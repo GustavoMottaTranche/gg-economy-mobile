@@ -64,7 +64,7 @@ jest.mock('react-i18next', () => ({
         'common.retry': 'Retry',
         'empty.review': 'Nothing to review',
         'empty.reviewHint': 'Import transactions to get started',
-        'import.selectFile': 'Select File',
+        'fileImport.selectFile': 'Select File',
         'errors.generic': 'An error occurred. Please try again.',
       };
       return translations[key] ?? key;

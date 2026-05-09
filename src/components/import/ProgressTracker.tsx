@@ -55,14 +55,14 @@ const FileResultItem = memo(function FileResultItem({
 
   const getStatusText = (): string => {
     if (result.success) {
-      return t('import.progress.fileSuccess', {
+      return t('fileImport.progress.fileSuccess', {
         count: result.transactionsImported,
       });
     }
     if (result.error) {
       return result.error.message;
     }
-    return t('import.progress.processing');
+    return t('fileImport.progress.processing');
   };
 
   return (
@@ -156,15 +156,15 @@ function ProgressTrackerComponent({
     <View style={styles.container} testID="progress-tracker">
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.title}>{t('import.progress.title')}</Text>
-        <Text style={styles.subtitle}>{t('import.progress.subtitle')}</Text>
+        <Text style={styles.title}>{t('fileImport.progress.title')}</Text>
+        <Text style={styles.subtitle}>{t('fileImport.progress.subtitle')}</Text>
       </View>
 
       {/* Current File Display (Requirement 6.1, 6.3) */}
       <View style={styles.currentFileContainer}>
         <Text style={styles.statusIcon}>{statusIcon}</Text>
         <View style={styles.currentFileInfo}>
-          <Text style={styles.currentFileLabel}>{t('import.progress.currentFile')}</Text>
+          <Text style={styles.currentFileLabel}>{t('fileImport.progress.currentFile')}</Text>
           <Text style={styles.currentFileName} numberOfLines={1} testID="current-file-name">
             {progress.currentFile}
           </Text>
@@ -174,7 +174,7 @@ function ProgressTrackerComponent({
       {/* Progress Counter (Requirement 6.2) */}
       <View style={styles.progressCounterContainer}>
         <Text style={styles.progressCounter} testID="progress-counter">
-          {t('import.progress.fileXofY', {
+          {t('fileImport.progress.fileXofY', {
             current: progress.currentIndex + 1,
             total: progress.totalFiles,
           })}
@@ -205,7 +205,7 @@ function ProgressTrackerComponent({
         <View style={styles.warningContainer} testID="failed-files-warning">
           <Text style={styles.warningIcon}>⚠️</Text>
           <Text style={styles.warningText}>
-            {t('import.progress.failedFiles', { count: failedCount })}
+            {t('fileImport.progress.failedFiles', { count: failedCount })}
           </Text>
         </View>
       )}
@@ -213,7 +213,7 @@ function ProgressTrackerComponent({
       {/* File Results List */}
       {partialResults.length > 0 && (
         <View style={styles.resultsContainer}>
-          <Text style={styles.resultsTitle}>{t('import.progress.processedFiles')}</Text>
+          <Text style={styles.resultsTitle}>{t('fileImport.progress.processedFiles')}</Text>
           <FlatList
             data={partialResults}
             renderItem={renderFileResult}
@@ -234,16 +234,16 @@ function ProgressTrackerComponent({
           disabled={!canCancel}
           activeOpacity={0.7}
           accessibilityRole="button"
-          accessibilityLabel={t('import.progress.cancel')}
+          accessibilityLabel={t('fileImport.progress.cancel')}
           accessibilityState={{ disabled: !canCancel }}
           testID="cancel-import-button"
         >
           <Text style={[styles.cancelButtonText, !canCancel && styles.cancelButtonTextDisabled]}>
             {canCancel
-              ? t('import.progress.cancelRemaining')
+              ? t('fileImport.progress.cancelRemaining')
               : isCompleted
-                ? t('import.progress.completed')
-                : t('import.progress.failed')}
+                ? t('fileImport.progress.completed')
+                : t('fileImport.progress.failed')}
           </Text>
         </TouchableOpacity>
       </View>

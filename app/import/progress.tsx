@@ -39,25 +39,25 @@ const PROGRESS_STEPS: ProgressStep[] = [
     stage: 'reading',
     icon: '📄',
     iconComplete: '✅',
-    labelKey: 'import.parsing',
+    labelKey: 'fileImport.parsing',
   },
   {
     stage: 'parsing',
     icon: '🔍',
     iconComplete: '✅',
-    labelKey: 'import.parsing',
+    labelKey: 'fileImport.parsing',
   },
   {
     stage: 'deduplicating',
     icon: '🔎',
     iconComplete: '✅',
-    labelKey: 'import.checkingDuplicates',
+    labelKey: 'fileImport.checkingDuplicates',
   },
   {
     stage: 'saving',
     icon: '💾',
     iconComplete: '✅',
-    labelKey: 'import.processing',
+    labelKey: 'fileImport.processing',
   },
 ];
 
@@ -191,10 +191,10 @@ export default function ImportProgressScreen() {
           {/* Title */}
           <Text style={styles.title} testID="import-progress-title">
             {isComplete
-              ? t('import.success')
+              ? t('fileImport.success')
               : hasError
-                ? t('import.error')
-                : t('import.importing')}
+                ? t('fileImport.error')
+                : t('fileImport.importing')}
           </Text>
 
           {/* File name */}
@@ -255,7 +255,7 @@ export default function ImportProgressScreen() {
               <View style={styles.resultItem}>
                 <Text style={styles.resultIcon}>📥</Text>
                 <Text style={styles.resultText}>
-                  {t('import.transactionsFound', { count: result.transactionsImported })}
+                  {t('fileImport.transactionsFound', { count: result.transactionsImported })}
                 </Text>
               </View>
 
@@ -263,7 +263,7 @@ export default function ImportProgressScreen() {
                 <View style={styles.resultItem}>
                   <Text style={styles.resultIcon}>🔄</Text>
                   <Text style={styles.resultText}>
-                    {t('import.duplicatesFound', { count: result.duplicatesFound })}
+                    {t('fileImport.duplicatesFound', { count: result.duplicatesFound })}
                   </Text>
                 </View>
               )}
@@ -282,7 +282,7 @@ export default function ImportProgressScreen() {
           {/* Error display */}
           {hasError && (
             <View style={styles.errorContainer} testID="import-error-container">
-              <Text style={styles.errorTitle}>{t('import.importFailed')}</Text>
+              <Text style={styles.errorTitle}>{t('fileImport.importFailed')}</Text>
               <Text style={styles.errorMessage}>
                 {error || result?.error?.message || t('errors.generic')}
               </Text>
@@ -290,7 +290,7 @@ export default function ImportProgressScreen() {
               {/* Parse errors list */}
               {result?.parseErrors && result.parseErrors.length > 0 && (
                 <View style={styles.parseErrorsContainer}>
-                  <Text style={styles.parseErrorsTitle}>{t('import.parseError')}:</Text>
+                  <Text style={styles.parseErrorsTitle}>{t('fileImport.parseError')}:</Text>
                   {result.parseErrors.slice(0, 5).map((parseError, index) => (
                     <Text key={index} style={styles.parseErrorItem}>
                       {parseError.lineNumber
@@ -318,10 +318,10 @@ export default function ImportProgressScreen() {
                 style={styles.primaryButton}
                 onPress={handleGoToReview}
                 accessibilityRole="button"
-                accessibilityLabel={t('import.goToReview')}
+                accessibilityLabel={t('fileImport.goToReview')}
                 testID="import-go-to-review-button"
               >
-                <Text style={styles.primaryButtonText}>{t('import.goToReview')}</Text>
+                <Text style={styles.primaryButtonText}>{t('fileImport.goToReview')}</Text>
               </TouchableOpacity>
             )}
 
@@ -341,10 +341,10 @@ export default function ImportProgressScreen() {
                   style={styles.secondaryButton}
                   onPress={handleSelectDifferentFile}
                   accessibilityRole="button"
-                  accessibilityLabel={t('import.selectFile')}
+                  accessibilityLabel={t('fileImport.selectFile')}
                   testID="import-select-different-button"
                 >
-                  <Text style={styles.secondaryButtonText}>{t('import.selectFile')}</Text>
+                  <Text style={styles.secondaryButtonText}>{t('fileImport.selectFile')}</Text>
                 </TouchableOpacity>
               </>
             )}

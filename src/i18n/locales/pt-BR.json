@@ -95,7 +95,7 @@
     "resolveDuplicate": "Resolver duplicata",
     "manualEntries": "Lançamentos manuais"
   },
-  "import": {
+  "fileImport": {
     "title": "Importar",
     "selectFile": "Selecionar Arquivo",
     "importing": "Importando...",

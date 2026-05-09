@@ -47,14 +47,14 @@ describe('MultiFileSelector', () => {
       const { getByText, getByTestId } = render(<MultiFileSelector {...defaultProps} />);
 
       expect(getByTestId('multi-file-selector')).toBeTruthy();
-      expect(getByText('import.multiFile.title')).toBeTruthy();
+      expect(getByText('fileImport.multiFile.title')).toBeTruthy();
     });
 
     it('renders empty state when no files are selected', () => {
       const { getByText } = render(<MultiFileSelector {...defaultProps} />);
 
-      expect(getByText('import.multiFile.noFilesSelected')).toBeTruthy();
-      expect(getByText('import.multiFile.tapToSelect')).toBeTruthy();
+      expect(getByText('fileImport.multiFile.noFilesSelected')).toBeTruthy();
+      expect(getByText('fileImport.multiFile.tapToSelect')).toBeTruthy();
     });
 
     it('renders file count display (Requirement 4.4)', () => {
@@ -169,7 +169,7 @@ describe('MultiFileSelector', () => {
 
       await waitFor(() => {
         expect(Alert.alert).toHaveBeenCalledWith(
-          'import.multiFile.limitExceeded',
+          'fileImport.multiFile.limitExceeded',
           expect.any(String)
         );
       });
@@ -195,7 +195,7 @@ describe('MultiFileSelector', () => {
 
       await waitFor(() => {
         expect(Alert.alert).toHaveBeenCalledWith(
-          'import.multiFile.limitExceeded',
+          'fileImport.multiFile.limitExceeded',
           expect.any(String)
         );
       });
@@ -214,7 +214,7 @@ describe('MultiFileSelector', () => {
       });
 
       // Should still show empty state
-      expect(getByText('import.multiFile.noFilesSelected')).toBeTruthy();
+      expect(getByText('fileImport.multiFile.noFilesSelected')).toBeTruthy();
     });
   });
 
@@ -247,7 +247,7 @@ describe('MultiFileSelector', () => {
         expect(queryByText('invalid.txt')).toBeNull();
         // Alert should be shown for invalid files
         expect(Alert.alert).toHaveBeenCalledWith(
-          'import.multiFile.invalidFiles',
+          'fileImport.multiFile.invalidFiles',
           expect.any(String)
         );
       });
@@ -496,7 +496,7 @@ describe('MultiFileSelector', () => {
       await waitFor(() => {
         expect(queryByText('test1.csv')).toBeNull();
         expect(queryByText('test2.csv')).toBeNull();
-        expect(getByText('import.multiFile.noFilesSelected')).toBeTruthy();
+        expect(getByText('fileImport.multiFile.noFilesSelected')).toBeTruthy();
       });
     });
   });
@@ -548,7 +548,7 @@ describe('MultiFileSelector', () => {
       });
 
       await waitFor(() => {
-        expect(Alert.alert).toHaveBeenCalledWith('common.error', 'import.multiFile.selectionError');
+        expect(Alert.alert).toHaveBeenCalledWith('common.error', 'fileImport.multiFile.selectionError');
       });
     });
   });

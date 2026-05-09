@@ -72,20 +72,20 @@ const FileResultItem = memo(function FileResultItem({
     if (result.success) {
       const parts: string[] = [];
       parts.push(
-        t('import.summary.transactionsImported', {
+        t('fileImport.summary.transactionsImported', {
           count: result.transactionsImported,
         })
       );
       if (result.duplicatesFound > 0) {
         parts.push(
-          t('import.summary.duplicatesSkipped', {
+          t('fileImport.summary.duplicatesSkipped', {
             count: result.duplicatesFound,
           })
         );
       }
       return parts.join(' • ');
     }
-    return t('import.summary.failed');
+    return t('fileImport.summary.failed');
   };
 
   return (
@@ -223,15 +223,15 @@ function ImportSummaryComponent({
 
   const getOverallStatusText = (): string => {
     if (allFilesFailed) {
-      return t('import.summary.allFilesFailed');
+      return t('fileImport.summary.allFilesFailed');
     }
     if (hasFailedFiles) {
-      return t('import.summary.partialSuccess', {
+      return t('fileImport.summary.partialSuccess', {
         success: successfulFiles,
         total: result.fileResults.length,
       });
     }
-    return t('import.summary.allFilesSuccess');
+    return t('fileImport.summary.allFilesSuccess');
   };
 
   return (
@@ -246,7 +246,7 @@ function ImportSummaryComponent({
           <Text style={styles.statusIcon} testID="overall-status-icon">
             {getOverallStatusIcon()}
           </Text>
-          <Text style={styles.title}>{t('import.summary.title')}</Text>
+          <Text style={styles.title}>{t('fileImport.summary.title')}</Text>
           <Text
             style={[styles.statusText, allFilesFailed && styles.statusTextError]}
             testID="overall-status-text"
@@ -258,11 +258,11 @@ function ImportSummaryComponent({
         {/* All Files Failed Error Message (Requirement 7.7) */}
         {allFilesFailed && (
           <View style={styles.errorContainer} testID="all-files-failed-error">
-            <Text style={styles.errorTitle}>{t('import.summary.errorTitle')}</Text>
-            <Text style={styles.errorMessage}>{t('import.summary.errorMessage')}</Text>
+            <Text style={styles.errorTitle}>{t('fileImport.summary.errorTitle')}</Text>
+            <Text style={styles.errorMessage}>{t('fileImport.summary.errorMessage')}</Text>
             <View style={styles.troubleshootingContainer}>
               <Text style={styles.troubleshootingTitle}>
-                {t('import.summary.troubleshootingTitle')}
+                {t('fileImport.summary.troubleshootingTitle')}
               </Text>
               {TROUBLESHOOTING_SUGGESTIONS.map((suggestion) => (
                 <View key={suggestion} style={styles.suggestionItem}>
@@ -284,7 +284,7 @@ function ImportSummaryComponent({
               <Text style={styles.statValue} testID="total-transactions">
                 {result.totalTransactionsImported}
               </Text>
-              <Text style={styles.statLabel}>{t('import.summary.totalTransactions')}</Text>
+              <Text style={styles.statLabel}>{t('fileImport.summary.totalTransactions')}</Text>
             </View>
 
             {/* Total Duplicates Found (Requirement 7.3) */}
@@ -295,7 +295,7 @@ function ImportSummaryComponent({
               >
                 {totalDuplicates}
               </Text>
-              <Text style={styles.statLabel}>{t('import.summary.totalDuplicates')}</Text>
+              <Text style={styles.statLabel}>{t('fileImport.summary.totalDuplicates')}</Text>
             </View>
 
             {/* Files Processed */}
@@ -303,7 +303,7 @@ function ImportSummaryComponent({
               <Text style={styles.statValue} testID="files-processed">
                 {successfulFiles}/{result.fileResults.length}
               </Text>
-              <Text style={styles.statLabel}>{t('import.summary.filesProcessed')}</Text>
+              <Text style={styles.statLabel}>{t('fileImport.summary.filesProcessed')}</Text>
             </View>
           </View>
         )}
@@ -311,10 +311,10 @@ function ImportSummaryComponent({
         {/* Duplicate Breakdown */}
         {!allFilesFailed && totalDuplicates > 0 && (
           <View style={styles.duplicateBreakdown} testID="duplicate-breakdown">
-            <Text style={styles.breakdownTitle}>{t('import.summary.duplicateBreakdown')}</Text>
+            <Text style={styles.breakdownTitle}>{t('fileImport.summary.duplicateBreakdown')}</Text>
             {result.totalDuplicatesInFile > 0 && (
               <View style={styles.breakdownItem}>
-                <Text style={styles.breakdownLabel}>{t('import.summary.inFileDuplicates')}</Text>
+                <Text style={styles.breakdownLabel}>{t('fileImport.summary.inFileDuplicates')}</Text>
                 <Text style={styles.breakdownValue} testID="in-file-duplicates">
                   {result.totalDuplicatesInFile}
                 </Text>
@@ -322,7 +322,7 @@ function ImportSummaryComponent({
             )}
             {result.totalCrossFileDuplicates > 0 && (
               <View style={styles.breakdownItem}>
-                <Text style={styles.breakdownLabel}>{t('import.summary.crossFileDuplicates')}</Text>
+                <Text style={styles.breakdownLabel}>{t('fileImport.summary.crossFileDuplicates')}</Text>
                 <Text style={styles.breakdownValue} testID="cross-file-duplicates">
                   {result.totalCrossFileDuplicates}
                 </Text>
@@ -330,7 +330,7 @@ function ImportSummaryComponent({
             )}
             {result.totalDatabaseDuplicates > 0 && (
               <View style={styles.breakdownItem}>
-                <Text style={styles.breakdownLabel}>{t('import.summary.databaseDuplicates')}</Text>
+                <Text style={styles.breakdownLabel}>{t('fileImport.summary.databaseDuplicates')}</Text>
                 <Text style={styles.breakdownValue} testID="database-duplicates">
                   {result.totalDatabaseDuplicates}
                 </Text>
@@ -341,7 +341,7 @@ function ImportSummaryComponent({
 
         {/* Per-File Results (Requirements 7.4, 7.5) */}
         <View style={styles.resultsContainer}>
-          <Text style={styles.resultsTitle}>{t('import.summary.fileResults')}</Text>
+          <Text style={styles.resultsTitle}>{t('fileImport.summary.fileResults')}</Text>
           <FlatList
             data={result.fileResults}
             renderItem={renderFileResult}
@@ -361,10 +361,10 @@ function ImportSummaryComponent({
             onPress={handleRetryFailed}
             activeOpacity={0.7}
             accessibilityRole="button"
-            accessibilityLabel={t('import.summary.retryFailed')}
+            accessibilityLabel={t('fileImport.summary.retryFailed')}
             testID="retry-failed-button"
           >
-            <Text style={styles.retryButtonText}>{t('import.summary.retryFailed')}</Text>
+            <Text style={styles.retryButtonText}>{t('fileImport.summary.retryFailed')}</Text>
           </TouchableOpacity>
         )}
 
@@ -375,10 +375,10 @@ function ImportSummaryComponent({
             onPress={handleGoToReview}
             activeOpacity={0.7}
             accessibilityRole="button"
-            accessibilityLabel={t('import.summary.reviewAll')}
+            accessibilityLabel={t('fileImport.summary.reviewAll')}
             testID="review-all-button"
           >
-            <Text style={styles.reviewButtonText}>{t('import.summary.reviewAll')}</Text>
+            <Text style={styles.reviewButtonText}>{t('fileImport.summary.reviewAll')}</Text>
           </TouchableOpacity>
         )}
 

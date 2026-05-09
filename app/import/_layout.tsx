@@ -31,14 +31,14 @@ export default function ImportLayout() {
       <Stack.Screen
         name="index"
         options={{
-          title: t('import.title'),
+          title: t('fileImport.title'),
           headerLeft: () => null, // Modal has close button on right
         }}
       />
       <Stack.Screen
         name="progress"
         options={{
-          title: t('import.importing'),
+          title: t('fileImport.importing'),
           headerBackTitle: t('common.back'),
         }}
       />

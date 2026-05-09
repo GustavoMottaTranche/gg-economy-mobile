@@ -613,7 +613,7 @@ export default function ReviewScreen() {
           title={t('empty.review')}
           description={t('empty.reviewHint')}
           action={{
-            label: t('import.selectFile'),
+            label: t('fileImport.selectFile'),
             onPress: handleNavigateToImport,
           }}
         />

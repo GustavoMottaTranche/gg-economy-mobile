@@ -187,7 +187,7 @@ export default function DashboardScreen() {
             title={t('dashboard.noData')}
             description={t('empty.transactionsHint')}
             action={{
-              label: t('import.selectFile'),
+              label: t('fileImport.selectFile'),
               onPress: () => router.push('/import'),
             }}
           />

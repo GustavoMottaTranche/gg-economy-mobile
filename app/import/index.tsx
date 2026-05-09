@@ -436,7 +436,7 @@ export default function ImportScreen() {
   if (isImporting && progress.stage === 'selecting') {
     return (
       <View style={styles.container} testID="import-screen-loading">
-        <LoadingIndicator message={t('import.selectFile')} testID="import-loading-indicator" />
+        <LoadingIndicator message={t('fileImport.selectFile')} testID="import-loading-indicator" />
       </View>
     );
   }
@@ -534,10 +534,10 @@ export default function ImportScreen() {
           <Text style={styles.icon}>📁</Text>
 
           {/* Title */}
-          <Text style={styles.title}>{t('import.title')}</Text>
+          <Text style={styles.title}>{t('fileImport.title')}</Text>
 
           {/* Subtitle */}
-          <Text style={styles.subtitle}>{t('import.supportedFormats')}</Text>
+          <Text style={styles.subtitle}>{t('fileImport.supportedFormats')}</Text>
 
           {/* Supported formats list */}
           <View style={styles.formatsContainer}>
@@ -575,11 +575,11 @@ export default function ImportScreen() {
             onPress={handleSelectFile}
             disabled={isImporting}
             accessibilityRole="button"
-            accessibilityLabel={t('import.selectFile')}
+            accessibilityLabel={t('fileImport.selectFile')}
             accessibilityState={{ disabled: isImporting }}
             testID="import-select-button"
           >
-            <Text style={styles.selectButtonText}>{t('import.selectFile')}</Text>
+            <Text style={styles.selectButtonText}>{t('fileImport.selectFile')}</Text>
           </TouchableOpacity>
 
           {/* Multi-file import button (Requirement 4.1) */}
@@ -588,11 +588,11 @@ export default function ImportScreen() {
             onPress={handleMultiFileMode}
             disabled={isImporting}
             accessibilityRole="button"
-            accessibilityLabel={t('import.multiFile.selectMultiple')}
+            accessibilityLabel={t('fileImport.multiFile.selectMultiple')}
             accessibilityState={{ disabled: isImporting }}
             testID="import-multi-file-button"
           >
-            <Text style={styles.multiFileButtonText}>{t('import.multiFile.selectMultiple')}</Text>
+            <Text style={styles.multiFileButtonText}>{t('fileImport.multiFile.selectMultiple')}</Text>
           </TouchableOpacity>
 
           {/* Manual entry button (Requirement 15.1) */}
@@ -610,7 +610,7 @@ export default function ImportScreen() {
 
           {/* Platform-specific hint */}
           {Platform.OS === 'android' && (
-            <Text style={styles.hint}>{t('import.supportedFormats')}</Text>
+            <Text style={styles.hint}>{t('fileImport.supportedFormats')}</Text>
           )}
         </View>
       </ScrollView>

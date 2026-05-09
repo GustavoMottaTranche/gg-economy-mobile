@@ -51,7 +51,7 @@ describe('ProgressTracker', () => {
       const { getByTestId, getByText } = render(<ProgressTracker {...defaultProps} />);
 
       expect(getByTestId('progress-tracker')).toBeTruthy();
-      expect(getByText('import.progress.title')).toBeTruthy();
+      expect(getByText('fileImport.progress.title')).toBeTruthy();
     });
 
     it('renders cancel button', () => {

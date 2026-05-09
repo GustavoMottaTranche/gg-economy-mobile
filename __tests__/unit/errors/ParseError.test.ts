@@ -29,7 +29,7 @@ describe('ParseError', () => {
 
       expect(error.lineNumber).toBe(42);
       expect(error.fileType).toBe('csv');
-      expect(error.messageKey).toEqual({ key: 'import.parseError', params: { line: 42 } });
+      expect(error.messageKey).toEqual({ key: 'fileImport.parseError', params: { line: 42 } });
     });
 
     it('should include line number and file type in context', () => {
@@ -118,7 +118,7 @@ describe('UnsupportedFileTypeError', () => {
 
     it('should have correct message key', () => {
       const error = new UnsupportedFileTypeError('pdf');
-      expect(error.messageKey).toEqual({ key: 'import.invalidFormat' });
+      expect(error.messageKey).toEqual({ key: 'fileImport.invalidFormat' });
     });
 
     it('should be an instance of AppError', () => {

@@ -119,7 +119,7 @@ const SheetItem = memo(function SheetItem({
       onPress={handlePress}
       activeOpacity={0.7}
       accessibilityRole="button"
-      accessibilityLabel={t('import.sheetSelector.selectSheet', { name: sheet.name })}
+      accessibilityLabel={t('fileImport.sheetSelector.selectSheet', { name: sheet.name })}
       accessibilityState={{ selected: isSelected }}
       testID={`sheet-item-${sheet.name}`}
     >
@@ -135,12 +135,12 @@ const SheetItem = memo(function SheetItem({
           {/* Suggested badge (Requirement 11.3) */}
           {isSuggested && (
             <View style={styles.suggestedBadge} testID={`suggested-badge-${sheet.name}`}>
-              <Text style={styles.suggestedBadgeText}>{t('import.sheetSelector.suggested')}</Text>
+              <Text style={styles.suggestedBadgeText}>{t('fileImport.sheetSelector.suggested')}</Text>
             </View>
           )}
         </View>
         <Text style={styles.sheetRowCount}>
-          {t('import.sheetSelector.rowCount', { count: sheet.rowCount })}
+          {t('fileImport.sheetSelector.rowCount', { count: sheet.rowCount })}
         </Text>
       </View>
 
@@ -348,9 +348,9 @@ function SheetSelectorComponent({
     <View style={styles.container} testID="sheet-selector">
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.title}>{t('import.sheetSelector.title')}</Text>
+        <Text style={styles.title}>{t('fileImport.sheetSelector.title')}</Text>
         <Text style={styles.subtitle}>
-          {t('import.sheetSelector.subtitle', { count: sheets.length })}
+          {t('fileImport.sheetSelector.subtitle', { count: sheets.length })}
         </Text>
       </View>
 
@@ -358,7 +358,7 @@ function SheetSelectorComponent({
       {showCountdown && (
         <View style={styles.countdownContainer} testID="countdown-container">
           <Text style={styles.countdownText}>
-            {t('import.sheetSelector.autoSelectIn', { seconds: remainingTime })}
+            {t('fileImport.sheetSelector.autoSelectIn', { seconds: remainingTime })}
           </Text>
           <View style={styles.countdownBar}>
             <View
@@ -388,10 +388,10 @@ function SheetSelectorComponent({
             onPress={handleSelectFirst}
             activeOpacity={0.7}
             accessibilityRole="button"
-            accessibilityLabel={t('import.sheetSelector.useFirst')}
+            accessibilityLabel={t('fileImport.sheetSelector.useFirst')}
             testID="use-first-button"
           >
-            <Text style={styles.defaultButtonText}>{t('import.sheetSelector.useFirst')}</Text>
+            <Text style={styles.defaultButtonText}>{t('fileImport.sheetSelector.useFirst')}</Text>
           </TouchableOpacity>
         )}
 
@@ -401,7 +401,7 @@ function SheetSelectorComponent({
           disabled={!hasSelection}
           activeOpacity={0.7}
           accessibilityRole="button"
-          accessibilityLabel={t('import.sheetSelector.confirm')}
+          accessibilityLabel={t('fileImport.sheetSelector.confirm')}
           accessibilityState={{ disabled: !hasSelection }}
           testID="confirm-sheet-button"
         >
@@ -409,8 +409,8 @@ function SheetSelectorComponent({
             style={[styles.confirmButtonText, !hasSelection && styles.confirmButtonTextDisabled]}
           >
             {hasSelection
-              ? t('import.sheetSelector.importSheet', { name: selectedSheet })
-              : t('import.sheetSelector.selectToImport')}
+              ? t('fileImport.sheetSelector.importSheet', { name: selectedSheet })
+              : t('fileImport.sheetSelector.selectToImport')}
           </Text>
         </TouchableOpacity>
       </View>

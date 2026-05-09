@@ -95,7 +95,7 @@
     "resolveDuplicate": "Resolve duplicate",
     "manualEntries": "Manual entries"
   },
-  "import": {
+  "fileImport": {
     "title": "Import",
     "selectFile": "Select File",
     "importing": "Importing...",

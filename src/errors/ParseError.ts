@@ -39,7 +39,7 @@ export class ParseError extends AppError {
     cause?: Error
   ) {
     const messageKey: ErrorMessageKey = lineNumber
-      ? { key: 'import.parseError', params: { line: lineNumber } }
+      ? { key: 'fileImport.parseError', params: { line: lineNumber } }
       : { key: 'errors.parseError' };
 
     super(message, 'PARSE_ERROR', true, messageKey, { ...context, lineNumber, fileType }, cause);
@@ -112,7 +112,7 @@ export class UnsupportedFileTypeError extends AppError {
       `Unsupported file type: ${fileType}. Supported types: ${supportedTypes.join(', ')}`,
       'UNSUPPORTED_FILE_TYPE',
       true,
-      { key: 'import.invalidFormat' },
+      { key: 'fileImport.invalidFormat' },
       { fileType, supportedTypes }
     );
 

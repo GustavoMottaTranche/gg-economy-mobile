@@ -67,7 +67,7 @@ describe('SheetSelector', () => {
       const { getByTestId, getByText } = render(<SheetSelector {...defaultProps} />);
 
       expect(getByTestId('sheet-selector')).toBeTruthy();
-      expect(getByText('import.sheetSelector.title')).toBeTruthy();
+      expect(getByText('fileImport.sheetSelector.title')).toBeTruthy();
     });
 
     it('renders confirm button', () => {

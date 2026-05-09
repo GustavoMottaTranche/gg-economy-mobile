@@ -267,7 +267,7 @@ export default function TransactionsScreen(): React.ReactElement {
         title={t('empty.transactions')}
         description={t('empty.transactionsHint')}
         action={{
-          label: t('import.selectFile'),
+          label: t('fileImport.selectFile'),
           onPress: handleImport,
         }}
         testID="empty-transactions"

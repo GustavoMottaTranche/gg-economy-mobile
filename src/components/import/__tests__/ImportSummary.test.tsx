@@ -249,33 +249,33 @@ describe('ImportSummary', () => {
       const result = createAllFailedResult();
       const { getByText } = render(<ImportSummary {...defaultProps} result={result} />);
 
-      expect(getByText('import.summary.errorTitle')).toBeTruthy();
+      expect(getByText('fileImport.summary.errorTitle')).toBeTruthy();
     });
 
     it('displays error message explaining the failure', () => {
       const result = createAllFailedResult();
       const { getByText } = render(<ImportSummary {...defaultProps} result={result} />);
 
-      expect(getByText('import.summary.errorMessage')).toBeTruthy();
+      expect(getByText('fileImport.summary.errorMessage')).toBeTruthy();
     });
 
     it('displays troubleshooting suggestions title', () => {
       const result = createAllFailedResult();
       const { getByText } = render(<ImportSummary {...defaultProps} result={result} />);
 
-      expect(getByText('import.summary.troubleshootingTitle')).toBeTruthy();
+      expect(getByText('fileImport.summary.troubleshootingTitle')).toBeTruthy();
     });
 
     it('displays all four troubleshooting suggestions', () => {
       const result = createAllFailedResult();
       const { getByText } = render(<ImportSummary {...defaultProps} result={result} />);
 
-      expect(getByText('import.summary.troubleshooting.checkFileFormat')).toBeTruthy();
-      expect(getByText('import.summary.troubleshooting.checkFileNotCorrupted')).toBeTruthy();
+      expect(getByText('fileImport.summary.troubleshooting.checkFileFormat')).toBeTruthy();
+      expect(getByText('fileImport.summary.troubleshooting.checkFileNotCorrupted')).toBeTruthy();
       expect(
-        getByText('import.summary.troubleshooting.checkFileNotPasswordProtected')
+        getByText('fileImport.summary.troubleshooting.checkFileNotPasswordProtected')
       ).toBeTruthy();
-      expect(getByText('import.summary.troubleshooting.tryDifferentFile')).toBeTruthy();
+      expect(getByText('fileImport.summary.troubleshooting.tryDifferentFile')).toBeTruthy();
     });
 
     it('does not display error container when some files succeed', () => {

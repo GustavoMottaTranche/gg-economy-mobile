@@ -37,7 +37,7 @@ jest.mock('react-i18next', () => ({
         'common.previous': 'Previous',
         'common.next': 'Next',
         'empty.transactionsHint': 'Import a statement or add manually',
-        'import.selectFile': 'Select File',
+        'fileImport.selectFile': 'Select File',
         'transactions.referenceMonth': 'Reference month',
         'review.transactionsToReview': `${params?.count ?? 0} transaction(s) to review`,
       };

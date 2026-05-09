@@ -229,8 +229,8 @@ function MultiFileSelectorComponent({
       // Show warning for invalid files
       if (invalidFiles.length > 0) {
         Alert.alert(
-          t('import.multiFile.invalidFiles'),
-          t('import.multiFile.invalidFilesMessage', {
+          t('fileImport.multiFile.invalidFiles'),
+          t('fileImport.multiFile.invalidFilesMessage', {
             files: invalidFiles.join(', '),
             formats: SUPPORTED_EXTENSIONS.join(', '),
           })
@@ -244,8 +244,8 @@ function MultiFileSelectorComponent({
         const filesToAdd = newFiles.slice(0, allowedCount);
 
         Alert.alert(
-          t('import.multiFile.limitExceeded'),
-          t('import.multiFile.limitExceededMessage', { max: maxFiles })
+          t('fileImport.multiFile.limitExceeded'),
+          t('fileImport.multiFile.limitExceededMessage', { max: maxFiles })
         );
 
         setSelectedFiles((prev) => [...prev, ...filesToAdd]);
@@ -253,7 +253,7 @@ function MultiFileSelectorComponent({
         setSelectedFiles((prev) => [...prev, ...newFiles]);
       }
     } catch (error) {
-      Alert.alert(t('common.error'), t('import.multiFile.selectionError'));
+      Alert.alert(t('common.error'), t('fileImport.multiFile.selectionError'));
     } finally {
       setIsSelecting(false);
     }
@@ -271,7 +271,7 @@ function MultiFileSelectorComponent({
    */
   const handleConfirm = useCallback(() => {
     if (selectedFiles.length === 0) {
-      Alert.alert(t('import.multiFile.noFiles'), t('import.multiFile.noFilesMessage'));
+      Alert.alert(t('fileImport.multiFile.noFiles'), t('fileImport.multiFile.noFilesMessage'));
       return;
     }
 
@@ -306,9 +306,9 @@ function MultiFileSelectorComponent({
     <View style={styles.container} testID="multi-file-selector">
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.title}>{t('import.multiFile.title')}</Text>
+        <Text style={styles.title}>{t('fileImport.multiFile.title')}</Text>
         <Text style={styles.subtitle}>
-          {t('import.multiFile.subtitle', {
+          {t('fileImport.multiFile.subtitle', {
             formats: SUPPORTED_EXTENSIONS.join(', '),
           })}
         </Text>
@@ -317,7 +317,7 @@ function MultiFileSelectorComponent({
       {/* File Count Display (Requirement 4.4) */}
       <View style={styles.countContainer}>
         <Text style={styles.countText} testID="file-count">
-          {t('import.multiFile.fileCount', {
+          {t('fileImport.multiFile.fileCount', {
             count: selectedFiles.length,
             max: maxFiles,
           })}
@@ -326,10 +326,10 @@ function MultiFileSelectorComponent({
           <TouchableOpacity
             onPress={handleClearAll}
             accessibilityRole="button"
-            accessibilityLabel={t('import.multiFile.clearAll')}
+            accessibilityLabel={t('fileImport.multiFile.clearAll')}
             testID="clear-all-button"
           >
-            <Text style={styles.clearAllText}>{t('import.multiFile.clearAll')}</Text>
+            <Text style={styles.clearAllText}>{t('fileImport.multiFile.clearAll')}</Text>
           </TouchableOpacity>
         )}
       </View>
@@ -348,8 +348,8 @@ function MultiFileSelectorComponent({
       ) : (
         <View style={styles.emptyContainer}>
           <Text style={styles.emptyIcon}>📁</Text>
-          <Text style={styles.emptyText}>{t('import.multiFile.noFilesSelected')}</Text>
-          <Text style={styles.emptyHint}>{t('import.multiFile.tapToSelect')}</Text>
+          <Text style={styles.emptyText}>{t('fileImport.multiFile.noFilesSelected')}</Text>
+          <Text style={styles.emptyHint}>{t('fileImport.multiFile.tapToSelect')}</Text>
         </View>
       )}
 
@@ -361,12 +361,12 @@ function MultiFileSelectorComponent({
           disabled={isSelecting}
           activeOpacity={0.7}
           accessibilityRole="button"
-          accessibilityLabel={t('import.multiFile.addFiles')}
+          accessibilityLabel={t('fileImport.multiFile.addFiles')}
           testID="add-files-button"
         >
           <Text style={styles.addButtonIcon}>+</Text>
           <Text style={styles.addButtonText}>
-            {isSelecting ? t('common.loading') : t('import.multiFile.addFiles')}
+            {isSelecting ? t('common.loading') : t('fileImport.multiFile.addFiles')}
           </Text>
         </TouchableOpacity>
       )}
@@ -390,12 +390,12 @@ function MultiFileSelectorComponent({
           disabled={!hasFiles}
           activeOpacity={0.7}
           accessibilityRole="button"
-          accessibilityLabel={t('import.multiFile.importFiles')}
+          accessibilityLabel={t('fileImport.multiFile.importFiles')}
           accessibilityState={{ disabled: !hasFiles }}
           testID="confirm-button"
         >
           <Text style={[styles.confirmButtonText, !hasFiles && styles.confirmButtonTextDisabled]}>
-            {t('import.multiFile.importFiles')}
+            {t('fileImport.multiFile.importFiles')}
           </Text>
         </TouchableOpacity>
       </View>

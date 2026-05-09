@@ -383,9 +383,9 @@ describe('Navigation Setup', () => {
   describe('Import Modal', () => {
     it('renders import screen with file selection', () => {
       render(<ImportScreen />);
-      // There are two elements with 'import.selectFile' - title and button
-      expect(screen.getAllByText('import.selectFile').length).toBeGreaterThan(0);
-      expect(screen.getByText('import.supportedFormats')).toBeTruthy();
+      // There are two elements with 'fileImport.selectFile' - title and button
+      expect(screen.getAllByText('fileImport.selectFile').length).toBeGreaterThan(0);
+      expect(screen.getByText('fileImport.supportedFormats')).toBeTruthy();
     });
   });
 
@@ -496,6 +496,6 @@ describe('Deep Linking Configuration', () => {
     // This is a static test - the actual deep linking is configured in app.json
     // We verify the configuration exists by checking the import flow handles shared files
     render(<ImportScreen />);
-    expect(screen.getByText('import.supportedFormats')).toBeTruthy();
+    expect(screen.getByText('fileImport.supportedFormats')).toBeTruthy();
   });
 });
