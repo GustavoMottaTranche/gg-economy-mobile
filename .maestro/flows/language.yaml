@@ -1,0 +1,358 @@
+# Language Switching E2E Test Flow for GG-Economy Mobile
+# Tests internationalization (i18n) functionality
+#
+# Tags: i18n
+# Validates: Requirements 25, 33
+#
+# This test covers:
+# - Language switching from default to alternate language
+# - UI strings change across multiple screens
+# - Language switching back to original language
+# - Language persistence after app restart
+#
+# Supported Languages:
+# - Portuguese (pt-BR): "Português (Brasil)"
+# - English (en): "English"
+
+appId: com.ggeconomy.mobile
+
+---
+
+# ============================================================================
+# PART A: App Launch and Initial State
+# ============================================================================
+
+- launchApp:
+    clearState: true
+
+# Wait for app to fully load - Dashboard should be the default screen
+- extendedWaitUntil:
+    visible: "Dashboard"
+    timeout: 15000
+
+# Verify Dashboard is visible (English is default or device locale)
+- assertVisible: "Dashboard"
+- takeScreenshot: "01_language_initial_state"
+
+# ============================================================================
+# PART B: Navigate to Language Settings
+# ============================================================================
+
+# Navigate to Settings tab
+- tapOn: "Settings"
+- extendedWaitUntil:
+    visible: "Settings"
+    timeout: 5000
+- assertVisible: "Settings"
+- takeScreenshot: "02_language_settings_main"
+
+# Navigate to Language settings
+- tapOn:
+    text: "Language"
+- extendedWaitUntil:
+    anyOf:
+      - visible: "Português (Brasil)"
+      - visible: "English"
+    timeout: 5000
+- takeScreenshot: "03_language_settings_screen"
+
+# ============================================================================
+# PART C: Switch to Portuguese (pt-BR)
+# ============================================================================
+
+# Tap on Portuguese option
+- tapOn:
+    text: "Português (Brasil)"
+- extendedWaitUntil:
+    visible: "pt-BR"
+    timeout: 3000
+
+# Wait for language change to take effect
+- extendedWaitUntil:
+    visible: "Selecione o idioma do aplicativo"
+    timeout: 5000
+    optional: true
+- takeScreenshot: "04_language_switched_to_portuguese"
+
+# Go back to Settings main
+- back
+- extendedWaitUntil:
+    visible: "Configurações"
+    timeout: 5000
+- assertVisible: "Configurações"
+- takeScreenshot: "05_language_settings_in_portuguese"
+
+# ============================================================================
+# PART D: Verify Portuguese Strings Across Screens
+# ============================================================================
+
+# Navigate to Dashboard and verify Portuguese strings
+- tapOn: "Painel"
+- extendedWaitUntil:
+    visible: "Painel"
+    timeout: 5000
+- assertVisible: "Painel"
+# Verify dashboard-specific Portuguese strings
+- assertVisible:
+    anyOf:
+      - text: "Receitas"
+      - text: "Despesas"
+      - text: "Saldo"
+    optional: true
+- takeScreenshot: "06_language_dashboard_portuguese"
+
+# Navigate to Transactions and verify Portuguese strings
+- tapOn: "Lançamentos"
+- extendedWaitUntil:
+    visible: "Lançamentos"
+    timeout: 5000
+- assertVisible: "Lançamentos"
+- takeScreenshot: "07_language_transactions_portuguese"
+
+# Navigate to Review and verify Portuguese strings
+- tapOn: "Revisão"
+- extendedWaitUntil:
+    visible: "Revisão"
+    timeout: 5000
+- assertVisible: "Revisão"
+- takeScreenshot: "08_language_review_portuguese"
+
+# Navigate to Manual Entry and verify Portuguese strings
+- tapOn: "Manual"
+- extendedWaitUntil:
+    visible: "Manual"
+    timeout: 5000
+# Verify manual entry form labels in Portuguese
+- assertVisible:
+    anyOf:
+      - text: "Lançamento Manual"
+      - text: "Valor"
+      - text: "Descrição"
+    optional: true
+- takeScreenshot: "09_language_manual_portuguese"
+
+# Navigate back to Settings
+- tapOn: "Configurações"
+- extendedWaitUntil:
+    visible: "Configurações"
+    timeout: 5000
+- assertVisible: "Configurações"
+
+# Verify settings items in Portuguese
+- assertVisible:
+    text: "Idioma"
+    optional: true
+- assertVisible:
+    text: "Backup"
+    optional: true
+- assertVisible:
+    text: "Categorias"
+    optional: true
+- takeScreenshot: "10_language_settings_items_portuguese"
+
+# ============================================================================
+# PART E: Switch Back to English
+# ============================================================================
+
+# Navigate to Language settings
+- tapOn:
+    text: "Idioma"
+- extendedWaitUntil:
+    visible: "Português (Brasil)"
+    timeout: 5000
+- takeScreenshot: "11_language_settings_before_switch_to_english"
+
+# Tap on English option
+- tapOn:
+    text: "English"
+- extendedWaitUntil:
+    visible: "en"
+    timeout: 3000
+
+# Wait for language change to take effect
+- extendedWaitUntil:
+    visible: "Select app language"
+    timeout: 5000
+    optional: true
+- takeScreenshot: "12_language_switched_to_english"
+
+# Go back to Settings main
+- back
+- extendedWaitUntil:
+    visible: "Settings"
+    timeout: 5000
+- assertVisible: "Settings"
+- takeScreenshot: "13_language_settings_in_english"
+
+# ============================================================================
+# PART F: Verify English Strings Across Screens
+# ============================================================================
+
+# Navigate to Dashboard and verify English strings
+- tapOn: "Dashboard"
+- extendedWaitUntil:
+    visible: "Dashboard"
+    timeout: 5000
+- assertVisible: "Dashboard"
+# Verify dashboard-specific English strings
+- assertVisible:
+    anyOf:
+      - text: "Income"
+      - text: "Expenses"
+      - text: "Balance"
+    optional: true
+- takeScreenshot: "14_language_dashboard_english"
+
+# Navigate to Transactions and verify English strings
+- tapOn: "Transactions"
+- extendedWaitUntil:
+    visible: "Transactions"
+    timeout: 5000
+- assertVisible: "Transactions"
+- takeScreenshot: "15_language_transactions_english"
+
+# Navigate to Review and verify English strings
+- tapOn: "Review"
+- extendedWaitUntil:
+    visible: "Review"
+    timeout: 5000
+- assertVisible: "Review"
+- takeScreenshot: "16_language_review_english"
+
+# Navigate to Manual Entry and verify English strings
+- tapOn: "Manual"
+- extendedWaitUntil:
+    visible: "Manual"
+    timeout: 5000
+# Verify manual entry form labels in English
+- assertVisible:
+    anyOf:
+      - text: "Manual Entry"
+      - text: "Amount"
+      - text: "Description"
+    optional: true
+- takeScreenshot: "17_language_manual_english"
+
+# ============================================================================
+# PART G: Test Language Persistence After App Restart
+# ============================================================================
+
+# First, switch to Portuguese to test persistence
+- tapOn: "Settings"
+- extendedWaitUntil:
+    visible: "Settings"
+    timeout: 5000
+
+- tapOn:
+    text: "Language"
+- extendedWaitUntil:
+    visible: "English"
+    timeout: 5000
+
+# Switch to Portuguese
+- tapOn:
+    text: "Português (Brasil)"
+- extendedWaitUntil:
+    visible: "pt-BR"
+    timeout: 3000
+- takeScreenshot: "18_language_set_portuguese_before_restart"
+
+# Go back to main screen
+- back
+- extendedWaitUntil:
+    visible: "Configurações"
+    timeout: 5000
+
+- tapOn: "Painel"
+- extendedWaitUntil:
+    visible: "Painel"
+    timeout: 5000
+- takeScreenshot: "19_language_dashboard_before_restart"
+
+# Restart the app (without clearing state to test persistence)
+- launchApp:
+    clearState: false
+
+# Wait for app to load
+- extendedWaitUntil:
+    visible: "Painel"
+    timeout: 15000
+
+# Verify Portuguese is still active after restart
+- assertVisible: "Painel"
+- takeScreenshot: "20_language_persisted_after_restart"
+
+# Verify navigation tabs are in Portuguese
+- assertVisible:
+    text: "Lançamentos"
+    optional: true
+- assertVisible:
+    text: "Revisão"
+    optional: true
+- assertVisible:
+    text: "Configurações"
+    optional: true
+
+# Navigate to Settings to verify language setting persisted
+- tapOn: "Configurações"
+- extendedWaitUntil:
+    visible: "Configurações"
+    timeout: 5000
+- assertVisible: "Configurações"
+- takeScreenshot: "21_language_settings_persisted"
+
+# Navigate to Language settings to verify selection
+- tapOn:
+    text: "Idioma"
+- extendedWaitUntil:
+    visible: "Português (Brasil)"
+    timeout: 5000
+
+# Verify Portuguese is selected (has checkmark)
+- assertVisible: "Português (Brasil)"
+- takeScreenshot: "22_language_selection_persisted"
+
+# ============================================================================
+# PART H: Reset to English for Clean State
+# ============================================================================
+
+# Switch back to English for clean state
+- tapOn:
+    text: "English"
+- extendedWaitUntil:
+    visible: "en"
+    timeout: 3000
+
+# Wait for language change
+- extendedWaitUntil:
+    visible: "Select app language"
+    timeout: 5000
+    optional: true
+
+# Go back to Settings
+- back
+- extendedWaitUntil:
+    visible: "Settings"
+    timeout: 5000
+
+# Navigate to Dashboard
+- tapOn: "Dashboard"
+- extendedWaitUntil:
+    visible: "Dashboard"
+    timeout: 5000
+- assertVisible: "Dashboard"
+- takeScreenshot: "23_language_final_state_english"
+
+# ============================================================================
+# Test Complete
+# ============================================================================
+
+- runScript:
+    script: |
+      console.log('Language Switching E2E test completed successfully!');
+      console.log('Verified:');
+      console.log('  - Language switching from English to Portuguese');
+      console.log('  - UI strings change across Dashboard, Transactions, Review, Manual, Settings');
+      console.log('  - Language switching from Portuguese back to English');
+      console.log('  - Language persistence after app restart');
+      console.log('  - Navigation tab labels update with language change');

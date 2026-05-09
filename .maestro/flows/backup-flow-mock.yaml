@@ -1,0 +1,352 @@
+# Backup Flow E2E Test (Mock Version) for GG-Economy Mobile
+# Tests the backup UI flow without actual OAuth/Google Drive interaction
+#
+# Tags: backup, e2e, mock
+# Validates: Requirements 7, 8, 9, 26, 33
+#
+# This version tests the Backup Settings UI without requiring:
+# - Google account on device
+# - Network connectivity
+# - Actual OAuth flow
+#
+# This is more reliable for CI/CD environments where OAuth
+# cannot be automated. For full backup testing with OAuth,
+# use backup-flow.yaml
+
+appId: com.ggeconomy.mobile
+
+---
+
+# ============================================
+# Test: Backup Settings UI Flow (Mock)
+# ============================================
+
+- launchApp:
+    clearState: true
+
+# Wait for app to fully load
+- extendedWaitUntil:
+    visible: "Dashboard"
+    timeout: 15000
+
+# Take screenshot of initial state
+- takeScreenshot: "mock_backup_01_dashboard"
+
+# ============================================
+# Step 1: Navigate to Settings
+# ============================================
+
+- tapOn: "Settings"
+
+# Wait for Settings screen to load
+- extendedWaitUntil:
+    visible: "Settings"
+    timeout: 10000
+
+# Take screenshot of settings screen
+- takeScreenshot: "mock_backup_02_settings"
+
+# ============================================
+# Step 2: Navigate to Backup Settings
+# ============================================
+
+# Tap on Backup option in settings
+- tapOn:
+    text: "Backup"
+
+# Wait for Backup Settings screen to load
+- extendedWaitUntil:
+    visible:
+      id: "backup-settings-screen"
+    timeout: 10000
+
+# Take screenshot of backup settings
+- takeScreenshot: "mock_backup_03_backup_settings"
+
+# ============================================
+# Step 3: Verify Backup Settings Screen Elements
+# ============================================
+
+# Verify Google Account section is visible
+- assertVisible:
+    id: "google-account-section"
+
+# Verify backup status section is visible
+- assertVisible:
+    id: "backup-status-section"
+
+# Verify frequency selector is visible
+- assertVisible:
+    id: "frequency-selector"
+
+# Verify time selector is visible
+- assertVisible:
+    id: "time-selector"
+
+# Verify backup now button is visible
+- assertVisible:
+    id: "backup-now-button"
+
+# Verify restore button is visible
+- assertVisible:
+    id: "restore-button"
+
+# Take screenshot showing all elements
+- takeScreenshot: "mock_backup_04_all_elements"
+
+# ============================================
+# Step 4: Verify Initial Connection State
+# ============================================
+
+# When not connected, connect button should be visible
+- assertVisible:
+    id: "connect-button"
+    optional: true
+
+# Backup status should show "Never backed up" or similar
+- assertVisible:
+    id: "backup-status-text"
+
+# Take screenshot of initial state
+- takeScreenshot: "mock_backup_05_initial_state"
+
+# ============================================
+# Step 5: Test Connect Button (UI Only)
+# ============================================
+
+# Tap connect button to verify it's interactive
+- tapOn:
+    id: "connect-button"
+    optional: true
+
+# Wait briefly for OAuth to potentially start
+# In mock mode, this may show an error or OAuth screen
+- extendedWaitUntil:
+    anyOf:
+      # OAuth screen started
+      - visible: "Sign in"
+      - visible: "Google"
+      # Or error (no network/account)
+      - visible: "Error"
+      # Or still on backup screen (OAuth cancelled)
+      - visible:
+          id: "backup-settings-screen"
+    timeout: 10000
+
+# Take screenshot of OAuth attempt
+- takeScreenshot: "mock_backup_06_oauth_attempt"
+
+# If OAuth screen appeared, go back to app
+- back:
+    optional: true
+
+# Wait to return to backup settings
+- extendedWaitUntil:
+    visible:
+      id: "backup-settings-screen"
+    timeout: 10000
+
+# ============================================
+# Step 6: Test Frequency Selector Modal
+# ============================================
+
+# Tap on frequency selector
+- tapOn:
+    id: "frequency-selector"
+
+# Wait for frequency modal to appear
+- extendedWaitUntil:
+    visible:
+      id: "frequency-modal"
+    timeout: 5000
+
+# Take screenshot of frequency modal
+- takeScreenshot: "mock_backup_07_frequency_modal"
+
+# Verify all frequency options are present
+- assertVisible:
+    id: "frequency-option-daily"
+
+- assertVisible:
+    id: "frequency-option-every2days"
+
+- assertVisible:
+    id: "frequency-option-every3days"
+
+- assertVisible:
+    id: "frequency-option-weekly"
+
+- assertVisible:
+    id: "frequency-option-disabled"
+
+# Select a frequency option
+- tapOn:
+    id: "frequency-option-weekly"
+
+# Wait for modal to close
+- extendedWaitUntil:
+    notVisible:
+      id: "frequency-modal"
+    timeout: 5000
+
+# Take screenshot after selection
+- takeScreenshot: "mock_backup_08_frequency_selected"
+
+# ============================================
+# Step 7: Test Time Selector Modal
+# ============================================
+
+# Tap on time selector
+- tapOn:
+    id: "time-selector"
+
+# Wait for time modal to appear
+- extendedWaitUntil:
+    visible:
+      id: "time-modal"
+    timeout: 5000
+
+# Take screenshot of time modal
+- takeScreenshot: "mock_backup_09_time_modal"
+
+# Verify time options are present (check a few)
+- assertVisible:
+    id: "time-option-0"
+
+- assertVisible:
+    id: "time-option-12"
+
+# Select a time option
+- tapOn:
+    id: "time-option-8"
+
+# Wait for modal to close
+- extendedWaitUntil:
+    notVisible:
+      id: "time-modal"
+    timeout: 5000
+
+# Take screenshot after selection
+- takeScreenshot: "mock_backup_10_time_selected"
+
+# ============================================
+# Step 8: Test Backup Now Button (Disabled State)
+# ============================================
+
+# When not connected, backup now should be disabled
+# Tap it to verify it doesn't crash (should show error or do nothing)
+- tapOn:
+    id: "backup-now-button"
+
+# Wait briefly for any response
+- extendedWaitUntil:
+    anyOf:
+      # Error alert
+      - visible: "Error"
+      # Or still on backup screen (button disabled)
+      - visible:
+          id: "backup-settings-screen"
+    timeout: 5000
+
+# Take screenshot
+- takeScreenshot: "mock_backup_11_backup_button_test"
+
+# Dismiss any alert if shown
+- tapOn:
+    text: "OK"
+    optional: true
+
+- tapOn:
+    text: "Cancel"
+    optional: true
+
+# ============================================
+# Step 9: Test Restore Button (Disabled State)
+# ============================================
+
+# When not connected, restore should be disabled
+# Tap it to verify behavior
+- tapOn:
+    id: "restore-button"
+
+# Wait briefly for any response
+- extendedWaitUntil:
+    anyOf:
+      # Restore modal (if it opens anyway)
+      - visible:
+          id: "restore-modal"
+      # Error alert
+      - visible: "Error"
+      # Or still on backup screen (button disabled)
+      - visible:
+          id: "backup-settings-screen"
+    timeout: 5000
+
+# Take screenshot
+- takeScreenshot: "mock_backup_12_restore_button_test"
+
+# If restore modal opened, close it
+- tapOn:
+    id: "close-restore-modal"
+    optional: true
+
+# Dismiss any alert if shown
+- tapOn:
+    text: "OK"
+    optional: true
+
+# ============================================
+# Step 10: Verify Final State
+# ============================================
+
+# Ensure we're back on backup settings screen
+- extendedWaitUntil:
+    visible:
+      id: "backup-settings-screen"
+    timeout: 5000
+
+# Verify all sections are still visible
+- assertVisible:
+    id: "google-account-section"
+
+- assertVisible:
+    id: "backup-status-section"
+
+# Take final screenshot
+- takeScreenshot: "mock_backup_13_final_state"
+
+# ============================================
+# Step 11: Navigate Back to Settings
+# ============================================
+
+# Go back to main settings
+- back
+
+# Wait for settings screen
+- extendedWaitUntil:
+    visible: "Settings"
+    timeout: 5000
+
+# Take screenshot
+- takeScreenshot: "mock_backup_14_back_to_settings"
+
+# ============================================
+# Test Completion
+# ============================================
+
+- runScript:
+    script: |
+      console.log('Mock backup flow E2E test completed!');
+      console.log('This test verified:');
+      console.log('- Navigation to Backup Settings');
+      console.log('- All UI elements are present');
+      console.log('- Connect button is interactive');
+      console.log('- Frequency selector modal works');
+      console.log('- Time selector modal works');
+      console.log('- Backup/Restore buttons respond appropriately');
+      console.log('- Navigation back to Settings');
+      console.log('');
+      console.log('NOTE: This mock test does not require:');
+      console.log('- Google account on device');
+      console.log('- Network connectivity');
+      console.log('- Actual OAuth flow');

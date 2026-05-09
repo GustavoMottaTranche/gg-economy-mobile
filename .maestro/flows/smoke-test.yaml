@@ -1,0 +1,75 @@
+# Smoke Test Flow for GG-Economy Mobile
+# This test verifies the app launches correctly and basic navigation works
+#
+# Tags: smoke
+# Validates: Requirement 33 - E2E Tests
+
+appId: com.ggeconomy.mobile
+
+---
+
+# Test: App Launch and Basic Navigation
+# Verifies the app starts and all main tabs are accessible
+
+- launchApp:
+    clearState: true
+
+# Wait for app to fully load
+- extendedWaitUntil:
+    visible: "Dashboard"
+    timeout: 15000
+
+# Verify Dashboard tab is visible and active (default screen)
+- assertVisible: "Dashboard"
+
+# Take screenshot of initial state
+- takeScreenshot: "01_dashboard_initial"
+
+# Navigate to Transactions tab
+- tapOn: "Transactions"
+- extendedWaitUntil:
+    visible: "Transactions"
+    timeout: 5000
+- assertVisible: "Transactions"
+- takeScreenshot: "02_transactions_screen"
+
+# Navigate to Review tab
+- tapOn: "Review"
+- extendedWaitUntil:
+    visible: "Review"
+    timeout: 5000
+- assertVisible: "Review"
+- takeScreenshot: "03_review_screen"
+
+# Navigate to Manual Entry tab
+- tapOn: "Manual"
+- extendedWaitUntil:
+    visible: "Manual"
+    timeout: 5000
+# Verify form elements are present
+- assertVisible:
+    text: "Amount"
+    optional: true
+- takeScreenshot: "04_manual_entry_screen"
+
+# Navigate to Settings tab
+- tapOn: "Settings"
+- extendedWaitUntil:
+    visible: "Settings"
+    timeout: 5000
+- assertVisible: "Settings"
+- takeScreenshot: "05_settings_screen"
+
+# Navigate back to Dashboard to complete the cycle
+- tapOn: "Dashboard"
+- extendedWaitUntil:
+    visible: "Dashboard"
+    timeout: 5000
+- assertVisible: "Dashboard"
+- takeScreenshot: "06_dashboard_final"
+
+# Test completed successfully
+- runScript:
+    script: |
+      console.log('Smoke test completed successfully!');
+      console.log('All main navigation tabs are accessible.');

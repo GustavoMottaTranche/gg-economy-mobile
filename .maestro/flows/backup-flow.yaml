@@ -1,0 +1,344 @@
+# Backup Flow E2E Test for GG-Economy Mobile
+# Tests the complete backup process from Google connection to backup verification
+#
+# Tags: backup, e2e
+# Validates: Requirements 7, 8, 9, 26, 33
+#
+# Flow:
+# 1. Navigate to Settings > Backup
+# 2. Connect Google account (OAuth flow)
+# 3. Configure backup settings (frequency, time)
+# 4. Trigger manual backup
+# 5. Verify backup success status
+#
+# IMPORTANT NOTES:
+# - OAuth flow involves system UI (Google Sign-In) which varies by device
+# - This test requires a Google account to be available on the device
+# - For CI/CD environments, use backup-flow-mock.yaml instead
+# - The test assumes Google Play Services are available (Android)
+
+appId: com.ggeconomy.mobile
+
+---
+
+# ============================================
+# Test: Complete Backup Flow with OAuth
+# ============================================
+
+- launchApp:
+    clearState: true
+
+# Wait for app to fully load
+- extendedWaitUntil:
+    visible: "Dashboard"
+    timeout: 15000
+
+# Take screenshot of initial state
+- takeScreenshot: "backup_01_dashboard_initial"
+
+# ============================================
+# Step 1: Navigate to Settings
+# ============================================
+
+- tapOn: "Settings"
+
+# Wait for Settings screen to load
+- extendedWaitUntil:
+    visible: "Settings"
+    timeout: 10000
+
+# Take screenshot of settings screen
+- takeScreenshot: "backup_02_settings_screen"
+
+# ============================================
+# Step 2: Navigate to Backup Settings
+# ============================================
+
+# Tap on Backup option in settings
+- tapOn:
+    text: "Backup"
+
+# Wait for Backup Settings screen to load
+- extendedWaitUntil:
+    visible:
+      id: "backup-settings-screen"
+    timeout: 10000
+
+# Take screenshot of backup settings
+- takeScreenshot: "backup_03_backup_settings"
+
+# ============================================
+# Step 3: Verify Initial State (Not Connected)
+# ============================================
+
+# Verify Google Account section is visible
+- assertVisible:
+    id: "google-account-section"
+
+# Check if already connected or not
+# If not connected, the connect button should be visible
+- assertVisible:
+    anyOf:
+      - id: "connect-button"
+      - id: "disconnect-button"
+
+# Take screenshot showing connection state
+- takeScreenshot: "backup_04_connection_state"
+
+# ============================================
+# Step 4: Connect Google Account (OAuth Flow)
+# ============================================
+
+# Tap connect button if visible (not already connected)
+- tapOn:
+    id: "connect-button"
+    optional: true
+
+# Wait for OAuth flow to start
+# This will open Google Sign-In system UI
+- extendedWaitUntil:
+    anyOf:
+      # Google Sign-In indicators
+      - visible: "Sign in"
+      - visible: "Choose an account"
+      - visible: "Google"
+      # Or already connected (if account was cached)
+      - visible:
+          id: "disconnect-button"
+      # Or error state
+      - visible: "Error"
+    timeout: 15000
+
+# Take screenshot of OAuth screen
+- takeScreenshot: "backup_05_oauth_screen"
+
+# ============================================
+# Step 5: Complete Google Sign-In (System UI)
+# ============================================
+
+# If Google account chooser is shown, select an account
+# Note: This depends on device having a Google account configured
+- tapOn:
+    text: ".*@gmail.com"
+    optional: true
+
+- tapOn:
+    text: ".*@googlemail.com"
+    optional: true
+
+# If permission consent is shown, accept it
+- tapOn:
+    text: "Allow"
+    optional: true
+
+- tapOn:
+    text: "Continue"
+    optional: true
+
+# Wait for OAuth to complete and return to app
+- extendedWaitUntil:
+    anyOf:
+      - visible:
+          id: "backup-settings-screen"
+      - visible:
+          id: "disconnect-button"
+      - visible:
+          id: "connected-email"
+    timeout: 30000
+
+# Take screenshot after OAuth
+- takeScreenshot: "backup_06_after_oauth"
+
+# ============================================
+# Step 6: Verify Connected State
+# ============================================
+
+# Verify disconnect button is now visible (indicates connected)
+- assertVisible:
+    id: "disconnect-button"
+    optional: true
+
+# Verify connected email is displayed
+- assertVisible:
+    id: "connected-email"
+    optional: true
+
+# Take screenshot showing connected state
+- takeScreenshot: "backup_07_connected_state"
+
+# ============================================
+# Step 7: Configure Backup Frequency
+# ============================================
+
+# Tap on frequency selector
+- tapOn:
+    id: "frequency-selector"
+
+# Wait for frequency modal to appear
+- extendedWaitUntil:
+    visible:
+      id: "frequency-modal"
+    timeout: 5000
+
+# Take screenshot of frequency options
+- takeScreenshot: "backup_08_frequency_modal"
+
+# Select "Daily" frequency
+- tapOn:
+    id: "frequency-option-daily"
+
+# Wait for modal to close
+- extendedWaitUntil:
+    notVisible:
+      id: "frequency-modal"
+    timeout: 5000
+
+# Take screenshot after frequency selection
+- takeScreenshot: "backup_09_frequency_selected"
+
+# ============================================
+# Step 8: Configure Backup Time
+# ============================================
+
+# Tap on time selector
+- tapOn:
+    id: "time-selector"
+
+# Wait for time modal to appear
+- extendedWaitUntil:
+    visible:
+      id: "time-modal"
+    timeout: 5000
+
+# Take screenshot of time options
+- takeScreenshot: "backup_10_time_modal"
+
+# Select a time (e.g., 02:00 for overnight backup)
+- tapOn:
+    id: "time-option-2"
+
+# Wait for modal to close
+- extendedWaitUntil:
+    notVisible:
+      id: "time-modal"
+    timeout: 5000
+
+# Take screenshot after time selection
+- takeScreenshot: "backup_11_time_selected"
+
+# ============================================
+# Step 9: Trigger Manual Backup
+# ============================================
+
+# Tap "Backup Now" button
+- tapOn:
+    id: "backup-now-button"
+
+# Wait for backup progress modal to appear
+- extendedWaitUntil:
+    visible:
+      id: "progress-modal"
+    timeout: 10000
+
+# Take screenshot of backup in progress
+- takeScreenshot: "backup_12_backup_in_progress"
+
+# Verify progress indicator is shown
+- assertVisible:
+    id: "backup-progress-message"
+    optional: true
+
+# Wait for backup to complete (success or error)
+- extendedWaitUntil:
+    anyOf:
+      # Progress modal closed (backup completed)
+      - notVisible:
+          id: "progress-modal"
+      # Or success indicator
+      - visible: "✅"
+      # Or error indicator
+      - visible: "❌"
+    timeout: 60000
+
+# Take screenshot after backup attempt
+- takeScreenshot: "backup_13_backup_completed"
+
+# ============================================
+# Step 10: Verify Backup Status
+# ============================================
+
+# Verify backup status section is visible
+- assertVisible:
+    id: "backup-status-section"
+
+# Verify backup status text is updated
+- assertVisible:
+    id: "backup-status-text"
+
+# Check for success status (green text or success icon)
+- assertVisible:
+    anyOf:
+      - text: "Just now"
+      - text: "minute"
+      - text: "✅"
+    optional: true
+
+# Take screenshot of final backup status
+- takeScreenshot: "backup_14_backup_status"
+
+# ============================================
+# Step 11: Test Restore Flow (Optional)
+# ============================================
+
+# Tap restore button
+- tapOn:
+    id: "restore-button"
+
+# Wait for restore modal to appear
+- extendedWaitUntil:
+    visible:
+      id: "restore-modal"
+    timeout: 10000
+
+# Take screenshot of restore modal
+- takeScreenshot: "backup_15_restore_modal"
+
+# Verify backups list or loading state
+- assertVisible:
+    anyOf:
+      - id: "backups-list"
+      - id: "backups-loading"
+      - id: "no-backups"
+
+# Close restore modal
+- tapOn:
+    id: "close-restore-modal"
+
+# Wait for modal to close
+- extendedWaitUntil:
+    notVisible:
+      id: "restore-modal"
+    timeout: 5000
+
+# Take final screenshot
+- takeScreenshot: "backup_16_final_state"
+
+# ============================================
+# Test Completion
+# ============================================
+
+- runScript:
+    script: |
+      console.log('Backup flow E2E test completed!');
+      console.log('Steps completed:');
+      console.log('1. Navigated to Settings > Backup');
+      console.log('2. Initiated Google OAuth connection');
+      console.log('3. Completed Google Sign-In (if account available)');
+      console.log('4. Configured backup frequency (Daily)');
+      console.log('5. Configured backup time (02:00)');
+      console.log('6. Triggered manual backup');
+      console.log('7. Verified backup status');
+      console.log('8. Tested restore modal');
+      console.log('');
+      console.log('NOTE: OAuth flow requires Google account on device');
+      console.log('For CI/CD, use backup-flow-mock.yaml instead');

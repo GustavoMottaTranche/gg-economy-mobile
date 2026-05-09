@@ -1,0 +1,48 @@
+# Maestro Configuration for GG-Economy Mobile
+# https://maestro.mobile.dev/
+
+# App configuration
+appId: com.ggeconomy.mobile
+
+# Default flow settings
+flows:
+  # Directory containing test flows
+  - flows/
+
+# Environment variables available in all flows
+env:
+  # App name for assertions
+  APP_NAME: "GG-Economy"
+  # Default timeout for operations (in milliseconds)
+  DEFAULT_TIMEOUT: "10000"
+  # Test data
+  TEST_AMOUNT: "100.00"
+  TEST_DESCRIPTION: "Test Transaction"
+
+# Tags for organizing tests
+tags:
+  smoke: "Quick validation tests"
+  import: "Import flow tests"
+  manual: "Manual entry tests"
+  backup: "Backup and restore tests"
+  navigation: "Navigation tests"
+  i18n: "Internationalization tests"
+
+# Execution settings
+executionOrder:
+  continueOnFailure: false
+  retryFailedTests: 1
+
+# Screenshot settings
+screenshots:
+  enabled: true
+  onFailure: true
+
+# Video recording settings
+video:
+  enabled: false
+
+# Report settings
+report:
+  format: junit
+  outputDir: .maestro/reports

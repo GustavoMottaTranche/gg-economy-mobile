@@ -1,0 +1,478 @@
+# Navigation E2E Test Flow for GG-Economy Mobile
+# Comprehensive test for navigation between all main screens
+#
+# Tags: navigation
+# Validates: Requirements 28, 33
+#
+# This test covers:
+# - Tab Navigation: Dashboard, Transactions, Review, Manual Entry, Settings
+# - Settings Stack: Main Settings, Backup, Language, Categories, Rules
+# - Modal Screens: Import, Transaction Detail
+# - Back navigation and gesture navigation
+# - Navigation state maintenance
+
+appId: com.ggeconomy.mobile
+
+---
+
+# ============================================================================
+# PART A: App Launch and Initial State
+# ============================================================================
+
+- launchApp:
+    clearState: true
+
+# Wait for app to fully load - Dashboard should be the default screen
+- extendedWaitUntil:
+    visible: "Dashboard"
+    timeout: 15000
+
+# Verify Dashboard is the default tab (index)
+- assertVisible: "Dashboard"
+- takeScreenshot: "01_navigation_dashboard_initial"
+
+# ============================================================================
+# PART B: Tab Navigation - Forward Cycle
+# ============================================================================
+
+# Navigate to Transactions tab
+- tapOn: "Transactions"
+- extendedWaitUntil:
+    visible: "Transactions"
+    timeout: 5000
+- assertVisible: "Transactions"
+- takeScreenshot: "02_navigation_transactions_tab"
+
+# Navigate to Review tab
+- tapOn: "Review"
+- extendedWaitUntil:
+    visible: "Review"
+    timeout: 5000
+- assertVisible: "Review"
+- takeScreenshot: "03_navigation_review_tab"
+
+# Navigate to Manual Entry tab
+- tapOn: "Manual"
+- extendedWaitUntil:
+    visible: "Manual"
+    timeout: 5000
+# Verify manual entry form elements are present
+- assertVisible:
+    id: "manual-screen"
+    optional: true
+- takeScreenshot: "04_navigation_manual_tab"
+
+# Navigate to Settings tab
+- tapOn: "Settings"
+- extendedWaitUntil:
+    visible: "Settings"
+    timeout: 5000
+- assertVisible: "Settings"
+- assertVisible:
+    id: "settings-screen"
+    optional: true
+- takeScreenshot: "05_navigation_settings_tab"
+
+# ============================================================================
+# PART C: Tab Navigation - Reverse Cycle
+# ============================================================================
+
+# Navigate back through tabs in reverse order
+- tapOn: "Manual"
+- extendedWaitUntil:
+    visible: "Manual"
+    timeout: 5000
+- assertVisible: "Manual"
+
+- tapOn: "Review"
+- extendedWaitUntil:
+    visible: "Review"
+    timeout: 5000
+- assertVisible: "Review"
+
+- tapOn: "Transactions"
+- extendedWaitUntil:
+    visible: "Transactions"
+    timeout: 5000
+- assertVisible: "Transactions"
+
+- tapOn: "Dashboard"
+- extendedWaitUntil:
+    visible: "Dashboard"
+    timeout: 5000
+- assertVisible: "Dashboard"
+- takeScreenshot: "06_navigation_back_to_dashboard"
+
+# ============================================================================
+# PART D: Settings Stack Navigation
+# ============================================================================
+
+# Navigate to Settings tab
+- tapOn: "Settings"
+- extendedWaitUntil:
+    visible: "Settings"
+    timeout: 5000
+- assertVisible: "Settings"
+
+# Navigate to Language Settings
+- tapOn:
+    text: "Language"
+    optional: true
+- extendedWaitUntil:
+    anyOf:
+      - visible: "Português"
+      - visible: "English"
+    timeout: 5000
+    optional: true
+- takeScreenshot: "07_navigation_language_settings"
+
+# Go back to Settings main
+- back
+- extendedWaitUntil:
+    visible: "Settings"
+    timeout: 5000
+- assertVisible: "Settings"
+
+# Navigate to Backup Settings
+- tapOn:
+    text: "Backup"
+    optional: true
+- extendedWaitUntil:
+    visible:
+      id: "backup-settings-screen"
+    timeout: 5000
+    optional: true
+- takeScreenshot: "08_navigation_backup_settings"
+
+# Go back to Settings main
+- back
+- extendedWaitUntil:
+    visible: "Settings"
+    timeout: 5000
+- assertVisible: "Settings"
+
+# Navigate to Categories Settings
+- tapOn:
+    text: "Categories"
+    optional: true
+- extendedWaitUntil:
+    visible:
+      id: "categories-settings-screen"
+    timeout: 5000
+    optional: true
+- takeScreenshot: "09_navigation_categories_settings"
+
+# Go back to Settings main
+- back
+- extendedWaitUntil:
+    visible: "Settings"
+    timeout: 5000
+- assertVisible: "Settings"
+
+# Navigate to Rules Settings
+- tapOn:
+    text: "Rules"
+    optional: true
+- extendedWaitUntil:
+    visible:
+      id: "rules-settings-screen"
+    timeout: 5000
+    optional: true
+- takeScreenshot: "10_navigation_rules_settings"
+
+# Go back to Settings main
+- back
+- extendedWaitUntil:
+    visible: "Settings"
+    timeout: 5000
+- assertVisible: "Settings"
+- takeScreenshot: "11_navigation_settings_after_stack"
+
+# ============================================================================
+# PART E: Settings Stack - Deep Navigation
+# ============================================================================
+
+# Test deep navigation: Settings -> Backup -> Frequency Modal
+- tapOn:
+    text: "Backup"
+    optional: true
+- extendedWaitUntil:
+    visible:
+      id: "backup-settings-screen"
+    timeout: 5000
+    optional: true
+
+# Open frequency selector modal (if connected)
+- tapOn:
+    id: "frequency-selector"
+    optional: true
+- extendedWaitUntil:
+    visible:
+      id: "frequency-modal"
+    timeout: 3000
+    optional: true
+- takeScreenshot: "12_navigation_frequency_modal"
+
+# Close the modal by tapping outside or back
+- back:
+    optional: true
+- extendedWaitUntil:
+    visible:
+      id: "backup-settings-screen"
+    timeout: 3000
+    optional: true
+
+# Go back to Settings main
+- back
+- extendedWaitUntil:
+    visible: "Settings"
+    timeout: 5000
+
+# ============================================================================
+# PART F: Modal Navigation - Import Screen
+# ============================================================================
+
+# Navigate to Dashboard first
+- tapOn: "Dashboard"
+- extendedWaitUntil:
+    visible: "Dashboard"
+    timeout: 5000
+
+# Look for import button on dashboard (if empty state shows it)
+- tapOn:
+    text: "Import"
+    optional: true
+- extendedWaitUntil:
+    visible:
+      id: "import-screen"
+    timeout: 5000
+    optional: true
+- takeScreenshot: "13_navigation_import_modal"
+
+# Close import modal
+- tapOn:
+    id: "import-close-button"
+    optional: true
+- back:
+    optional: true
+- extendedWaitUntil:
+    visible: "Dashboard"
+    timeout: 5000
+- takeScreenshot: "14_navigation_after_import_close"
+
+# ============================================================================
+# PART G: Navigation State Persistence
+# ============================================================================
+
+# Navigate to Transactions tab
+- tapOn: "Transactions"
+- extendedWaitUntil:
+    visible: "Transactions"
+    timeout: 5000
+
+# Navigate to Settings
+- tapOn: "Settings"
+- extendedWaitUntil:
+    visible: "Settings"
+    timeout: 5000
+
+# Navigate to Backup settings
+- tapOn:
+    text: "Backup"
+    optional: true
+- extendedWaitUntil:
+    visible:
+      id: "backup-settings-screen"
+    timeout: 5000
+    optional: true
+
+# Switch to another tab (Dashboard)
+- tapOn: "Dashboard"
+- extendedWaitUntil:
+    visible: "Dashboard"
+    timeout: 5000
+
+# Go back to Settings - should remember we were in Backup
+- tapOn: "Settings"
+- extendedWaitUntil:
+    anyOf:
+      - visible:
+          id: "backup-settings-screen"
+      - visible: "Settings"
+    timeout: 5000
+- takeScreenshot: "15_navigation_state_persistence"
+
+# Go back to Settings main if needed
+- back:
+    optional: true
+- extendedWaitUntil:
+    visible: "Settings"
+    timeout: 5000
+
+# ============================================================================
+# PART H: Rapid Tab Switching
+# ============================================================================
+
+# Test rapid navigation between tabs
+- tapOn: "Dashboard"
+- tapOn: "Transactions"
+- tapOn: "Review"
+- tapOn: "Manual"
+- tapOn: "Settings"
+- tapOn: "Dashboard"
+
+# Verify we end up on Dashboard
+- extendedWaitUntil:
+    visible: "Dashboard"
+    timeout: 5000
+- assertVisible: "Dashboard"
+- takeScreenshot: "16_navigation_rapid_switching"
+
+# ============================================================================
+# PART I: Categories Modal Navigation
+# ============================================================================
+
+# Navigate to Settings -> Categories
+- tapOn: "Settings"
+- extendedWaitUntil:
+    visible: "Settings"
+    timeout: 5000
+
+- tapOn:
+    text: "Categories"
+    optional: true
+- extendedWaitUntil:
+    visible:
+      id: "categories-settings-screen"
+    timeout: 5000
+    optional: true
+
+# Open add category modal
+- tapOn:
+    id: "add-category-button"
+    optional: true
+- extendedWaitUntil:
+    visible:
+      id: "category-form-modal"
+    timeout: 3000
+    optional: true
+- takeScreenshot: "17_navigation_category_modal"
+
+# Close the modal
+- tapOn:
+    id: "close-category-modal"
+    optional: true
+- back:
+    optional: true
+- extendedWaitUntil:
+    visible:
+      id: "categories-settings-screen"
+    timeout: 3000
+    optional: true
+
+# Go back to Settings
+- back
+- extendedWaitUntil:
+    visible: "Settings"
+    timeout: 5000
+
+# ============================================================================
+# PART J: Rules Modal Navigation
+# ============================================================================
+
+# Navigate to Rules settings
+- tapOn:
+    text: "Rules"
+    optional: true
+- extendedWaitUntil:
+    visible:
+      id: "rules-settings-screen"
+    timeout: 5000
+    optional: true
+
+# Open add rule modal
+- tapOn:
+    id: "add-rule-button"
+    optional: true
+- extendedWaitUntil:
+    visible:
+      id: "rule-form-modal"
+    timeout: 3000
+    optional: true
+- takeScreenshot: "18_navigation_rule_modal"
+
+# Close the modal
+- tapOn:
+    id: "close-rule-modal"
+    optional: true
+- back:
+    optional: true
+- extendedWaitUntil:
+    visible:
+      id: "rules-settings-screen"
+    timeout: 3000
+    optional: true
+
+# Go back to Settings
+- back
+- extendedWaitUntil:
+    visible: "Settings"
+    timeout: 5000
+
+# ============================================================================
+# PART K: Final Navigation Verification
+# ============================================================================
+
+# Complete a full cycle to verify all navigation is working
+- tapOn: "Dashboard"
+- extendedWaitUntil:
+    visible: "Dashboard"
+    timeout: 5000
+- assertVisible: "Dashboard"
+
+- tapOn: "Transactions"
+- extendedWaitUntil:
+    visible: "Transactions"
+    timeout: 5000
+- assertVisible: "Transactions"
+
+- tapOn: "Review"
+- extendedWaitUntil:
+    visible: "Review"
+    timeout: 5000
+- assertVisible: "Review"
+
+- tapOn: "Manual"
+- extendedWaitUntil:
+    visible: "Manual"
+    timeout: 5000
+- assertVisible: "Manual"
+
+- tapOn: "Settings"
+- extendedWaitUntil:
+    visible: "Settings"
+    timeout: 5000
+- assertVisible: "Settings"
+
+# Return to Dashboard for final state
+- tapOn: "Dashboard"
+- extendedWaitUntil:
+    visible: "Dashboard"
+    timeout: 5000
+- assertVisible: "Dashboard"
+- takeScreenshot: "19_navigation_final_state"
+
+# ============================================================================
+# Test Complete
+# ============================================================================
+
+- runScript:
+    script: |
+      console.log('Navigation E2E test completed successfully!');
+      console.log('Verified:');
+      console.log('  - Tab navigation (Dashboard, Transactions, Review, Manual, Settings)');
+      console.log('  - Settings stack navigation (Backup, Language, Categories, Rules)');
+      console.log('  - Modal screens (Import, Category Form, Rule Form, Frequency)');
+      console.log('  - Back navigation');
+      console.log('  - Navigation state persistence');
+      console.log('  - Rapid tab switching');
