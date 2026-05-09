@@ -15,7 +15,7 @@
  * @module ImportOrchestrator
  */
 
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
 import type { ITransactionRepository } from '../../repositories/interfaces/ITransactionRepository';
 import type { IImportBatchRepository } from '../../repositories/interfaces/IImportBatchRepository';
 import type { FileType, ImportBatch, CreateTransactionDTO, RawTransaction } from '../../types';

@@ -9,7 +9,7 @@
  * @module services/backup/BackupService
  */
 
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
 import { DATABASE_NAME } from '../../db/client';
 import { oAuthService, OAuthError } from './OAuthService';
 import {

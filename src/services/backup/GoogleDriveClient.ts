@@ -7,7 +7,7 @@
  * @module services/backup/GoogleDriveClient
  */
 
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
 
 // Google Drive API base URL
 const DRIVE_API_BASE = 'https://www.googleapis.com/drive/v3';

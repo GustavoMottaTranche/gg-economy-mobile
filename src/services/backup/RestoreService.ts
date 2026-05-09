@@ -9,7 +9,7 @@
  * @module services/backup/RestoreService
  */
 
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
 import { DATABASE_NAME, resetDbClient, getExpoDatabase } from '../../db/client';
 import { runMigrations, getCurrentSchemaVersion } from '../../db/migrate';
 import { oAuthService, OAuthError } from './OAuthService';
