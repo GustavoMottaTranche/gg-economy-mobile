@@ -13,6 +13,8 @@ import { View, Text, StyleSheet, TouchableOpacity, FlatList, Alert } from 'react
 import * as DocumentPicker from 'expo-document-picker';
 import { useTranslation } from 'react-i18next';
 import type { FileType } from '../../types/importBatch';
+import { useThemeColors } from '../../hooks/useThemeColors';
+import { spacing, borderRadius } from '../../constants/theme';
 
 /**
  * Supported file extensions for import
@@ -119,8 +121,9 @@ const FileItem = memo(function FileItem({
 }: {
   file: SelectedFile;
   onRemove: (uri: string) => void;
-}): JSX.Element {
+}): React.JSX.Element {
   const { t } = useTranslation();
+  const colors = useThemeColors();
 
   const handleRemove = useCallback(() => {
     onRemove(file.uri);
@@ -129,26 +132,26 @@ const FileItem = memo(function FileItem({
   const icon = FILE_TYPE_ICONS[file.fileType] || '📄';
 
   return (
-    <View style={styles.fileItem} testID={`file-item-${file.fileName}`}>
+    <View style={[styles.fileItem, { borderBottomColor: colors.border.subtle }]} testID={`file-item-${file.fileName}`}>
       <View style={styles.fileItemContent}>
         <Text style={styles.fileIcon}>{icon}</Text>
         <View style={styles.fileInfo}>
-          <Text style={styles.fileName} numberOfLines={1}>
+          <Text style={[styles.fileName, { color: colors.text.primary }]} numberOfLines={1}>
             {file.fileName}
           </Text>
-          <Text style={styles.fileSize}>
+          <Text style={[styles.fileSize, { color: colors.text.secondary }]}>
             {formatFileSize(file.size)} • {file.fileType.toUpperCase()}
           </Text>
         </View>
       </View>
       <TouchableOpacity
-        style={styles.removeButton}
+        style={[styles.removeButton, { backgroundColor: colors.semantic.danger.light }]}
         onPress={handleRemove}
         accessibilityRole="button"
         accessibilityLabel={t('common.remove')}
         testID={`remove-file-${file.fileName}`}
       >
-        <Text style={styles.removeButtonText}>✕</Text>
+        <Text style={[styles.removeButtonText, { color: colors.semantic.danger.base }]}>✕</Text>
       </TouchableOpacity>
     </View>
   );
@@ -170,8 +173,9 @@ function MultiFileSelectorComponent({
   maxFiles = MAX_MULTI_FILE_COUNT,
   onFilesSelected,
   onCancel,
-}: MultiFileSelectorProps): JSX.Element {
+}: MultiFileSelectorProps): React.JSX.Element {
   const { t } = useTranslation();
+  const colors = useThemeColors();
   const [selectedFiles, setSelectedFiles] = useState<SelectedFile[]>([]);
   const [isSelecting, setIsSelecting] = useState(false);
 
@@ -303,11 +307,11 @@ function MultiFileSelectorComponent({
   const hasFiles = selectedFiles.length > 0;
 
   return (
-    <View style={styles.container} testID="multi-file-selector">
+    <View style={[styles.container, { backgroundColor: colors.surface.card }]} testID="multi-file-selector">
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.title}>{t('fileImport.multiFile.title')}</Text>
-        <Text style={styles.subtitle}>
+        <Text style={[styles.title, { color: colors.text.primary }]}>{t('fileImport.multiFile.title')}</Text>
+        <Text style={[styles.subtitle, { color: colors.text.secondary }]}>
           {t('fileImport.multiFile.subtitle', {
             formats: SUPPORTED_EXTENSIONS.join(', '),
           })}
@@ -315,8 +319,8 @@ function MultiFileSelectorComponent({
       </View>
 
       {/* File Count Display (Requirement 4.4) */}
-      <View style={styles.countContainer}>
-        <Text style={styles.countText} testID="file-count">
+      <View style={[styles.countContainer, { backgroundColor: colors.background.secondary, borderColor: colors.border.default }]}>
+        <Text style={[styles.countText, { color: colors.text.primary }]} testID="file-count">
           {t('fileImport.multiFile.fileCount', {
             count: selectedFiles.length,
             max: maxFiles,
@@ -329,7 +333,7 @@ function MultiFileSelectorComponent({
             accessibilityLabel={t('fileImport.multiFile.clearAll')}
             testID="clear-all-button"
           >
-            <Text style={styles.clearAllText}>{t('fileImport.multiFile.clearAll')}</Text>
+            <Text style={[styles.clearAllText, { color: colors.semantic.danger.base }]}>{t('fileImport.multiFile.clearAll')}</Text>
           </TouchableOpacity>
         )}
       </View>
@@ -348,15 +352,19 @@ function MultiFileSelectorComponent({
       ) : (
         <View style={styles.emptyContainer}>
           <Text style={styles.emptyIcon}>📁</Text>
-          <Text style={styles.emptyText}>{t('fileImport.multiFile.noFilesSelected')}</Text>
-          <Text style={styles.emptyHint}>{t('fileImport.multiFile.tapToSelect')}</Text>
+          <Text style={[styles.emptyText, { color: colors.text.primary }]}>{t('fileImport.multiFile.noFilesSelected')}</Text>
+          <Text style={[styles.emptyHint, { color: colors.text.secondary }]}>{t('fileImport.multiFile.tapToSelect')}</Text>
         </View>
       )}
 
       {/* Add Files Button */}
       {canAddMore && (
         <TouchableOpacity
-          style={[styles.addButton, isSelecting && styles.addButtonDisabled]}
+          style={[
+            styles.addButton,
+            { backgroundColor: colors.background.tertiary, borderColor: colors.border.default },
+            isSelecting && styles.addButtonDisabled,
+          ]}
           onPress={handleSelectFiles}
           disabled={isSelecting}
           activeOpacity={0.7}
@@ -364,28 +372,32 @@ function MultiFileSelectorComponent({
           accessibilityLabel={t('fileImport.multiFile.addFiles')}
           testID="add-files-button"
         >
-          <Text style={styles.addButtonIcon}>+</Text>
-          <Text style={styles.addButtonText}>
+          <Text style={[styles.addButtonIcon, { color: colors.interactive.primary }]}>+</Text>
+          <Text style={[styles.addButtonText, { color: colors.interactive.primary }]}>
             {isSelecting ? t('common.loading') : t('fileImport.multiFile.addFiles')}
           </Text>
         </TouchableOpacity>
       )}
 
       {/* Action Buttons */}
-      <View style={styles.actionContainer}>
+      <View style={[styles.actionContainer, { borderTopColor: colors.border.default }]}>
         <TouchableOpacity
-          style={styles.cancelButton}
+          style={[styles.cancelButton, { backgroundColor: colors.background.tertiary }]}
           onPress={handleCancel}
           activeOpacity={0.7}
           accessibilityRole="button"
           accessibilityLabel={t('common.cancel')}
           testID="cancel-button"
         >
-          <Text style={styles.cancelButtonText}>{t('common.cancel')}</Text>
+          <Text style={[styles.cancelButtonText, { color: colors.text.primary }]}>{t('common.cancel')}</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={[styles.confirmButton, !hasFiles && styles.confirmButtonDisabled]}
+          style={[
+            styles.confirmButton,
+            { backgroundColor: colors.interactive.primary },
+            !hasFiles && { backgroundColor: colors.interactive.disabled },
+          ]}
           onPress={handleConfirm}
           disabled={!hasFiles}
           activeOpacity={0.7}
@@ -394,7 +406,11 @@ function MultiFileSelectorComponent({
           accessibilityState={{ disabled: !hasFiles }}
           testID="confirm-button"
         >
-          <Text style={[styles.confirmButtonText, !hasFiles && styles.confirmButtonTextDisabled]}>
+          <Text style={[
+            styles.confirmButtonText,
+            { color: colors.text.inverse },
+            !hasFiles && { color: colors.text.tertiary },
+          ]}>
             {t('fileImport.multiFile.importFiles')}
           </Text>
         </TouchableOpacity>
@@ -409,59 +425,51 @@ function MultiFileSelectorComponent({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#ffffff',
   },
   header: {
-    paddingHorizontal: 16,
-    paddingTop: 16,
-    paddingBottom: 12,
+    paddingHorizontal: spacing.base,
+    paddingTop: spacing.base,
+    paddingBottom: spacing.md,
   },
   title: {
     fontSize: 24,
     fontWeight: '700',
-    color: '#111827',
-    marginBottom: 4,
+    marginBottom: spacing.xs,
   },
   subtitle: {
     fontSize: 14,
-    color: '#6b7280',
     lineHeight: 20,
   },
   countContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    backgroundColor: '#f9fafb',
+    paddingHorizontal: spacing.base,
+    paddingVertical: spacing.md,
     borderTopWidth: 1,
     borderBottomWidth: 1,
-    borderColor: '#e5e7eb',
   },
   countText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#374151',
   },
   clearAllText: {
     fontSize: 14,
-    color: '#ef4444',
     fontWeight: '500',
   },
   fileList: {
     flex: 1,
   },
   fileListContent: {
-    paddingVertical: 8,
+    paddingVertical: spacing.sm,
   },
   fileItem: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingHorizontal: spacing.base,
+    paddingVertical: spacing.md,
     borderBottomWidth: 1,
-    borderBottomColor: '#f3f4f6',
   },
   fileItemContent: {
     flexDirection: 'row',
@@ -470,7 +478,7 @@ const styles = StyleSheet.create({
   },
   fileIcon: {
     fontSize: 28,
-    marginRight: 12,
+    marginRight: spacing.md,
   },
   fileInfo: {
     flex: 1,
@@ -478,60 +486,52 @@ const styles = StyleSheet.create({
   fileName: {
     fontSize: 16,
     fontWeight: '500',
-    color: '#111827',
     marginBottom: 2,
   },
   fileSize: {
     fontSize: 12,
-    color: '#6b7280',
   },
   removeButton: {
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: '#fee2e2',
     justifyContent: 'center',
     alignItems: 'center',
-    marginLeft: 12,
+    marginLeft: spacing.md,
   },
   removeButtonText: {
     fontSize: 14,
-    color: '#ef4444',
     fontWeight: '600',
   },
   emptyContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 32,
+    padding: spacing['2xl'],
   },
   emptyIcon: {
     fontSize: 64,
-    marginBottom: 16,
+    marginBottom: spacing.base,
   },
   emptyText: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#374151',
-    marginBottom: 8,
+    marginBottom: spacing.sm,
     textAlign: 'center',
   },
   emptyHint: {
     fontSize: 14,
-    color: '#6b7280',
     textAlign: 'center',
   },
   addButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    marginHorizontal: 16,
-    marginVertical: 12,
+    marginHorizontal: spacing.base,
+    marginVertical: spacing.md,
     paddingVertical: 14,
-    backgroundColor: '#f3f4f6',
-    borderRadius: 12,
+    borderRadius: borderRadius.md,
     borderWidth: 2,
-    borderColor: '#e5e7eb',
     borderStyle: 'dashed',
   },
   addButtonDisabled: {
@@ -539,52 +539,39 @@ const styles = StyleSheet.create({
   },
   addButtonIcon: {
     fontSize: 20,
-    color: '#3b82f6',
     fontWeight: '600',
-    marginRight: 8,
+    marginRight: spacing.sm,
   },
   addButtonText: {
     fontSize: 16,
-    color: '#3b82f6',
     fontWeight: '600',
   },
   actionContainer: {
     flexDirection: 'row',
-    paddingHorizontal: 16,
-    paddingVertical: 16,
+    paddingHorizontal: spacing.base,
+    paddingVertical: spacing.base,
     borderTopWidth: 1,
-    borderTopColor: '#e5e7eb',
-    gap: 12,
+    gap: spacing.md,
   },
   cancelButton: {
     flex: 1,
     paddingVertical: 14,
-    backgroundColor: '#f3f4f6',
-    borderRadius: 12,
+    borderRadius: borderRadius.md,
     alignItems: 'center',
   },
   cancelButtonText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#374151',
   },
   confirmButton: {
     flex: 2,
     paddingVertical: 14,
-    backgroundColor: '#3b82f6',
-    borderRadius: 12,
+    borderRadius: borderRadius.md,
     alignItems: 'center',
-  },
-  confirmButtonDisabled: {
-    backgroundColor: '#d1d5db',
   },
   confirmButtonText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#ffffff',
-  },
-  confirmButtonTextDisabled: {
-    color: '#9ca3af',
   },
 });
 

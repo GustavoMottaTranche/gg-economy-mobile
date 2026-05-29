@@ -266,8 +266,14 @@ export function validateReferenceMonth(value: unknown): ValidationResult {
     return invalid('Reference month must be in YYYY-MM format', 'INVALID_FORMAT');
   }
 
-  const year = parseInt(match[1], 10);
-  const month = parseInt(match[2], 10);
+  const yearStr = match[1];
+  const monthStr = match[2];
+  if (!yearStr || !monthStr) {
+    return invalid('Reference month must be in YYYY-MM format', 'INVALID_FORMAT');
+  }
+
+  const year = parseInt(yearStr, 10);
+  const month = parseInt(monthStr, 10);
 
   // Validate year range (reasonable range)
   if (year < 1900 || year > 2100) {

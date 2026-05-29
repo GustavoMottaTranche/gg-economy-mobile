@@ -24,6 +24,8 @@ import {
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import type { Category, CategoryType } from '../../types/category';
+import { useThemeColors } from '../../hooks/useThemeColors';
+import { spacing, borderRadius, typography } from '../../constants/theme';
 
 /**
  * Props for the CategoryPicker component
@@ -69,8 +71,9 @@ const CategoryItem = memo(function CategoryItem({
   category,
   isSelected,
   onPress,
-}: CategoryItemProps): JSX.Element {
+}: CategoryItemProps): React.JSX.Element {
   const { t } = useTranslation();
+  const colors = useThemeColors();
 
   const handlePress = useCallback(() => {
     onPress(category);
@@ -89,7 +92,8 @@ const CategoryItem = memo(function CategoryItem({
     <TouchableOpacity
       style={[
         styles.categoryItem,
-        isSelected && styles.categoryItemSelected,
+        { borderBottomColor: colors.border.subtle },
+        isSelected && { backgroundColor: colors.semantic.primary.light },
         !category.isActive && styles.categoryItemInactive,
       ]}
       onPress={handlePress}
@@ -104,19 +108,23 @@ const CategoryItem = memo(function CategoryItem({
         </View>
         <View style={styles.categoryInfo}>
           <Text
-            style={[styles.categoryName, !category.isActive && styles.categoryNameInactive]}
+            style={[
+              styles.categoryName,
+              { color: colors.text.primary },
+              !category.isActive && { color: colors.text.tertiary },
+            ]}
             numberOfLines={1}
           >
             {category.name}
           </Text>
-          <Text style={styles.categoryType}>
+          <Text style={[styles.categoryType, { color: colors.text.secondary }]}>
             {category.type === 'income' ? t('manual.income') : t('manual.expense')}
           </Text>
         </View>
       </View>
       {isSelected && (
-        <View style={styles.checkmark}>
-          <Text style={styles.checkmarkText}>✓</Text>
+        <View style={[styles.checkmark, { backgroundColor: colors.interactive.primary }]}>
+          <Text style={[styles.checkmarkText, { color: colors.text.inverse }]}>✓</Text>
         </View>
       )}
     </TouchableOpacity>
@@ -126,10 +134,11 @@ const CategoryItem = memo(function CategoryItem({
 /**
  * Section header component
  */
-const SectionHeader = memo(function SectionHeader({ title }: { title: string }): JSX.Element {
+const SectionHeader = memo(function SectionHeader({ title }: { title: string }): React.JSX.Element {
+  const colors = useThemeColors();
   return (
-    <View style={styles.sectionHeader}>
-      <Text style={styles.sectionHeaderText}>{title}</Text>
+    <View style={[styles.sectionHeader, { backgroundColor: colors.background.secondary }]}>
+      <Text style={[styles.sectionHeaderText, { color: colors.text.secondary }]}>{title}</Text>
     </View>
   );
 });
@@ -172,8 +181,9 @@ function CategoryPickerComponent({
   style,
   asModal = false,
   testID,
-}: CategoryPickerProps): JSX.Element | null {
+}: CategoryPickerProps): React.JSX.Element | null {
   const { t } = useTranslation();
+  const colors = useThemeColors();
   const [searchQuery, setSearchQuery] = useState('');
 
   // Filter and group categories
@@ -265,20 +275,20 @@ function CategoryPickerComponent({
   const ListEmptyComponent = useCallback(
     () => (
       <View style={styles.emptyContainer}>
-        <Text style={styles.emptyText}>{t('categories.noCategories')}</Text>
+        <Text style={[styles.emptyText, { color: colors.text.secondary }]}>{t('categories.noCategories')}</Text>
       </View>
     ),
-    [t]
+    [t, colors]
   );
 
   const content = (
-    <View style={[styles.container, style]} testID={testID}>
+    <View style={[styles.container, { backgroundColor: colors.surface.card }, style]} testID={testID}>
       {/* Search Input */}
-      <View style={styles.searchContainer}>
+      <View style={[styles.searchContainer, { borderBottomColor: colors.border.default }]}>
         <TextInput
-          style={styles.searchInput}
+          style={[styles.searchInput, { backgroundColor: colors.background.tertiary, color: colors.text.primary }]}
           placeholder={searchPlaceholder || t('common.search')}
-          placeholderTextColor="#9ca3af"
+          placeholderTextColor={colors.text.tertiary}
           value={searchQuery}
           onChangeText={setSearchQuery}
           autoCapitalize="none"
@@ -295,7 +305,7 @@ function CategoryPickerComponent({
             accessibilityRole="button"
             accessibilityLabel={t('common.clear')}
           >
-            <Text style={styles.clearButtonText}>✕</Text>
+            <Text style={[styles.clearButtonText, { color: colors.text.secondary }]}>✕</Text>
           </TouchableOpacity>
         )}
       </View>
@@ -324,14 +334,14 @@ function CategoryPickerComponent({
         onRequestClose={onClose}
         testID={testID ? `${testID}-modal` : undefined}
       >
-        <SafeAreaView style={styles.modalContainer}>
+        <SafeAreaView style={[styles.modalContainer, { backgroundColor: colors.surface.card }]}>
           <KeyboardAvoidingView
             behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
             style={styles.modalContent}
           >
             {/* Modal Header */}
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>{t('manual.selectCategory')}</Text>
+            <View style={[styles.modalHeader, { borderBottomColor: colors.border.default }]}>
+              <Text style={[styles.modalTitle, { color: colors.text.primary }]}>{t('manual.selectCategory')}</Text>
               {onClose && (
                 <TouchableOpacity
                   onPress={onClose}
@@ -339,7 +349,7 @@ function CategoryPickerComponent({
                   accessibilityRole="button"
                   accessibilityLabel={t('common.close')}
                 >
-                  <Text style={styles.closeButtonText}>{t('common.close')}</Text>
+                  <Text style={[styles.closeButtonText, { color: colors.interactive.primary }]}>{t('common.close')}</Text>
                 </TouchableOpacity>
               )}
             </View>
@@ -364,11 +374,9 @@ function CategoryPickerComponent({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#ffffff',
   },
   modalContainer: {
     flex: 1,
-    backgroundColor: '#ffffff',
   },
   modalContent: {
     flex: 1,
@@ -377,75 +385,62 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingHorizontal: spacing.base,
+    paddingVertical: spacing.md,
     borderBottomWidth: 1,
-    borderBottomColor: '#e5e7eb',
   },
   modalTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#111827',
   },
   closeButton: {
-    padding: 8,
+    padding: spacing.sm,
   },
   closeButtonText: {
-    fontSize: 16,
-    color: '#3b82f6',
+    fontSize: typography.body.fontSize,
     fontWeight: '500',
   },
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingHorizontal: spacing.base,
+    paddingVertical: spacing.md,
     borderBottomWidth: 1,
-    borderBottomColor: '#e5e7eb',
   },
   searchInput: {
     flex: 1,
     height: 40,
-    backgroundColor: '#f3f4f6',
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    fontSize: 16,
-    color: '#111827',
+    borderRadius: borderRadius.sm,
+    paddingHorizontal: spacing.md,
+    fontSize: typography.body.fontSize,
   },
   clearButton: {
     position: 'absolute',
-    right: 24,
-    padding: 8,
+    right: spacing.xl,
+    padding: spacing.sm,
   },
   clearButtonText: {
-    fontSize: 16,
-    color: '#6b7280',
+    fontSize: typography.body.fontSize,
   },
   listContent: {
-    paddingBottom: 16,
+    paddingBottom: spacing.base,
   },
   sectionHeader: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    backgroundColor: '#f9fafb',
+    paddingHorizontal: spacing.base,
+    paddingVertical: spacing.sm,
   },
   sectionHeaderText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#6b7280',
     textTransform: 'uppercase',
   },
   categoryItem: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingHorizontal: spacing.base,
+    paddingVertical: spacing.md,
     borderBottomWidth: 1,
-    borderBottomColor: '#f3f4f6',
-  },
-  categoryItemSelected: {
-    backgroundColor: '#eff6ff',
   },
   categoryItemInactive: {
     opacity: 0.5,
@@ -461,7 +456,7 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 12,
+    marginRight: spacing.md,
   },
   categoryIconText: {
     fontSize: 18,
@@ -470,28 +465,21 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   categoryName: {
-    fontSize: 16,
+    fontSize: typography.body.fontSize,
     fontWeight: '500',
-    color: '#111827',
     marginBottom: 2,
-  },
-  categoryNameInactive: {
-    color: '#9ca3af',
   },
   categoryType: {
     fontSize: 12,
-    color: '#6b7280',
   },
   checkmark: {
     width: 24,
     height: 24,
     borderRadius: 12,
-    backgroundColor: '#3b82f6',
     justifyContent: 'center',
     alignItems: 'center',
   },
   checkmarkText: {
-    color: '#ffffff',
     fontSize: 14,
     fontWeight: '600',
   },
@@ -502,8 +490,7 @@ const styles = StyleSheet.create({
     paddingVertical: 40,
   },
   emptyText: {
-    fontSize: 16,
-    color: '#6b7280',
+    fontSize: typography.body.fontSize,
   },
 });
 

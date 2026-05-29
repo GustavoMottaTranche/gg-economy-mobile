@@ -9,12 +9,7 @@
  * @module DedupeEngine.crossfile.test
  */
 
-import {
-  DedupeEngine,
-  FileTransactions,
-  CrossFileDedupeResult,
-  DatabaseVerificationResult,
-} from '../../../../src/services/import/DedupeEngine';
+import { DedupeEngine, FileTransactions } from '../../../../src/services/import/DedupeEngine';
 import { RawTransaction, Transaction } from '../../../../src/types/transaction';
 
 describe('DedupeEngine Cross-File Deduplication', () => {
@@ -43,6 +38,7 @@ describe('DedupeEngine Cross-File Deduplication', () => {
   function createTransaction(overrides: Partial<Transaction> = {}): Transaction {
     return {
       id: 'tx-001',
+      title: '',
       date: new Date(Date.UTC(2024, 0, 15)),
       amount: -100.0,
       description: 'Test Transaction',
@@ -53,6 +49,8 @@ describe('DedupeEngine Cross-File Deduplication', () => {
       needsReview: true,
       isExcludedFromTotals: false,
       duplicateOf: null,
+      installmentGroupId: null,
+      recurringId: null,
       createdAt: new Date(),
       updatedAt: new Date(),
       ...overrides,
@@ -95,10 +93,10 @@ describe('DedupeEngine Cross-File Deduplication', () => {
       const result = engine.findCrossFileDuplicates(files);
 
       expect(result.crossFileDuplicates).toHaveLength(1);
-      expect(result.crossFileDuplicates[0].matchReason).toBe('fitid');
-      expect(result.crossFileDuplicates[0].confidence).toBe(1.0);
-      expect(result.crossFileDuplicates[0].originalFileId).toBe('file-1');
-      expect(result.crossFileDuplicates[0].duplicateFileId).toBe('file-2');
+      expect(result.crossFileDuplicates[0]!.matchReason).toBe('fitid');
+      expect(result.crossFileDuplicates[0]!.confidence).toBe(1.0);
+      expect(result.crossFileDuplicates[0]!.originalFileId).toBe('file-1');
+      expect(result.crossFileDuplicates[0]!.duplicateFileId).toBe('file-2');
       expect(result.totalUnique).toBe(1);
     });
 
@@ -117,8 +115,8 @@ describe('DedupeEngine Cross-File Deduplication', () => {
       const result = engine.findCrossFileDuplicates(files);
 
       expect(result.crossFileDuplicates).toHaveLength(1);
-      expect(result.crossFileDuplicates[0].matchReason).toBe('date_amount_description');
-      expect(result.crossFileDuplicates[0].confidence).toBeGreaterThanOrEqual(0.9);
+      expect(result.crossFileDuplicates[0]!.matchReason).toBe('date_amount_description');
+      expect(result.crossFileDuplicates[0]!.confidence).toBeGreaterThanOrEqual(0.9);
       expect(result.totalUnique).toBe(1);
     });
 
@@ -248,13 +246,12 @@ describe('DedupeEngine Cross-File Deduplication', () => {
     it('should identify transactions that exist in database', () => {
       const existingTx = createTransaction({
         id: 'db-tx-1',
-        fitId: 'FIT123',
         description: 'Existing Transaction',
         amount: -100,
       });
 
       const newTransactions: RawTransaction[] = [
-        createRawTransaction({ fitId: 'FIT123', description: 'New but duplicate', amount: -100 }),
+        createRawTransaction({ description: 'Existing Transaction', amount: -100 }),
         createRawTransaction({ fitId: 'FIT456', description: 'Truly new', amount: -200 }), // Different amount
       ];
 
@@ -296,7 +293,7 @@ describe('DedupeEngine Cross-File Deduplication', () => {
       const result = engine.verifyAgainstDatabase(newTransactions, [existingTx]);
 
       expect(result.existingInDatabase).toHaveLength(1);
-      expect(result.existingInDatabase[0].matchReason).toBe('date_amount_description');
+      expect(result.existingInDatabase[0]!.matchReason).toBe('date_amount_description');
     });
   });
 
@@ -317,7 +314,7 @@ describe('DedupeEngine Cross-File Deduplication', () => {
 
       // Database has one existing transaction
       const existingTransactions: Transaction[] = [
-        createTransaction({ id: 'db-1', fitId: 'F2-UNIQUE', amount: -300 }),
+        createTransaction({ id: 'db-1', description: 'File 2 Unique', amount: -300 }),
       ];
 
       const files: FileTransactions[] = [
@@ -393,14 +390,14 @@ describe('DedupeEngine Cross-File Deduplication', () => {
       ];
 
       const existingTransactions: Transaction[] = [
-        createTransaction({ id: 'db-1', fitId: 'EXISTS', amount: -200 }),
+        createTransaction({ id: 'db-1', description: 'EXISTS', amount: -200 }),
       ];
 
       const result = engine.deduplicateMultiFileImport(files, existingTransactions);
 
       // File results should only contain the new transaction
       expect(result.fileResults.get('file-1')?.length).toBe(1);
-      expect(result.fileResults.get('file-1')?.[0].fitId).toBe('NEW');
+      expect(result.fileResults.get('file-1')?.[0]!.fitId).toBe('NEW');
     });
   });
 
@@ -434,7 +431,7 @@ describe('DedupeEngine Cross-File Deduplication', () => {
       const result = engine.findCrossFileDuplicates(files);
 
       expect(result.crossFileDuplicates).toHaveLength(1);
-      expect(result.crossFileDuplicates[0].matchReason).toBe('date_amount');
+      expect(result.crossFileDuplicates[0]!.matchReason).toBe('date_amount');
     });
 
     it('should handle large number of files', () => {

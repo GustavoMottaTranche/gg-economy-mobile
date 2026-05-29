@@ -12,7 +12,6 @@ import {
   type ManualEntryDraft,
   type CategoryDraft,
   type RuleDraft,
-  type DraftFormType,
 } from '../../../src/services/draft';
 import * as SecureStore from 'expo-secure-store';
 
@@ -262,7 +261,7 @@ describe('Property 13: Draft Storage Round-Trip', () => {
         categoryDraftArb,
         categoryDraftArb,
         fc.uuid(),
-        fc.uuid().filter((id2) => true), // Different UUIDs
+        fc.uuid().filter((_id2) => true), // Different UUIDs
         async (draft1, draft2, formId1, formId2) => {
           // Ensure different formIds
           if (formId1 === formId2) return;

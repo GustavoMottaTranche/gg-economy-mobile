@@ -77,7 +77,7 @@ export async function isBackgroundFetchAvailable(): Promise<boolean> {
 /**
  * Get the current background fetch status
  */
-export async function getBackgroundFetchStatus(): Promise<BackgroundFetch.BackgroundFetchStatus> {
+export async function getBackgroundFetchStatus(): Promise<BackgroundFetch.BackgroundFetchStatus | null> {
   return BackgroundFetch.getStatusAsync();
 }
 
@@ -241,7 +241,7 @@ export class ScheduledBackupService {
   async getStatus(): Promise<{
     isAvailable: boolean;
     isEnabled: boolean;
-    status: BackgroundFetch.BackgroundFetchStatus;
+    status: BackgroundFetch.BackgroundFetchStatus | null;
   }> {
     const [isAvailable, isEnabled, status] = await Promise.all([
       isBackgroundFetchAvailable(),

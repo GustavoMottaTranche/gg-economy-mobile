@@ -228,12 +228,12 @@ describe('useDraftStorage', () => {
         useDraftStorage<ManualEntryDraft>('manual-entry', undefined, { autoRestore: false })
       );
 
-      let restoredData: ManualEntryDraft | null = null;
+      let restoredData: ManualEntryDraft | null | undefined = null;
       await act(async () => {
         restoredData = await result.current.restore();
       });
 
-      expect(restoredData?.description).toBe('Manually restored');
+      expect((restoredData as ManualEntryDraft | null)?.description).toBe('Manually restored');
       expect(result.current.draft?.description).toBe('Manually restored');
     });
 

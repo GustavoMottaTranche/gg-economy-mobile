@@ -7,9 +7,9 @@
  * - Edit existing categories
  * - Deactivate/activate categories (soft delete)
  *
- * **Validates: Requirements 17, 27, 30**
+ * **Validates: Requirements 17, 27, 30, 5.5, 6.1, 10.1, 10.2, 10.3, 10.4**
  */
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useEffect } from 'react';
 import {
   View,
   Text,
@@ -23,127 +23,88 @@ import {
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useCategories, type CategoryWithCount } from '../../../src/hooks/useCategories';
+import { ReplacementPrompt } from '../../../src/components/ReplacementPrompt';
 import type {
   Category,
   CategoryType,
+  ExpenseGroup,
   CreateCategoryDTO,
   UpdateCategoryDTO,
 } from '../../../src/types';
+import { useThemeColors } from '../../../src/hooks/useThemeColors';
+import { spacing, typography, borderRadius } from '../../../src/constants/theme';
 
 /**
  * Available icons for categories
  */
 const CATEGORY_ICONS = [
-  '🍔',
-  '🍕',
-  '🍜',
-  '☕',
-  '🛒',
-  '🏠',
-  '💡',
-  '📱',
-  '🚗',
-  '⛽',
-  '🚌',
-  '✈️',
-  '🏥',
-  '💊',
-  '🎬',
-  '🎮',
-  '📚',
-  '👕',
-  '💇',
-  '🎁',
-  '💰',
-  '💵',
-  '💳',
-  '📈',
-  '🏦',
-  '💼',
-  '🎓',
-  '🏋️',
-  '🎵',
-  '🐕',
+  '🍔', '🍕', '🍜', '☕', '🛒', '🏠', '💡', '📱', '🚗', '⛽',
+  '🚌', '✈️', '🏥', '💊', '🎬', '🎮', '📚', '👕', '💇', '🎁',
+  '💰', '💵', '💳', '📈', '🏦', '💼', '🎓', '🏋️', '🎵', '🐕',
 ];
 
 /**
  * Available colors for categories
  */
 const CATEGORY_COLORS = [
-  '#FF3B30',
-  '#FF9500',
-  '#FFCC00',
-  '#34C759',
-  '#00C7BE',
-  '#30B0C7',
-  '#007AFF',
-  '#5856D6',
-  '#AF52DE',
-  '#FF2D55',
-  '#A2845E',
-  '#8E8E93',
-  '#636366',
-  '#48484A',
-  '#3A3A3C',
+  '#FF3B30', '#FF9500', '#FFCC00', '#34C759', '#00C7BE',
+  '#30B0C7', '#007AFF', '#5856D6', '#AF52DE', '#FF2D55',
+  '#A2845E', '#8E8E93', '#636366', '#48484A', '#3A3A3C',
 ];
 
-/**
- * Category item component
- */
+type ExpenseGroupFilter = 'all' | 'fixed' | 'variable';
+
 interface CategoryItemProps {
   category: CategoryWithCount;
   onEdit: (category: Category) => void;
   onToggleActive: (category: Category) => void;
+  showGroupBadge?: boolean;
 }
 
-function CategoryItem({ category, onEdit, onToggleActive }: CategoryItemProps) {
+function CategoryItem({ category, onEdit, onToggleActive, showGroupBadge = false }: CategoryItemProps) {
   const { t } = useTranslation();
+  const colors = useThemeColors();
 
   return (
     <View
-      style={[styles.categoryItem, !category.isActive && styles.categoryItemInactive]}
+      style={[styles.categoryItem, { borderBottomColor: colors.border.subtle }, !category.isActive && styles.categoryItemInactive]}
       testID={`category-item-${category.id}`}
     >
       <View style={[styles.categoryIcon, { backgroundColor: category.color }]}>
         <Text style={styles.categoryIconText}>{category.icon}</Text>
       </View>
       <View style={styles.categoryInfo}>
-        <Text style={[styles.categoryName, !category.isActive && styles.categoryNameInactive]}>
+        <Text style={[styles.categoryName, { color: colors.text.primary }, !category.isActive && { color: colors.text.tertiary, textDecorationLine: 'line-through' }]}>
           {category.name}
         </Text>
-        <Text style={styles.categoryCount}>
-          {t('categories.transactionCount', { count: category.transactionCount })}
-        </Text>
+        <View style={styles.categoryMeta}>
+          <Text style={[styles.categoryCount, { color: colors.text.tertiary }]}>
+            {t('categories.transactionCount', { count: category.transactionCount })}
+          </Text>
+          {showGroupBadge && category.type === 'expense' && category.expenseGroup && (
+            <View
+              style={[styles.expenseGroupBadge, { backgroundColor: category.expenseGroup === 'fixed' ? colors.semantic.success.light : colors.semantic.warning.light }]}
+              testID={`expense-group-badge-${category.id}`}
+            >
+              <Text style={[styles.expenseGroupBadgeText, { color: category.expenseGroup === 'fixed' ? colors.semantic.success.dark : colors.semantic.warning.dark }]}>
+                {category.expenseGroup === 'fixed' ? t('categories.fixedCost') : t('categories.variableCost')}
+              </Text>
+            </View>
+          )}
+        </View>
       </View>
       <View style={styles.categoryActions}>
-        <TouchableOpacity
-          style={styles.actionButton}
-          onPress={() => onEdit(category)}
-          accessibilityRole="button"
-          accessibilityLabel={t('common.edit')}
-          testID={`edit-category-${category.id}`}
-        >
-          <Text style={styles.actionIcon}>✏️</Text>
+        <TouchableOpacity style={styles.catActionButton} onPress={() => onEdit(category)} accessibilityRole="button" accessibilityLabel={t('common.edit')} testID={`edit-category-${category.id}`}>
+          <Text style={styles.catActionIcon}>✏️</Text>
         </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.actionButton}
-          onPress={() => onToggleActive(category)}
-          accessibilityRole="button"
-          accessibilityLabel={
-            category.isActive ? t('categories.deactivate') : t('categories.activate')
-          }
-          testID={`toggle-category-${category.id}`}
-        >
-          <Text style={styles.actionIcon}>{category.isActive ? '🚫' : '✅'}</Text>
+        <TouchableOpacity style={styles.catActionButton} onPress={() => onToggleActive(category)} accessibilityRole="button" accessibilityLabel={category.isActive ? t('categories.deactivate') : t('categories.activate')} testID={`toggle-category-${category.id}`}>
+          <Text style={styles.catActionIcon}>{category.isActive ? '🚫' : '✅'}</Text>
         </TouchableOpacity>
       </View>
     </View>
   );
 }
 
-/**
- * Category form modal component
- */
 interface CategoryFormModalProps {
   visible: boolean;
   category: Category | null;
@@ -152,85 +113,60 @@ interface CategoryFormModalProps {
   isLoading: boolean;
 }
 
-function CategoryFormModal({
-  visible,
-  category,
-  onClose,
-  onSave,
-  isLoading,
-}: CategoryFormModalProps) {
+function CategoryFormModal({ visible, category, onClose, onSave, isLoading }: CategoryFormModalProps) {
   const { t } = useTranslation();
+  const colors = useThemeColors();
   const isEditing = category !== null;
 
   const [name, setName] = useState(category?.name ?? '');
   const [type, setType] = useState<CategoryType>(category?.type ?? 'expense');
   const [icon, setIcon] = useState(category?.icon ?? '🏷️');
   const [color, setColor] = useState(category?.color ?? '#007AFF');
+  const [expenseGroup, setExpenseGroup] = useState<ExpenseGroup | null>(category?.expenseGroup ?? null);
   const [showIconPicker, setShowIconPicker] = useState(false);
   const [showColorPicker, setShowColorPicker] = useState(false);
 
-  // Reset form when modal opens with new category
   const resetForm = useCallback(() => {
     setName(category?.name ?? '');
     setType(category?.type ?? 'expense');
     setIcon(category?.icon ?? '🏷️');
     setColor(category?.color ?? '#007AFF');
+    setExpenseGroup(category?.expenseGroup ?? null);
     setShowIconPicker(false);
     setShowColorPicker(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [category]);
 
-  // Reset when category changes
-  useState(() => {
-    resetForm();
-  });
+  const categoryId = category?.id ?? null;
+  useEffect(() => { resetForm(); }, [categoryId, resetForm]);
 
   const handleSave = useCallback(async () => {
-    if (!name.trim()) {
-      Alert.alert(t('common.error'), t('categories.nameRequired'));
-      return;
-    }
-
+    if (!name.trim()) { Alert.alert(t('common.error'), t('categories.nameRequired')); return; }
     const data: CreateCategoryDTO | UpdateCategoryDTO = {
-      name: name.trim(),
-      type,
-      icon,
-      color,
+      name: name.trim(), type, icon, color,
+      expenseGroup: type === 'expense' ? expenseGroup : null,
     };
-
     await onSave(data);
-  }, [name, type, icon, color, onSave, t]);
+  }, [name, type, icon, color, expenseGroup, onSave, t]);
 
-  const handleClose = useCallback(() => {
-    resetForm();
-    onClose();
-  }, [resetForm, onClose]);
+  const handleClose = useCallback(() => { resetForm(); onClose(); }, [resetForm, onClose]);
 
   return (
-    <Modal
-      visible={visible}
-      animationType="slide"
-      transparent
-      onRequestClose={handleClose}
-      testID="category-form-modal"
-    >
-      <View style={styles.modalOverlay}>
-        <View style={styles.modalContent}>
-          <View style={styles.modalHeader}>
+    <Modal visible={visible} animationType="slide" transparent onRequestClose={handleClose} testID="category-form-modal">
+      <View style={[styles.modalOverlay, { backgroundColor: colors.surface.overlay }]}>
+        <View style={[styles.modalContent, { backgroundColor: colors.surface.card }]}>
+          <View style={[styles.modalHeader, { borderBottomColor: colors.border.subtle }]}>
             <TouchableOpacity onPress={handleClose} testID="close-category-modal">
-              <Text style={styles.modalCancel}>{t('common.cancel')}</Text>
+              <Text style={[styles.modalCancel, { color: colors.interactive.primary }]}>{t('common.cancel')}</Text>
             </TouchableOpacity>
-            <Text style={styles.modalTitle}>
+            <Text style={[styles.modalTitle, { color: colors.text.primary }]}>
               {isEditing ? t('categories.editCategory') : t('categories.addCategory')}
             </Text>
-            <TouchableOpacity
-              onPress={handleSave}
-              disabled={isLoading || !name.trim()}
-              testID="save-category-button"
-            >
+            <TouchableOpacity onPress={handleSave} disabled={isLoading || !name.trim()} testID="save-category-button">
               {isLoading ? (
-                <ActivityIndicator size="small" color="#007AFF" />
+                <ActivityIndicator size="small" color={colors.interactive.primary} />
               ) : (
-                <Text style={[styles.modalSave, !name.trim() && styles.modalSaveDisabled]}>
+                <Text style={[styles.modalSave, { color: colors.interactive.primary }, !name.trim() && { color: colors.interactive.disabled }]}>
                   {t('common.save')}
                 </Text>
               )}
@@ -240,77 +176,83 @@ function CategoryFormModal({
           <ScrollView style={styles.formContainer}>
             {/* Name Input */}
             <View style={styles.formGroup}>
-              <Text style={styles.formLabel}>{t('categories.name')}</Text>
+              <Text style={[styles.formLabel, { color: colors.text.secondary }]}>{t('categories.name')}</Text>
               <TextInput
-                style={styles.textInput}
-                value={name}
-                onChangeText={setName}
-                placeholder={t('categories.namePlaceholder')}
-                placeholderTextColor="#C7C7CC"
-                autoFocus
-                testID="category-name-input"
+                style={[styles.textInput, { backgroundColor: colors.background.secondary, color: colors.text.primary }]}
+                value={name} onChangeText={setName}
+                placeholder={t('categories.namePlaceholder')} placeholderTextColor={colors.text.tertiary}
+                autoFocus testID="category-name-input"
               />
             </View>
 
             {/* Type Selector */}
             <View style={styles.formGroup}>
-              <Text style={styles.formLabel}>{t('categories.type')}</Text>
-              <View style={styles.typeSelector}>
+              <Text style={[styles.formLabel, { color: colors.text.secondary }]}>{t('categories.type')}</Text>
+              <View style={[styles.typeSelector, { backgroundColor: colors.background.secondary }]}>
                 <TouchableOpacity
-                  style={[styles.typeOption, type === 'expense' && styles.typeOptionSelected]}
-                  onPress={() => setType('expense')}
-                  testID="type-expense-button"
+                  style={[styles.typeOption, type === 'expense' && [styles.typeOptionSelected, { backgroundColor: colors.surface.card }]]}
+                  onPress={() => setType('expense')} testID="type-expense-button"
                 >
-                  <Text
-                    style={[
-                      styles.typeOptionText,
-                      type === 'expense' && styles.typeOptionTextSelected,
-                    ]}
-                  >
+                  <Text style={[styles.typeOptionText, { color: colors.text.tertiary }, type === 'expense' && { color: colors.interactive.primary, fontWeight: '600' }]}>
                     {t('categories.expense')}
                   </Text>
                 </TouchableOpacity>
                 <TouchableOpacity
-                  style={[styles.typeOption, type === 'income' && styles.typeOptionSelected]}
-                  onPress={() => setType('income')}
-                  testID="type-income-button"
+                  style={[styles.typeOption, type === 'income' && [styles.typeOptionSelected, { backgroundColor: colors.surface.card }]]}
+                  onPress={() => { setType('income'); setExpenseGroup(null); }} testID="type-income-button"
                 >
-                  <Text
-                    style={[
-                      styles.typeOptionText,
-                      type === 'income' && styles.typeOptionTextSelected,
-                    ]}
-                  >
+                  <Text style={[styles.typeOptionText, { color: colors.text.tertiary }, type === 'income' && { color: colors.interactive.primary, fontWeight: '600' }]}>
                     {t('categories.income')}
                   </Text>
                 </TouchableOpacity>
               </View>
             </View>
 
+            {/* Expense Group Selector */}
+            {type === 'expense' && (
+              <View style={styles.formGroup} testID="expense-group-selector">
+                <Text style={[styles.formLabel, { color: colors.text.secondary }]}>{t('categories.expenseGroup')}</Text>
+                <View style={[styles.typeSelector, { backgroundColor: colors.background.secondary }]}>
+                  <TouchableOpacity
+                    style={[styles.typeOption, expenseGroup === 'fixed' && [styles.typeOptionSelected, { backgroundColor: colors.surface.card }]]}
+                    onPress={() => setExpenseGroup(expenseGroup === 'fixed' ? null : 'fixed')} testID="expense-group-fixed-button"
+                  >
+                    <Text style={[styles.typeOptionText, { color: colors.text.tertiary }, expenseGroup === 'fixed' && { color: colors.semantic.success.base, fontWeight: '600' }]}>
+                      {t('categories.fixedCost')}
+                    </Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.typeOption, expenseGroup === 'variable' && [styles.typeOptionSelected, { backgroundColor: colors.surface.card }]]}
+                    onPress={() => setExpenseGroup(expenseGroup === 'variable' ? null : 'variable')} testID="expense-group-variable-button"
+                  >
+                    <Text style={[styles.typeOptionText, { color: colors.text.tertiary }, expenseGroup === 'variable' && { color: colors.semantic.success.base, fontWeight: '600' }]}>
+                      {t('categories.variableCost')}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            )}
+
             {/* Icon Selector */}
             <View style={styles.formGroup}>
-              <Text style={styles.formLabel}>{t('categories.icon')}</Text>
+              <Text style={[styles.formLabel, { color: colors.text.secondary }]}>{t('categories.icon')}</Text>
               <TouchableOpacity
-                style={styles.pickerButton}
-                onPress={() => setShowIconPicker(!showIconPicker)}
-                testID="icon-picker-button"
+                style={[styles.pickerButton, { backgroundColor: colors.background.secondary }]}
+                onPress={() => setShowIconPicker(!showIconPicker)} testID="icon-picker-button"
               >
                 <View style={[styles.selectedIcon, { backgroundColor: color }]}>
                   <Text style={styles.selectedIconText}>{icon}</Text>
                 </View>
-                <Text style={styles.pickerButtonText}>{t('categories.selectIcon')}</Text>
-                <Text style={styles.chevron}>›</Text>
+                <Text style={[styles.pickerButtonText, { color: colors.text.primary }]}>{t('categories.selectIcon')}</Text>
+                <Text style={[styles.chevron, { color: colors.text.tertiary }]}>›</Text>
               </TouchableOpacity>
               {showIconPicker && (
-                <View style={styles.pickerGrid} testID="icon-picker-grid">
+                <View style={[styles.pickerGrid, { backgroundColor: colors.background.secondary }]} testID="icon-picker-grid">
                   {CATEGORY_ICONS.map((iconOption) => (
                     <TouchableOpacity
                       key={iconOption}
-                      style={[styles.pickerItem, icon === iconOption && styles.pickerItemSelected]}
-                      onPress={() => {
-                        setIcon(iconOption);
-                        setShowIconPicker(false);
-                      }}
+                      style={[styles.pickerItem, icon === iconOption && { backgroundColor: colors.surface.card }]}
+                      onPress={() => { setIcon(iconOption); setShowIconPicker(false); }}
                       testID={`icon-option-${iconOption}`}
                     >
                       <Text style={styles.pickerItemText}>{iconOption}</Text>
@@ -322,30 +264,22 @@ function CategoryFormModal({
 
             {/* Color Selector */}
             <View style={styles.formGroup}>
-              <Text style={styles.formLabel}>{t('categories.color')}</Text>
+              <Text style={[styles.formLabel, { color: colors.text.secondary }]}>{t('categories.color')}</Text>
               <TouchableOpacity
-                style={styles.pickerButton}
-                onPress={() => setShowColorPicker(!showColorPicker)}
-                testID="color-picker-button"
+                style={[styles.pickerButton, { backgroundColor: colors.background.secondary }]}
+                onPress={() => setShowColorPicker(!showColorPicker)} testID="color-picker-button"
               >
                 <View style={[styles.selectedColor, { backgroundColor: color }]} />
-                <Text style={styles.pickerButtonText}>{t('categories.selectColor')}</Text>
-                <Text style={styles.chevron}>›</Text>
+                <Text style={[styles.pickerButtonText, { color: colors.text.primary }]}>{t('categories.selectColor')}</Text>
+                <Text style={[styles.chevron, { color: colors.text.tertiary }]}>›</Text>
               </TouchableOpacity>
               {showColorPicker && (
-                <View style={styles.pickerGrid} testID="color-picker-grid">
+                <View style={[styles.pickerGrid, { backgroundColor: colors.background.secondary }]} testID="color-picker-grid">
                   {CATEGORY_COLORS.map((colorOption) => (
                     <TouchableOpacity
                       key={colorOption}
-                      style={[
-                        styles.colorItem,
-                        { backgroundColor: colorOption },
-                        color === colorOption && styles.colorItemSelected,
-                      ]}
-                      onPress={() => {
-                        setColor(colorOption);
-                        setShowColorPicker(false);
-                      }}
+                      style={[styles.colorItem, { backgroundColor: colorOption }, color === colorOption && styles.colorItemSelected]}
+                      onPress={() => { setColor(colorOption); setShowColorPicker(false); }}
                       testID={`color-option-${colorOption}`}
                     />
                   ))}
@@ -355,13 +289,13 @@ function CategoryFormModal({
 
             {/* Preview */}
             <View style={styles.formGroup}>
-              <Text style={styles.formLabel}>{t('categories.preview')}</Text>
-              <View style={styles.previewContainer}>
+              <Text style={[styles.formLabel, { color: colors.text.secondary }]}>{t('categories.preview')}</Text>
+              <View style={[styles.previewContainer, { backgroundColor: colors.background.secondary }]}>
                 <View style={[styles.categoryIcon, { backgroundColor: color }]}>
                   <Text style={styles.categoryIconText}>{icon}</Text>
                 </View>
-                <Text style={styles.previewName}>{name || t('categories.namePlaceholder')}</Text>
-                <Text style={styles.previewType}>
+                <Text style={[styles.previewName, { color: colors.text.primary }]}>{name || t('categories.namePlaceholder')}</Text>
+                <Text style={[styles.previewType, { color: colors.text.tertiary, backgroundColor: colors.border.default }]}>
                   {type === 'income' ? t('categories.income') : t('categories.expense')}
                 </Text>
               </View>
@@ -378,165 +312,107 @@ function CategoryFormModal({
  */
 export default function CategoriesSettingsScreen() {
   const { t } = useTranslation();
-  const {
-    categoriesWithCounts,
-    incomeCategories,
-    expenseCategories,
-    isLoading,
-    error,
-    create,
-    update,
-    deactivate,
-    activate,
-  } = useCategories({ includeInactive: true });
+  const colors = useThemeColors();
+  const { categoriesWithCounts, isLoading, error, create, update, deactivate, activate, deleteWithReplacement } = useCategories({ includeInactive: true });
 
   const [showFormModal, setShowFormModal] = useState(false);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [expenseGroupFilter, setExpenseGroupFilter] = useState<ExpenseGroupFilter>('all');
+  const [showReplacementPrompt, setShowReplacementPrompt] = useState(false);
+  const [categoryToDelete, setCategoryToDelete] = useState<CategoryWithCount | null>(null);
 
-  // Separate categories by type with counts
-  const incomeCategoriesWithCounts = useMemo(
-    () => categoriesWithCounts.filter((c) => c.type === 'income'),
-    [categoriesWithCounts]
-  );
+  const incomeCategoriesWithCounts = useMemo(() => categoriesWithCounts.filter((c) => c.type === 'income'), [categoriesWithCounts]);
+  const expenseCategoriesWithCounts = useMemo(() => categoriesWithCounts.filter((c) => c.type === 'expense'), [categoriesWithCounts]);
+  const filteredExpenseCategoriesWithCounts = useMemo(() => {
+    if (expenseGroupFilter === 'all') return expenseCategoriesWithCounts;
+    return expenseCategoriesWithCounts.filter((c) => c.expenseGroup === expenseGroupFilter);
+  }, [expenseCategoriesWithCounts, expenseGroupFilter]);
 
-  const expenseCategoriesWithCounts = useMemo(
-    () => categoriesWithCounts.filter((c) => c.type === 'expense'),
-    [categoriesWithCounts]
-  );
+  const handleAddCategory = useCallback(() => { setEditingCategory(null); setShowFormModal(true); }, []);
+  const handleEditCategory = useCallback((category: Category) => { setEditingCategory(category); setShowFormModal(true); }, []);
 
-  /**
-   * Handle opening the create form
-   */
-  const handleAddCategory = useCallback(() => {
-    setEditingCategory(null);
-    setShowFormModal(true);
-  }, []);
-
-  /**
-   * Handle opening the edit form
-   */
-  const handleEditCategory = useCallback((category: Category) => {
-    setEditingCategory(category);
-    setShowFormModal(true);
-  }, []);
-
-  /**
-   * Handle toggling category active state
-   */
   const handleToggleActive = useCallback(
     async (category: Category) => {
-      const action = category.isActive ? t('categories.deactivate') : t('categories.activate');
-      const message = category.isActive
-        ? t('categories.deactivateConfirmation', { name: category.name })
-        : t('categories.activateConfirmation', { name: category.name });
-
-      Alert.alert(action, message, [
-        { text: t('common.cancel'), style: 'cancel' },
-        {
-          text: action,
-          style: category.isActive ? 'destructive' : 'default',
-          onPress: async () => {
-            try {
-              if (category.isActive) {
-                await deactivate(category.id);
-              } else {
-                await activate(category.id);
-              }
-            } catch (err) {
-              Alert.alert(t('common.error'), t('categories.toggleError'));
-            }
-          },
-        },
-      ]);
-    },
-    [deactivate, activate, t]
-  );
-
-  /**
-   * Handle saving a category (create or update)
-   */
-  const handleSaveCategory = useCallback(
-    async (data: CreateCategoryDTO | UpdateCategoryDTO) => {
-      setIsSaving(true);
-      try {
-        if (editingCategory) {
-          await update(editingCategory.id, data);
-        } else {
-          await create(data as CreateCategoryDTO);
-        }
-        setShowFormModal(false);
-        setEditingCategory(null);
-      } catch (err) {
-        Alert.alert(t('common.error'), t('categories.saveError'));
-      } finally {
-        setIsSaving(false);
+      if (!category.isActive) {
+        Alert.alert(t('categories.activate'), t('categories.activateConfirmation', { name: category.name }), [
+          { text: t('common.cancel'), style: 'cancel' },
+          { text: t('categories.activate'), style: 'default', onPress: async () => { try { await activate(category.id); } catch (err) { Alert.alert(t('common.error'), t('categories.toggleError')); } } },
+        ]);
+        return;
+      }
+      const categoryWithCount = categoriesWithCounts.find((c) => c.id === category.id);
+      const transactionCount = categoryWithCount?.transactionCount ?? 0;
+      if (transactionCount > 0) {
+        setCategoryToDelete(categoryWithCount ?? null);
+        setShowReplacementPrompt(true);
+      } else {
+        Alert.alert(t('categories.deactivate'), t('categories.deactivateConfirmation', { name: category.name }), [
+          { text: t('common.cancel'), style: 'cancel' },
+          { text: t('categories.deactivate'), style: 'destructive', onPress: async () => { try { await deactivate(category.id); } catch (err) { Alert.alert(t('common.error'), t('categories.toggleError')); } } },
+        ]);
       }
     },
-    [editingCategory, create, update, t]
+    [deactivate, activate, categoriesWithCounts, t]
   );
 
-  /**
-   * Handle closing the form modal
-   */
-  const handleCloseModal = useCallback(() => {
-    setShowFormModal(false);
-    setEditingCategory(null);
-  }, []);
+  const handleReplacementChosen = useCallback(async (replacementCategoryId: string) => {
+    if (!categoryToDelete) return;
+    try { await deleteWithReplacement(categoryToDelete.id, replacementCategoryId); } catch (err) { Alert.alert(t('common.error'), t('categories.toggleError')); } finally { setShowReplacementPrompt(false); setCategoryToDelete(null); }
+  }, [categoryToDelete, deleteWithReplacement, t]);
+
+  const handleSoftDeleteWithoutReplacement = useCallback(async () => {
+    if (!categoryToDelete) return;
+    try { await deactivate(categoryToDelete.id); } catch (err) { Alert.alert(t('common.error'), t('categories.toggleError')); } finally { setShowReplacementPrompt(false); setCategoryToDelete(null); }
+  }, [categoryToDelete, deactivate, t]);
+
+  const handleReplacementCancel = useCallback(() => { setShowReplacementPrompt(false); setCategoryToDelete(null); }, []);
+
+  const handleSaveCategory = useCallback(async (data: CreateCategoryDTO | UpdateCategoryDTO) => {
+    setIsSaving(true);
+    try { if (editingCategory) { await update(editingCategory.id, data); } else { await create(data as CreateCategoryDTO); } setShowFormModal(false); setEditingCategory(null); } catch (err) { Alert.alert(t('common.error'), t('categories.saveError')); } finally { setIsSaving(false); }
+  }, [editingCategory, create, update, t]);
+
+  const handleCloseModal = useCallback(() => { setShowFormModal(false); setEditingCategory(null); }, []);
 
   if (isLoading) {
     return (
-      <View style={styles.loadingContainer} testID="categories-loading">
-        <ActivityIndicator size="large" color="#007AFF" />
-        <Text style={styles.loadingText}>{t('common.loading')}</Text>
+      <View style={[styles.loadingContainer, { backgroundColor: colors.background.secondary }]} testID="categories-loading">
+        <ActivityIndicator size="large" color={colors.interactive.primary} />
+        <Text style={[styles.loadingText, { color: colors.text.tertiary }]}>{t('common.loading')}</Text>
       </View>
     );
   }
 
   if (error) {
     return (
-      <View style={styles.errorContainer} testID="categories-error">
+      <View style={[styles.errorContainer, { backgroundColor: colors.background.secondary }]} testID="categories-error">
         <Text style={styles.errorIcon}>⚠️</Text>
-        <Text style={styles.errorText}>{error}</Text>
+        <Text style={[styles.errorText, { color: colors.semantic.danger.base }]}>{error}</Text>
       </View>
     );
   }
 
   return (
-    <ScrollView
-      style={styles.container}
-      contentContainerStyle={styles.contentContainer}
-      testID="categories-settings-screen"
-    >
+    <ScrollView style={[styles.container, { backgroundColor: colors.background.secondary }]} contentContainerStyle={styles.contentContainer} testID="categories-settings-screen">
       {/* Add Category Button */}
-      <TouchableOpacity
-        style={styles.addButton}
-        onPress={handleAddCategory}
-        accessibilityRole="button"
-        accessibilityLabel={t('categories.addCategory')}
-        testID="add-category-button"
-      >
-        <Text style={styles.addIcon}>+</Text>
-        <Text style={styles.addText}>{t('categories.addCategory')}</Text>
+      <TouchableOpacity style={[styles.addButton, { backgroundColor: colors.interactive.primary }]} onPress={handleAddCategory} accessibilityRole="button" accessibilityLabel={t('categories.addCategory')} testID="add-category-button">
+        <Text style={[styles.addIcon, { color: colors.text.inverse }]}>+</Text>
+        <Text style={[styles.addText, { color: colors.text.inverse }]}>{t('categories.addCategory')}</Text>
       </TouchableOpacity>
 
       {/* Income Categories Section */}
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>{t('categories.incomeCategories')}</Text>
-        <View style={styles.sectionContent}>
+        <Text style={[styles.sectionTitle, { color: colors.text.secondary }]}>{t('categories.incomeCategories')}</Text>
+        <View style={[styles.sectionContent, { backgroundColor: colors.surface.card, borderColor: colors.border.default }]}>
           {incomeCategoriesWithCounts.length === 0 ? (
             <View style={styles.emptyState} testID="income-categories-empty">
               <Text style={styles.emptyIcon}>💰</Text>
-              <Text style={styles.emptyText}>{t('categories.noCategories')}</Text>
+              <Text style={[styles.emptyText, { color: colors.text.tertiary }]}>{t('categories.noCategories')}</Text>
             </View>
           ) : (
             incomeCategoriesWithCounts.map((category) => (
-              <CategoryItem
-                key={category.id}
-                category={category}
-                onEdit={handleEditCategory}
-                onToggleActive={handleToggleActive}
-              />
+              <CategoryItem key={category.id} category={category} onEdit={handleEditCategory} onToggleActive={handleToggleActive} />
             ))
           )}
         </View>
@@ -544,34 +420,54 @@ export default function CategoriesSettingsScreen() {
 
       {/* Expense Categories Section */}
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>{t('categories.expenseCategories')}</Text>
-        <View style={styles.sectionContent}>
-          {expenseCategoriesWithCounts.length === 0 ? (
+        <Text style={[styles.sectionTitle, { color: colors.text.secondary }]}>{t('categories.expenseCategories')}</Text>
+
+        {/* Expense Group Filter Tabs */}
+        <View style={[styles.filterContainer, { backgroundColor: colors.background.secondary }]} testID="expense-group-filter">
+          <TouchableOpacity
+            style={[styles.filterTab, expenseGroupFilter === 'all' && [styles.filterTabActive, { backgroundColor: colors.surface.card }]]}
+            onPress={() => setExpenseGroupFilter('all')} accessibilityRole="button" accessibilityState={{ selected: expenseGroupFilter === 'all' }} testID="filter-tab-all"
+          >
+            <Text style={[styles.filterTabText, { color: colors.text.tertiary }, expenseGroupFilter === 'all' && { color: colors.interactive.primary, fontWeight: '600' }]}>
+              {t('categories.filterAll', { defaultValue: 'Todos' })}
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.filterTab, expenseGroupFilter === 'fixed' && [styles.filterTabActive, { backgroundColor: colors.surface.card }]]}
+            onPress={() => setExpenseGroupFilter('fixed')} accessibilityRole="button" accessibilityState={{ selected: expenseGroupFilter === 'fixed' }} testID="filter-tab-fixed"
+          >
+            <Text style={[styles.filterTabText, { color: colors.text.tertiary }, expenseGroupFilter === 'fixed' && { color: colors.interactive.primary, fontWeight: '600' }]}>
+              {t('categories.fixedCost')}
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.filterTab, expenseGroupFilter === 'variable' && [styles.filterTabActive, { backgroundColor: colors.surface.card }]]}
+            onPress={() => setExpenseGroupFilter('variable')} accessibilityRole="button" accessibilityState={{ selected: expenseGroupFilter === 'variable' }} testID="filter-tab-variable"
+          >
+            <Text style={[styles.filterTabText, { color: colors.text.tertiary }, expenseGroupFilter === 'variable' && { color: colors.interactive.primary, fontWeight: '600' }]}>
+              {t('categories.variableCost')}
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        <View style={[styles.sectionContent, { backgroundColor: colors.surface.card, borderColor: colors.border.default }]}>
+          {filteredExpenseCategoriesWithCounts.length === 0 ? (
             <View style={styles.emptyState} testID="expense-categories-empty">
               <Text style={styles.emptyIcon}>💸</Text>
-              <Text style={styles.emptyText}>{t('categories.noCategories')}</Text>
+              <Text style={[styles.emptyText, { color: colors.text.tertiary }]}>{t('categories.noCategories')}</Text>
             </View>
           ) : (
-            expenseCategoriesWithCounts.map((category) => (
-              <CategoryItem
-                key={category.id}
-                category={category}
-                onEdit={handleEditCategory}
-                onToggleActive={handleToggleActive}
-              />
+            filteredExpenseCategoriesWithCounts.map((category) => (
+              <CategoryItem key={category.id} category={category} onEdit={handleEditCategory} onToggleActive={handleToggleActive} showGroupBadge={expenseGroupFilter === 'all'} />
             ))
           )}
         </View>
       </View>
 
-      {/* Category Form Modal */}
-      <CategoryFormModal
-        visible={showFormModal}
-        category={editingCategory}
-        onClose={handleCloseModal}
-        onSave={handleSaveCategory}
-        isLoading={isSaving}
-      />
+      <CategoryFormModal visible={showFormModal} category={editingCategory} onClose={handleCloseModal} onSave={handleSaveCategory} isLoading={isSaving} />
+      {categoryToDelete && (
+        <ReplacementPrompt category={categoryToDelete} transactionCount={categoryToDelete.transactionCount} onReplace={handleReplacementChosen} onSoftDelete={handleSoftDeleteWithoutReplacement} onCancel={handleReplacementCancel} visible={showReplacementPrompt} />
+      )}
     </ScrollView>
   );
 }
@@ -579,96 +475,83 @@ export default function CategoriesSettingsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F2F2F7',
   },
   contentContainer: {
-    paddingVertical: 20,
+    paddingVertical: spacing.lg,
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#F2F2F7',
   },
   loadingText: {
-    marginTop: 12,
-    fontSize: 16,
-    color: '#8E8E93',
+    marginTop: spacing.md,
+    fontSize: typography.body.fontSize,
   },
   errorContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#F2F2F7',
-    padding: 32,
+    padding: spacing['2xl'],
   },
   errorIcon: {
-    fontSize: 48,
-    marginBottom: 16,
+    fontSize: spacing['3xl'],
+    marginBottom: spacing.base,
   },
   errorText: {
-    fontSize: 16,
-    color: '#FF3B30',
+    fontSize: typography.body.fontSize,
     textAlign: 'center',
   },
   addButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#007AFF',
-    marginHorizontal: 16,
-    marginBottom: 24,
-    paddingVertical: 12,
-    borderRadius: 10,
+    marginHorizontal: spacing.base,
+    marginBottom: spacing.xl,
+    paddingVertical: spacing.md,
+    borderRadius: borderRadius.md,
   },
   addIcon: {
-    fontSize: 20,
-    color: '#FFFFFF',
+    fontSize: spacing.lg,
     fontWeight: '600',
-    marginRight: 8,
+    marginRight: spacing.sm,
   },
   addText: {
-    fontSize: 16,
-    color: '#FFFFFF',
+    fontSize: typography.body.fontSize,
     fontWeight: '600',
   },
   section: {
-    marginBottom: 24,
+    marginBottom: spacing.xl,
   },
   sectionTitle: {
-    fontSize: 13,
+    fontSize: typography.caption.fontSize,
     fontWeight: '600',
-    color: '#6D6D72',
     textTransform: 'uppercase',
-    marginLeft: 16,
-    marginBottom: 8,
+    marginLeft: spacing.base,
+    marginBottom: spacing.sm,
   },
   sectionContent: {
-    backgroundColor: '#FFFFFF',
     borderTopWidth: 1,
     borderBottomWidth: 1,
-    borderColor: '#E5E5EA',
   },
   emptyState: {
     alignItems: 'center',
-    paddingVertical: 32,
+    paddingVertical: spacing['2xl'],
   },
   emptyIcon: {
-    fontSize: 32,
-    marginBottom: 8,
+    fontSize: spacing['2xl'],
+    marginBottom: spacing.sm,
   },
   emptyText: {
-    fontSize: 14,
-    color: '#8E8E93',
+    fontSize: typography.caption.fontSize + 1,
   },
   // Category Item styles
   categoryItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.base,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#E5E5EA',
   },
   categoryItemInactive: {
     opacity: 0.5,
@@ -676,114 +559,133 @@ const styles = StyleSheet.create({
   categoryIcon: {
     width: 40,
     height: 40,
-    borderRadius: 8,
+    borderRadius: borderRadius.sm,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 12,
+    marginRight: spacing.md,
   },
   categoryIconText: {
-    fontSize: 20,
+    fontSize: spacing.lg,
   },
   categoryInfo: {
     flex: 1,
   },
   categoryName: {
-    fontSize: 16,
+    fontSize: typography.body.fontSize,
     fontWeight: '500',
-    color: '#000000',
   },
-  categoryNameInactive: {
-    color: '#8E8E93',
-    textDecorationLine: 'line-through',
+  categoryMeta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 2,
   },
   categoryCount: {
-    fontSize: 13,
-    color: '#8E8E93',
-    marginTop: 2,
+    fontSize: typography.caption.fontSize,
+  },
+  expenseGroupBadge: {
+    marginLeft: spacing.sm,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: spacing.xs,
+  },
+  expenseGroupBadgeText: {
+    fontSize: typography.overline.fontSize,
+    fontWeight: '500',
   },
   categoryActions: {
     flexDirection: 'row',
   },
-  actionButton: {
-    padding: 8,
-    marginLeft: 4,
+  catActionButton: {
+    padding: spacing.sm,
+    marginLeft: spacing.xs,
   },
-  actionIcon: {
+  catActionIcon: {
     fontSize: 18,
+  },
+  // Filter tabs styles
+  filterContainer: {
+    flexDirection: 'row',
+    marginHorizontal: spacing.base,
+    marginBottom: spacing.sm,
+    borderRadius: borderRadius.md,
+    padding: spacing.xs,
+  },
+  filterTab: {
+    flex: 1,
+    paddingVertical: spacing.sm,
+    alignItems: 'center',
+    borderRadius: borderRadius.sm,
+  },
+  filterTabActive: {
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  filterTabText: {
+    fontSize: typography.caption.fontSize,
+    fontWeight: '500',
   },
   // Modal styles
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
     justifyContent: 'flex-end',
   },
   modalContent: {
-    backgroundColor: '#FFFFFF',
-    borderTopLeftRadius: 16,
-    borderTopRightRadius: 16,
+    borderTopLeftRadius: borderRadius.lg,
+    borderTopRightRadius: borderRadius.lg,
     maxHeight: '90%',
   },
   modalHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 16,
+    paddingHorizontal: spacing.base,
+    paddingVertical: spacing.base,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#E5E5EA',
   },
   modalTitle: {
-    fontSize: 17,
+    fontSize: typography.body.fontSize + 1,
     fontWeight: '600',
-    color: '#000000',
   },
   modalCancel: {
-    fontSize: 17,
-    color: '#007AFF',
+    fontSize: typography.body.fontSize + 1,
   },
   modalSave: {
-    fontSize: 17,
-    color: '#007AFF',
+    fontSize: typography.body.fontSize + 1,
     fontWeight: '600',
-  },
-  modalSaveDisabled: {
-    color: '#C7C7CC',
   },
   formContainer: {
-    padding: 16,
+    padding: spacing.base,
   },
   formGroup: {
-    marginBottom: 20,
+    marginBottom: spacing.lg,
   },
   formLabel: {
-    fontSize: 13,
+    fontSize: typography.caption.fontSize,
     fontWeight: '600',
-    color: '#6D6D72',
     textTransform: 'uppercase',
-    marginBottom: 8,
+    marginBottom: spacing.sm,
   },
   textInput: {
-    backgroundColor: '#F2F2F7',
-    borderRadius: 10,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    fontSize: 16,
-    color: '#000000',
+    borderRadius: borderRadius.md,
+    paddingHorizontal: spacing.base,
+    paddingVertical: spacing.md,
+    fontSize: typography.body.fontSize,
   },
   typeSelector: {
     flexDirection: 'row',
-    backgroundColor: '#F2F2F7',
-    borderRadius: 10,
-    padding: 4,
+    borderRadius: borderRadius.md,
+    padding: spacing.xs,
   },
   typeOption: {
     flex: 1,
     paddingVertical: 10,
     alignItems: 'center',
-    borderRadius: 8,
+    borderRadius: borderRadius.sm,
   },
   typeOptionSelected: {
-    backgroundColor: '#FFFFFF',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
@@ -791,72 +693,60 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   typeOptionText: {
-    fontSize: 15,
-    color: '#8E8E93',
-  },
-  typeOptionTextSelected: {
-    color: '#007AFF',
-    fontWeight: '600',
+    fontSize: typography.caption.fontSize + 2,
   },
   pickerButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F2F2F7',
-    borderRadius: 10,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    borderRadius: borderRadius.md,
+    paddingHorizontal: spacing.base,
+    paddingVertical: spacing.md,
   },
   selectedIcon: {
-    width: 32,
-    height: 32,
+    width: spacing['2xl'],
+    height: spacing['2xl'],
     borderRadius: 6,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 12,
+    marginRight: spacing.md,
   },
   selectedIconText: {
     fontSize: 18,
   },
   selectedColor: {
-    width: 32,
-    height: 32,
+    width: spacing['2xl'],
+    height: spacing['2xl'],
     borderRadius: 6,
-    marginRight: 12,
+    marginRight: spacing.md,
   },
   pickerButtonText: {
     flex: 1,
-    fontSize: 16,
-    color: '#000000',
+    fontSize: typography.body.fontSize,
   },
   chevron: {
-    fontSize: 20,
-    color: '#C7C7CC',
+    fontSize: spacing.lg,
   },
   pickerGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    marginTop: 12,
-    backgroundColor: '#F2F2F7',
-    borderRadius: 10,
-    padding: 8,
+    marginTop: spacing.md,
+    borderRadius: borderRadius.md,
+    padding: spacing.sm,
   },
   pickerItem: {
     width: '16.66%',
     aspectRatio: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    borderRadius: 8,
-  },
-  pickerItemSelected: {
-    backgroundColor: '#FFFFFF',
+    borderRadius: borderRadius.sm,
   },
   pickerItemText: {
-    fontSize: 24,
+    fontSize: spacing.xl,
   },
   colorItem: {
     width: '16.66%',
     aspectRatio: 1,
-    borderRadius: 8,
+    borderRadius: borderRadius.sm,
     margin: '0.83%',
   },
   colorItemSelected: {
@@ -871,23 +761,19 @@ const styles = StyleSheet.create({
   previewContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F2F2F7',
-    borderRadius: 10,
-    padding: 16,
+    borderRadius: borderRadius.md,
+    padding: spacing.base,
   },
   previewName: {
     flex: 1,
-    fontSize: 16,
+    fontSize: typography.body.fontSize,
     fontWeight: '500',
-    color: '#000000',
-    marginLeft: 12,
+    marginLeft: spacing.md,
   },
   previewType: {
-    fontSize: 13,
-    color: '#8E8E93',
-    backgroundColor: '#E5E5EA',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 4,
+    fontSize: typography.caption.fontSize,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+    borderRadius: spacing.xs,
   },
 });

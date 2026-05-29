@@ -46,7 +46,8 @@ export async function getAllImportBatches() {
 export async function getImportBatchById(id: string) {
   const db = getDb();
   const results = await db.select().from(importBatches).where(eq(importBatches.id, id)).limit(1);
-  return results.length > 0 ? toImportBatch(results[0]) : null;
+  const first = results[0];
+  return first ? toImportBatch(first) : null;
 }
 
 /**

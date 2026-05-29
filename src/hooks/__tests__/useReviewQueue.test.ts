@@ -5,7 +5,7 @@
  *
  * **Validates: Requirements 16, 29**
  */
-import { renderHook, act, waitFor } from '@testing-library/react-native';
+import { renderHook, act } from '@testing-library/react-native';
 
 // Mock data
 const mockTransactionRecord = {
@@ -20,18 +20,11 @@ const mockTransactionRecord = {
   needsReview: true,
   isExcludedFromTotals: false,
   duplicateOf: null,
+  title: '',
+  installmentGroupId: null,
+  recurringId: null,
   createdAt: '2024-01-15T10:00:00Z',
   updatedAt: '2024-01-15T10:00:00Z',
-};
-
-const mockCategoryRecord = {
-  id: 'cat-1',
-  name: 'Food',
-  type: 'expense',
-  icon: 'restaurant',
-  color: '#FF6B6B',
-  isActive: true,
-  createdAt: '2024-01-01T00:00:00Z',
 };
 
 const mockBatchRecord = {
@@ -48,7 +41,7 @@ const mockGetDb = jest.fn();
 
 jest.mock('../../db/client', () => ({
   getDb: () => mockGetDb(),
-  useLiveQuery: jest.fn((query, deps) => ({
+  useLiveQuery: jest.fn((_query, _deps) => ({
     data: [
       {
         transaction: mockTransactionRecord,
@@ -130,14 +123,14 @@ describe('useReviewQueue', () => {
       const { result } = renderHook(() => useReviewQueue());
 
       expect(result.current.transactions).toHaveLength(1);
-      expect(result.current.transactions[0].needsReview).toBe(true);
+      expect(result.current.transactions[0]!.needsReview).toBe(true);
     });
 
     it('returns transactions with batch info', () => {
       const { result } = renderHook(() => useReviewQueue());
 
-      expect(result.current.transactions[0].importBatch).toBeDefined();
-      expect(result.current.transactions[0].importBatch?.fileName).toBe('import.csv');
+      expect(result.current.transactions[0]!.importBatch).toBeDefined();
+      expect(result.current.transactions[0]!.importBatch?.fileName).toBe('import.csv');
     });
 
     it('returns loading state initially', () => {
@@ -186,8 +179,8 @@ describe('useReviewQueue', () => {
       const { result } = renderHook(() => useReviewQueue());
 
       expect(result.current.groupedByBatch).toHaveLength(2);
-      expect(result.current.groupedByBatch[0].count).toBe(2);
-      expect(result.current.groupedByBatch[1].count).toBe(1);
+      expect(result.current.groupedByBatch[0]!.count).toBe(2);
+      expect(result.current.groupedByBatch[1]!.count).toBe(1);
     });
 
     it('handles transactions without batch', () => {
@@ -206,7 +199,7 @@ describe('useReviewQueue', () => {
       const { result } = renderHook(() => useReviewQueue());
 
       expect(result.current.groupedByBatch).toHaveLength(1);
-      expect(result.current.groupedByBatch[0].batchId).toBeNull();
+      expect(result.current.groupedByBatch[0]!.batchId).toBeNull();
     });
   });
 

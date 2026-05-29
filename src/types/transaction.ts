@@ -4,11 +4,13 @@
 export interface Transaction {
   /** Unique identifier (UUID) */
   id: string;
+  /** Short title identifying the transaction (1-100 chars) */
+  title: string;
   /** Transaction date */
   date: Date;
   /** Amount in cents (positive for income, negative for expense) */
   amount: number;
-  /** Transaction description from bank statement or user input */
+  /** Optional description with additional details (0-500 chars) */
   description: string;
   /** Reference to the category (nullable for uncategorized) */
   categoryId: string | null;
@@ -24,6 +26,12 @@ export interface Transaction {
   isExcludedFromTotals: boolean;
   /** Reference to duplicate transaction (if this is a duplicate) */
   duplicateOf: string | null;
+  /** UUID linking parcels of the same installment group; null for non-installment transactions */
+  installmentGroupId: string | null;
+  /** Reference to recurring transaction; null for non-recurring transactions */
+  recurringId: string | null;
+  /** Whether this transaction has been paid */
+  isPaid: boolean;
   /** Creation timestamp */
   createdAt: Date;
   /** Last update timestamp */
@@ -34,6 +42,7 @@ export interface Transaction {
  * DTO for creating a new transaction
  */
 export interface CreateTransactionDTO {
+  title: string;
   date: Date;
   amount: number;
   description: string;
@@ -43,12 +52,16 @@ export interface CreateTransactionDTO {
   referenceMonth: string;
   needsReview?: boolean;
   isExcludedFromTotals?: boolean;
+  isPaid?: boolean;
+  /** UUID linking parcels of the same installment group; null/undefined for non-installment transactions */
+  installmentGroupId?: string;
 }
 
 /**
  * DTO for updating an existing transaction
  */
 export interface UpdateTransactionDTO {
+  title?: string;
   date?: Date;
   amount?: number;
   description?: string;

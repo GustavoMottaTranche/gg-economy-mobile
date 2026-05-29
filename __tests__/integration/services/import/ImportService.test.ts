@@ -96,6 +96,7 @@ function createMockRepositoriesWithStorage(mockDbData: MockDbData) {
       const id = `tx-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
       const tx: Transaction = {
         id,
+        title: data.title,
         date: data.date,
         amount: data.amount,
         description: data.description,
@@ -106,6 +107,8 @@ function createMockRepositoriesWithStorage(mockDbData: MockDbData) {
         needsReview: data.needsReview ?? true,
         isExcludedFromTotals: data.isExcludedFromTotals ?? false,
         duplicateOf: null,
+        installmentGroupId: data.installmentGroupId ?? null,
+        recurringId: null,
         createdAt: new Date(),
         updatedAt: new Date(),
       };
@@ -117,6 +120,7 @@ function createMockRepositoriesWithStorage(mockDbData: MockDbData) {
         const id = `tx-${Date.now()}-${index}-${Math.random().toString(36).substr(2, 9)}`;
         const tx: Transaction = {
           id,
+          title: data.title,
           date: data.date,
           amount: data.amount,
           description: data.description,
@@ -127,6 +131,8 @@ function createMockRepositoriesWithStorage(mockDbData: MockDbData) {
           needsReview: data.needsReview ?? true,
           isExcludedFromTotals: data.isExcludedFromTotals ?? false,
           duplicateOf: null,
+          installmentGroupId: data.installmentGroupId ?? null,
+          recurringId: null,
           createdAt: new Date(),
           updatedAt: new Date(),
         };

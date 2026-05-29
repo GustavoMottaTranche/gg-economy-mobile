@@ -8,7 +8,7 @@
  * - Time picker for preferred hour and minute
  * - Next notification preview showing calculated next time
  *
- * **Validates: Requirements 1.1, 1.3, 2.1, 2.3, 5.2, 5.3, 5.4**
+ * **Validates: Requirements 1.1, 1.3, 2.1, 2.3, 5.2, 5.3, 5.4, 5.5, 6.1, 10.1, 10.2, 10.3, 10.4**
  */
 import { useState, useCallback, useEffect } from 'react';
 import {
@@ -27,14 +27,19 @@ import {
   useNotificationSettings,
   useNotificationPermission,
   type NotificationFrequency,
+  type TimeSlot,
 } from '../../../src/stores/notificationStore';
 import { permissionHandler } from '../../../src/services/notifications/PermissionHandler';
 import { notificationScheduler } from '../../../src/services/notifications/NotificationScheduler';
+import { TimeSlotSection } from '../../../src/components/notifications/TimeSlotSection';
+import { useThemeColors } from '../../../src/hooks/useThemeColors';
+import { spacing, typography, borderRadius } from '../../../src/constants/theme';
 
 /**
  * Frequency options for notification scheduling
  */
 const FREQUENCY_OPTIONS: { value: NotificationFrequency; labelKey: string }[] = [
+  { value: 'multipleDaily', labelKey: 'notifications.frequencyMultipleDaily' },
   { value: 'daily', labelKey: 'notifications.frequencyDaily' },
   { value: 'every2days', labelKey: 'notifications.frequencyEvery2Days' },
   { value: 'every3days', labelKey: 'notifications.frequencyEvery3Days' },
@@ -76,15 +81,20 @@ function formatNextNotificationDate(date: Date): string {
 
 export default function NotificationSettingsScreen() {
   const { t } = useTranslation();
+  const colors = useThemeColors();
   const {
     isEnabled,
     frequency,
     preferredHour,
     preferredMinute,
+    timeSlots,
     setEnabled,
     setFrequency,
     setPreferredTime,
     setScheduledNotificationId,
+    addTimeSlot,
+    removeTimeSlot,
+    setTimeSlotNotificationIds,
   } = useNotificationSettings();
 
   const { permissionStatus, setPermissionStatus } = useNotificationPermission();
@@ -94,6 +104,7 @@ export default function NotificationSettingsScreen() {
   const [showTimeModal, setShowTimeModal] = useState(false);
   const [selectedHour, setSelectedHour] = useState(preferredHour);
   const [selectedMinute, setSelectedMinute] = useState(preferredMinute);
+  const [duplicateMessage, setDuplicateMessage] = useState<string | null>(null);
 
   // Check permission status on mount
   useEffect(() => {
@@ -105,14 +116,19 @@ export default function NotificationSettingsScreen() {
   }, [setPermissionStatus]);
 
   // Calculate next notification time
-  const nextNotificationTime = notificationScheduler.calculateNextTime({
-    isEnabled,
-    frequency,
-    preferredHour,
-    preferredMinute,
-    scheduledNotificationId: null,
-    lastDeliveryTime: null,
-  });
+  const nextNotificationTime =
+    frequency === 'multipleDaily'
+      ? notificationScheduler.calculateNextTimeMultiSlot(timeSlots)
+      : notificationScheduler.calculateNextTime({
+          isEnabled,
+          frequency,
+          preferredHour,
+          preferredMinute,
+          scheduledNotificationId: null,
+          lastDeliveryTime: null,
+          timeSlots: [],
+          timeSlotNotificationIds: {},
+        });
 
   /**
    * Handle enable/disable toggle
@@ -120,21 +136,17 @@ export default function NotificationSettingsScreen() {
   const handleToggleEnabled = useCallback(
     async (value: boolean) => {
       if (value) {
-        // Request permission when enabling for the first time
         if (permissionStatus !== 'granted') {
           const status = await permissionHandler.requestPermission();
           setPermissionStatus(status);
 
           if (status !== 'granted') {
-            // Permission denied, don't enable
             return;
           }
         }
 
-        // Enable notifications
         setEnabled(true);
 
-        // Schedule the next notification
         try {
           const settings = {
             isEnabled: true,
@@ -150,7 +162,6 @@ export default function NotificationSettingsScreen() {
           console.warn('Failed to schedule notification:', error);
         }
       } else {
-        // Disable notifications
         setEnabled(false);
         await notificationScheduler.cancelAll();
         setScheduledNotificationId(null);
@@ -169,16 +180,61 @@ export default function NotificationSettingsScreen() {
 
   /**
    * Handle frequency selection
+   *
+   * - Switching TO multipleDaily: initializes timeSlots from preferredHour/preferredMinute if empty, calls scheduleAllSlots
+   * - Switching FROM multipleDaily to another frequency: cancels all, schedules single notification with preferredHour/preferredMinute
+   * - Switching to disabled: cancels all notifications
+   * - Preserves timeSlots data in store when switching away (does not clear)
+   *
+   * **Validates: Requirements 2.3, 2.4, 2.5, 3.1**
    */
   const handleFrequencySelect = useCallback(
     async (newFrequency: NotificationFrequency) => {
       setFrequency(newFrequency);
       setShowFrequencyModal(false);
 
-      // Reschedule notification with new frequency
-      if (isEnabled && newFrequency !== 'disabled') {
+      if (!isEnabled) {
+        return;
+      }
+
+      if (newFrequency === 'disabled') {
+        // Cancel all notifications when switching to disabled (including multi-slot)
         try {
           await notificationScheduler.cancelAll();
+          setScheduledNotificationId(null);
+          setTimeSlotNotificationIds({});
+        } catch (error) {
+          console.warn('Failed to cancel notifications:', error);
+        }
+        return;
+      }
+
+      try {
+        await notificationScheduler.cancelAll();
+
+        if (newFrequency === 'multipleDaily') {
+          // Initialize time slots from preferredHour/preferredMinute when switching to multipleDaily with empty list
+          let slotsToSchedule = timeSlots;
+          if (timeSlots.length === 0) {
+            addTimeSlot({ hour: preferredHour, minute: preferredMinute });
+            slotsToSchedule = [{ hour: preferredHour, minute: preferredMinute }];
+          }
+
+          const settings = {
+            isEnabled: true,
+            frequency: newFrequency,
+            preferredHour,
+            preferredMinute,
+            scheduledNotificationId: null,
+            lastDeliveryTime: null,
+            timeSlots: slotsToSchedule,
+            timeSlotNotificationIds: {},
+          };
+          const result = await notificationScheduler.scheduleAllSlots(slotsToSchedule, settings);
+          setTimeSlotNotificationIds(result);
+        } else {
+          // Switching from multipleDaily (or any other) to a single-notification frequency:
+          // Schedule single notification using preferredHour/preferredMinute with new frequency
           const settings = {
             isEnabled: true,
             frequency: newFrequency,
@@ -189,12 +245,13 @@ export default function NotificationSettingsScreen() {
           };
           const notificationId = await notificationScheduler.scheduleNext(settings);
           setScheduledNotificationId(notificationId);
-        } catch (error) {
-          console.warn('Failed to reschedule notification:', error);
+          setTimeSlotNotificationIds({});
         }
+      } catch (error) {
+        console.warn('Failed to reschedule notification:', error);
       }
     },
-    [setFrequency, isEnabled, preferredHour, preferredMinute, setScheduledNotificationId]
+    [setFrequency, isEnabled, preferredHour, preferredMinute, setScheduledNotificationId, timeSlots, addTimeSlot, setTimeSlotNotificationIds]
   );
 
   /**
@@ -204,7 +261,6 @@ export default function NotificationSettingsScreen() {
     setPreferredTime(selectedHour, selectedMinute);
     setShowTimeModal(false);
 
-    // Reschedule notification with new time
     if (isEnabled && frequency !== 'disabled') {
       try {
         await notificationScheduler.cancelAll();
@@ -230,6 +286,146 @@ export default function NotificationSettingsScreen() {
     frequency,
     setScheduledNotificationId,
   ]);
+
+  /**
+   * Handle adding a time slot in multipleDaily mode
+   */
+  const handleAddSlot = useCallback(
+    async (slot: TimeSlot) => {
+      setDuplicateMessage(null);
+      const success = addTimeSlot(slot);
+
+      if (!success) {
+        // Show duplicate validation message
+        setDuplicateMessage(t('notifications.duplicateTimeSlot'));
+        return;
+      }
+
+      // Schedule all slots after successful add
+      if (isEnabled && frequency === 'multipleDaily') {
+        try {
+          const updatedSlots = [...timeSlots, slot].sort((a, b) => {
+            if (a.hour !== b.hour) return a.hour - b.hour;
+            return a.minute - b.minute;
+          });
+          const settings = {
+            isEnabled: true,
+            frequency: frequency as NotificationFrequency,
+            preferredHour,
+            preferredMinute,
+            scheduledNotificationId: null,
+            lastDeliveryTime: null,
+            timeSlots: updatedSlots,
+            timeSlotNotificationIds: {},
+          };
+          const result = await notificationScheduler.scheduleAllSlots(updatedSlots, settings);
+          setTimeSlotNotificationIds(result);
+        } catch (error) {
+          console.warn('Failed to reschedule notifications after adding slot:', error);
+        }
+      }
+    },
+    [addTimeSlot, isEnabled, frequency, timeSlots, preferredHour, preferredMinute, setTimeSlotNotificationIds, t]
+  );
+
+  /**
+   * Handle removing a time slot in multipleDaily mode
+   */
+  const handleRemoveSlot = useCallback(
+    async (key: string) => {
+      setDuplicateMessage(null);
+      const success = removeTimeSlot(key);
+
+      if (!success) {
+        return;
+      }
+
+      // Schedule all remaining slots after successful remove
+      if (isEnabled && frequency === 'multipleDaily') {
+        try {
+          const updatedSlots = timeSlots.filter(
+            (s) => `${s.hour.toString().padStart(2, '0')}:${s.minute.toString().padStart(2, '0')}` !== key
+          );
+          const settings = {
+            isEnabled: true,
+            frequency: frequency as NotificationFrequency,
+            preferredHour,
+            preferredMinute,
+            scheduledNotificationId: null,
+            lastDeliveryTime: null,
+            timeSlots: updatedSlots,
+            timeSlotNotificationIds: {},
+          };
+          const result = await notificationScheduler.scheduleAllSlots(updatedSlots, settings);
+          setTimeSlotNotificationIds(result);
+        } catch (error) {
+          console.warn('Failed to reschedule notifications after removing slot:', error);
+        }
+      }
+    },
+    [removeTimeSlot, isEnabled, frequency, timeSlots, preferredHour, preferredMinute, setTimeSlotNotificationIds]
+  );
+
+  /**
+   * Handle editing a time slot (remove old, add new)
+   */
+  const handleEditSlot = useCallback(
+    async (oldKey: string, newSlot: TimeSlot) => {
+      setDuplicateMessage(null);
+
+      // If the time didn't change, do nothing
+      const newKey = `${newSlot.hour.toString().padStart(2, '0')}:${newSlot.minute.toString().padStart(2, '0')}`;
+      if (oldKey === newKey) return;
+
+      // Check if the new time already exists (excluding the one being edited)
+      const existsAlready = timeSlots.some(
+        (s) => `${s.hour.toString().padStart(2, '0')}:${s.minute.toString().padStart(2, '0')}` === newKey &&
+               `${s.hour.toString().padStart(2, '0')}:${s.minute.toString().padStart(2, '0')}` !== oldKey
+      );
+      if (existsAlready) {
+        setDuplicateMessage(t('notifications.duplicateTimeSlot'));
+        return;
+      }
+
+      // Remove old slot and add new one
+      removeTimeSlot(oldKey);
+      const success = addTimeSlot(newSlot);
+
+      if (!success) {
+        // Shouldn't happen since we checked for duplicates, but handle gracefully
+        // Re-add the old slot back
+        const [hourStr, minStr] = oldKey.split(':');
+        addTimeSlot({ hour: parseInt(hourStr, 10), minute: parseInt(minStr, 10) });
+        setDuplicateMessage(t('notifications.duplicateTimeSlot'));
+        return;
+      }
+
+      // Reschedule all slots
+      if (isEnabled && frequency === 'multipleDaily') {
+        try {
+          const updatedSlots = timeSlots
+            .filter((s) => `${s.hour.toString().padStart(2, '0')}:${s.minute.toString().padStart(2, '0')}` !== oldKey)
+            .concat(newSlot)
+            .sort((a, b) => a.hour !== b.hour ? a.hour - b.hour : a.minute - b.minute);
+          const settings = {
+            isEnabled: true,
+            frequency: frequency as NotificationFrequency,
+            preferredHour,
+            preferredMinute,
+            scheduledNotificationId: null,
+            lastDeliveryTime: null,
+            timeSlots: updatedSlots,
+            timeSlotNotificationIds: {},
+          };
+          const result = await notificationScheduler.scheduleAllSlots(updatedSlots, settings);
+          setTimeSlotNotificationIds(result);
+        } catch (error) {
+          console.warn('Failed to reschedule notifications after editing slot:', error);
+        }
+      }
+    },
+    [timeSlots, removeTimeSlot, addTimeSlot, isEnabled, frequency, preferredHour, preferredMinute, setTimeSlotNotificationIds, t]
+  );
 
   /**
    * Handle opening system settings
@@ -265,26 +461,47 @@ export default function NotificationSettingsScreen() {
   const areControlsDisabled = isPermissionDenied || !isEnabled;
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={['bottom']}>
+    <SafeAreaView
+      style={[styles.safeArea, { backgroundColor: colors.background.secondary }]}
+      edges={['bottom']}
+    >
       <ScrollView
-        style={styles.container}
+        style={[styles.container, { backgroundColor: colors.background.secondary }]}
         contentContainerStyle={styles.contentContainer}
         testID="notification-settings-screen"
       >
         {/* Permission Denied Banner */}
         {isPermissionDenied && (
-          <View style={styles.permissionBanner} testID="permission-denied-banner">
+          <View
+            style={[
+              styles.permissionBanner,
+              {
+                backgroundColor: colors.semantic.warning.light,
+                borderColor: colors.semantic.warning.base,
+              },
+            ]}
+            testID="permission-denied-banner"
+          >
             <Text style={styles.permissionBannerIcon}>🔕</Text>
             <View style={styles.permissionBannerContent}>
-              <Text style={styles.permissionBannerText}>{t('notifications.permissionDenied')}</Text>
+              <Text
+                style={[styles.permissionBannerText, { color: colors.semantic.warning.dark }]}
+              >
+                {t('notifications.permissionDenied')}
+              </Text>
               <TouchableOpacity
-                style={styles.openSettingsButton}
+                style={[
+                  styles.openSettingsButton,
+                  { backgroundColor: colors.interactive.primary },
+                ]}
                 onPress={handleOpenSettings}
                 accessibilityRole="button"
                 accessibilityLabel={t('notifications.openSettings')}
                 testID="open-settings-button"
               >
-                <Text style={styles.openSettingsButtonText}>{t('notifications.openSettings')}</Text>
+                <Text style={[styles.openSettingsButtonText, { color: colors.text.inverse }]}>
+                  {t('notifications.openSettings')}
+                </Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -292,13 +509,25 @@ export default function NotificationSettingsScreen() {
 
         {/* Enable/Disable Section */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>{t('notifications.settingsTitle')}</Text>
-          <View style={styles.sectionContent}>
+          <Text style={[styles.sectionTitle, { color: colors.text.secondary }]}>
+            {t('notifications.settingsTitle')}
+          </Text>
+          <View
+            style={[
+              styles.sectionContent,
+              {
+                backgroundColor: colors.surface.card,
+                borderColor: colors.border.default,
+              },
+            ]}
+          >
             <View style={styles.toggleItem} testID="notification-toggle-section">
               <Text style={styles.toggleIcon}>🔔</Text>
               <View style={styles.toggleInfo}>
-                <Text style={styles.toggleLabel}>{t('notifications.settingsTitle')}</Text>
-                <Text style={styles.toggleStatus}>
+                <Text style={[styles.toggleLabel, { color: colors.text.primary }]}>
+                  {t('notifications.settingsTitle')}
+                </Text>
+                <Text style={[styles.toggleStatus, { color: colors.text.tertiary }]}>
                   {isEnabled ? t('notifications.enabled') : t('notifications.disabled')}
                 </Text>
               </View>
@@ -306,8 +535,8 @@ export default function NotificationSettingsScreen() {
                 value={isEnabled}
                 onValueChange={handleToggleEnabled}
                 disabled={isPermissionDenied}
-                trackColor={{ false: '#E5E5EA', true: '#34C759' }}
-                thumbColor="#FFFFFF"
+                trackColor={{ false: colors.border.default, true: colors.semantic.success.base }}
+                thumbColor={colors.background.primary}
                 accessibilityRole="switch"
                 accessibilityLabel={t('notifications.settingsTitle')}
                 accessibilityState={{ checked: isEnabled, disabled: isPermissionDenied }}
@@ -319,8 +548,18 @@ export default function NotificationSettingsScreen() {
 
         {/* Frequency Section */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>{t('notifications.frequency')}</Text>
-          <View style={styles.sectionContent}>
+          <Text style={[styles.sectionTitle, { color: colors.text.secondary }]}>
+            {t('notifications.frequency')}
+          </Text>
+          <View
+            style={[
+              styles.sectionContent,
+              {
+                backgroundColor: colors.surface.card,
+                borderColor: colors.border.default,
+              },
+            ]}
+          >
             <TouchableOpacity
               style={styles.frequencyItem}
               onPress={() => setShowFrequencyModal(true)}
@@ -330,60 +569,120 @@ export default function NotificationSettingsScreen() {
               accessibilityState={{ disabled: areControlsDisabled }}
               testID="frequency-selector"
             >
-              <Text style={styles.frequencyLabel}>{t('notifications.frequency')}</Text>
-              <View style={styles.frequencyValue}>
-                <Text style={[styles.frequencyText, areControlsDisabled && styles.disabledText]}>
-                  {getFrequencyText(frequency)}
-                </Text>
-                <Text style={[styles.chevron, areControlsDisabled && styles.disabledText]}>›</Text>
-              </View>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[styles.frequencyItem, styles.borderTop]}
-              onPress={() => {
-                setSelectedHour(preferredHour);
-                setSelectedMinute(preferredMinute);
-                setShowTimeModal(true);
-              }}
-              disabled={areControlsDisabled || frequency === 'disabled'}
-              accessibilityRole="button"
-              accessibilityLabel={t('notifications.preferredTime')}
-              accessibilityState={{ disabled: areControlsDisabled || frequency === 'disabled' }}
-              testID="time-selector"
-            >
-              <Text style={styles.frequencyLabel}>{t('notifications.preferredTime')}</Text>
+              <Text style={[styles.frequencyLabel, { color: colors.text.primary }]}>
+                {t('notifications.frequency')}
+              </Text>
               <View style={styles.frequencyValue}>
                 <Text
                   style={[
                     styles.frequencyText,
-                    (areControlsDisabled || frequency === 'disabled') && styles.disabledText,
+                    { color: colors.text.tertiary },
+                    areControlsDisabled && styles.disabledOpacity,
                   ]}
                 >
-                  {formatTime(preferredHour, preferredMinute)}
+                  {getFrequencyText(frequency)}
                 </Text>
                 <Text
                   style={[
                     styles.chevron,
-                    (areControlsDisabled || frequency === 'disabled') && styles.disabledText,
+                    { color: colors.text.tertiary },
+                    areControlsDisabled && styles.disabledOpacity,
                   ]}
                 >
                   ›
                 </Text>
               </View>
             </TouchableOpacity>
+
+            {/* Single time picker - hidden when frequency is multipleDaily */}
+            {frequency !== 'multipleDaily' && (
+              <TouchableOpacity
+                style={[styles.frequencyItem, { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border.subtle }]}
+                onPress={() => {
+                  setSelectedHour(preferredHour);
+                  setSelectedMinute(preferredMinute);
+                  setShowTimeModal(true);
+                }}
+                disabled={areControlsDisabled || frequency === 'disabled'}
+                accessibilityRole="button"
+                accessibilityLabel={t('notifications.preferredTime')}
+                accessibilityState={{ disabled: areControlsDisabled || frequency === 'disabled' }}
+                testID="time-selector"
+              >
+                <Text style={[styles.frequencyLabel, { color: colors.text.primary }]}>
+                  {t('notifications.preferredTime')}
+                </Text>
+                <View style={styles.frequencyValue}>
+                  <Text
+                    style={[
+                      styles.frequencyText,
+                      { color: colors.text.tertiary },
+                      (areControlsDisabled || frequency === 'disabled') && styles.disabledOpacity,
+                    ]}
+                  >
+                    {formatTime(preferredHour, preferredMinute)}
+                  </Text>
+                  <Text
+                    style={[
+                      styles.chevron,
+                      { color: colors.text.tertiary },
+                      (areControlsDisabled || frequency === 'disabled') && styles.disabledOpacity,
+                    ]}
+                  >
+                    ›
+                  </Text>
+                </View>
+              </TouchableOpacity>
+            )}
           </View>
         </View>
+
+        {/* Time Slot Section - shown when frequency is multipleDaily */}
+        {frequency === 'multipleDaily' && (
+          <View style={styles.section}>
+            <Text style={[styles.sectionTitle, { color: colors.text.secondary }]}>
+              {t('notifications.preferredTime')}
+            </Text>
+            <TimeSlotSection
+              timeSlots={timeSlots}
+              onAddSlot={handleAddSlot}
+              onRemoveSlot={handleRemoveSlot}
+              onEditSlot={handleEditSlot}
+              disabled={areControlsDisabled}
+            />
+            {duplicateMessage && (
+              <Text
+                style={[styles.duplicateMessage, { color: colors.semantic.warning.dark }]}
+                testID="duplicate-time-slot-message"
+              >
+                {duplicateMessage}
+              </Text>
+            )}
+          </View>
+        )}
 
         {/* Next Notification Preview */}
         {isEnabled && nextNotificationTime && (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>{t('notifications.nextNotification')}</Text>
-            <View style={styles.sectionContent}>
+            <Text style={[styles.sectionTitle, { color: colors.text.secondary }]}>
+              {t('notifications.nextNotification')}
+            </Text>
+            <View
+              style={[
+                styles.sectionContent,
+                {
+                  backgroundColor: colors.surface.card,
+                  borderColor: colors.border.default,
+                },
+              ]}
+            >
               <View style={styles.previewItem} testID="next-notification-preview">
                 <Text style={styles.previewIcon}>📅</Text>
                 <View style={styles.previewInfo}>
-                  <Text style={styles.previewText} testID="next-notification-time">
+                  <Text
+                    style={[styles.previewText, { color: colors.text.primary }]}
+                    testID="next-notification-time"
+                  >
                     {formatNextNotificationDate(nextNotificationTime)}
                   </Text>
                 </View>
@@ -392,7 +691,9 @@ export default function NotificationSettingsScreen() {
           </View>
         )}
 
-        <Text style={styles.hint}>{t('notifications.settingsDescription')}</Text>
+        <Text style={[styles.hint, { color: colors.text.tertiary }]}>
+          {t('notifications.settingsDescription')}
+        </Text>
 
         {/* Frequency Selection Modal */}
         <Modal
@@ -402,30 +703,47 @@ export default function NotificationSettingsScreen() {
           onRequestClose={() => setShowFrequencyModal(false)}
           testID="frequency-modal"
         >
-          <View style={styles.modalOverlay}>
-            <View style={styles.modalContent}>
-              <View style={styles.modalHeader}>
-                <Text style={styles.modalTitle}>{t('notifications.frequency')}</Text>
+          <View style={[styles.modalOverlay, { backgroundColor: colors.surface.overlay }]}>
+            <View
+              style={[styles.modalContent, { backgroundColor: colors.surface.card }]}
+            >
+              <View
+                style={[
+                  styles.modalHeader,
+                  { borderBottomColor: colors.border.subtle },
+                ]}
+              >
+                <Text style={[styles.modalTitle, { color: colors.text.primary }]}>
+                  {t('notifications.frequency')}
+                </Text>
                 <TouchableOpacity
                   onPress={() => setShowFrequencyModal(false)}
                   accessibilityRole="button"
                   accessibilityLabel={t('common.close')}
                   testID="close-frequency-modal"
                 >
-                  <Text style={styles.modalClose}>{t('common.close')}</Text>
+                  <Text style={[styles.modalClose, { color: colors.interactive.primary }]}>
+                    {t('common.close')}
+                  </Text>
                 </TouchableOpacity>
               </View>
               {FREQUENCY_OPTIONS.map((option) => (
                 <TouchableOpacity
                   key={option.value}
-                  style={styles.modalOption}
+                  style={[styles.modalOption, { borderBottomColor: colors.border.subtle }]}
                   onPress={() => handleFrequencySelect(option.value)}
                   accessibilityRole="radio"
                   accessibilityState={{ selected: frequency === option.value }}
                   testID={`frequency-option-${option.value}`}
                 >
-                  <Text style={styles.modalOptionText}>{t(option.labelKey)}</Text>
-                  {frequency === option.value && <Text style={styles.checkmark}>✓</Text>}
+                  <Text style={[styles.modalOptionText, { color: colors.text.primary }]}>
+                    {t(option.labelKey)}
+                  </Text>
+                  {frequency === option.value && (
+                    <Text style={[styles.checkmark, { color: colors.interactive.primary }]}>
+                      ✓
+                    </Text>
+                  )}
                 </TouchableOpacity>
               ))}
             </View>
@@ -440,32 +758,47 @@ export default function NotificationSettingsScreen() {
           onRequestClose={() => setShowTimeModal(false)}
           testID="time-modal"
         >
-          <View style={styles.modalOverlay}>
-            <View style={styles.modalContent}>
-              <View style={styles.modalHeader}>
+          <View style={[styles.modalOverlay, { backgroundColor: colors.surface.overlay }]}>
+            <View
+              style={[styles.modalContent, { backgroundColor: colors.surface.card }]}
+            >
+              <View
+                style={[
+                  styles.modalHeader,
+                  { borderBottomColor: colors.border.subtle },
+                ]}
+              >
                 <TouchableOpacity
                   onPress={() => setShowTimeModal(false)}
                   accessibilityRole="button"
                   accessibilityLabel={t('common.cancel')}
                   testID="cancel-time-modal"
                 >
-                  <Text style={styles.modalCancel}>{t('common.cancel')}</Text>
+                  <Text style={[styles.modalCancel, { color: colors.interactive.primary }]}>
+                    {t('common.cancel')}
+                  </Text>
                 </TouchableOpacity>
-                <Text style={styles.modalTitle}>{t('notifications.selectTime')}</Text>
+                <Text style={[styles.modalTitle, { color: colors.text.primary }]}>
+                  {t('notifications.selectTime')}
+                </Text>
                 <TouchableOpacity
                   onPress={handleTimeConfirm}
                   accessibilityRole="button"
                   accessibilityLabel={t('common.done')}
                   testID="confirm-time-modal"
                 >
-                  <Text style={styles.modalDone}>{t('common.done')}</Text>
+                  <Text style={[styles.modalDone, { color: colors.interactive.primary }]}>
+                    {t('common.done')}
+                  </Text>
                 </TouchableOpacity>
               </View>
 
               <View style={styles.timePickerContainer}>
                 {/* Hour Picker */}
                 <View style={styles.timeColumn}>
-                  <Text style={styles.timeColumnLabel}>Hour</Text>
+                  <Text style={[styles.timeColumnLabel, { color: colors.text.tertiary }]}>
+                    Hour
+                  </Text>
                   <FlatList
                     data={HOUR_OPTIONS}
                     keyExtractor={(item) => item.value.toString()}
@@ -473,7 +806,10 @@ export default function NotificationSettingsScreen() {
                       <TouchableOpacity
                         style={[
                           styles.timeOption,
-                          selectedHour === item.value && styles.timeOptionSelected,
+                          selectedHour === item.value && [
+                            styles.timeOptionSelected,
+                            { backgroundColor: colors.interactive.primary },
+                          ],
                         ]}
                         onPress={() => setSelectedHour(item.value)}
                         accessibilityRole="radio"
@@ -483,7 +819,11 @@ export default function NotificationSettingsScreen() {
                         <Text
                           style={[
                             styles.timeOptionText,
-                            selectedHour === item.value && styles.timeOptionTextSelected,
+                            { color: colors.text.primary },
+                            selectedHour === item.value && {
+                              color: colors.text.inverse,
+                              fontWeight: '600',
+                            },
                           ]}
                         >
                           {item.label}
@@ -503,7 +843,9 @@ export default function NotificationSettingsScreen() {
 
                 {/* Minute Picker */}
                 <View style={styles.timeColumn}>
-                  <Text style={styles.timeColumnLabel}>Minute</Text>
+                  <Text style={[styles.timeColumnLabel, { color: colors.text.tertiary }]}>
+                    Minute
+                  </Text>
                   <FlatList
                     data={MINUTE_OPTIONS}
                     keyExtractor={(item) => item.value.toString()}
@@ -511,7 +853,10 @@ export default function NotificationSettingsScreen() {
                       <TouchableOpacity
                         style={[
                           styles.timeOption,
-                          selectedMinute === item.value && styles.timeOptionSelected,
+                          selectedMinute === item.value && [
+                            styles.timeOptionSelected,
+                            { backgroundColor: colors.interactive.primary },
+                          ],
                         ]}
                         onPress={() => setSelectedMinute(item.value)}
                         accessibilityRole="radio"
@@ -521,7 +866,11 @@ export default function NotificationSettingsScreen() {
                         <Text
                           style={[
                             styles.timeOptionText,
-                            selectedMinute === item.value && styles.timeOptionTextSelected,
+                            { color: colors.text.primary },
+                            selectedMinute === item.value && {
+                              color: colors.text.inverse,
+                              fontWeight: '600',
+                            },
                           ]}
                         >
                           :{item.label}
@@ -534,8 +883,13 @@ export default function NotificationSettingsScreen() {
                 </View>
               </View>
 
-              <View style={styles.selectedTimePreview}>
-                <Text style={styles.selectedTimeText}>
+              <View
+                style={[
+                  styles.selectedTimePreview,
+                  { borderTopColor: colors.border.subtle },
+                ]}
+              >
+                <Text style={[styles.selectedTimeText, { color: colors.interactive.primary }]}>
                   {formatTime(selectedHour, selectedMinute)}
                 </Text>
               </View>
@@ -550,91 +904,79 @@ export default function NotificationSettingsScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#F2F2F7',
   },
   container: {
     flex: 1,
-    backgroundColor: '#F2F2F7',
   },
   contentContainer: {
-    paddingVertical: 20,
+    paddingVertical: spacing.lg,
   },
   // Permission Banner
   permissionBanner: {
     flexDirection: 'row',
-    backgroundColor: '#FFF3CD',
-    marginHorizontal: 16,
-    marginBottom: 20,
-    padding: 16,
-    borderRadius: 12,
+    marginHorizontal: spacing.base,
+    marginBottom: spacing.lg,
+    padding: spacing.base,
+    borderRadius: borderRadius.md,
     borderWidth: 1,
-    borderColor: '#FFE69C',
   },
   permissionBannerIcon: {
-    fontSize: 24,
-    marginRight: 12,
+    fontSize: spacing.xl,
+    marginRight: spacing.md,
   },
   permissionBannerContent: {
     flex: 1,
   },
   permissionBannerText: {
-    fontSize: 14,
-    color: '#664D03',
-    lineHeight: 20,
-    marginBottom: 12,
+    fontSize: typography.caption.fontSize + 1,
+    lineHeight: spacing.lg,
+    marginBottom: spacing.md,
   },
   openSettingsButton: {
-    backgroundColor: '#007AFF',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 8,
+    paddingHorizontal: spacing.base,
+    paddingVertical: spacing.sm,
+    borderRadius: borderRadius.sm,
     alignSelf: 'flex-start',
   },
   openSettingsButtonText: {
-    color: '#FFFFFF',
-    fontSize: 14,
+    fontSize: typography.caption.fontSize + 1,
     fontWeight: '600',
   },
   // Sections
   section: {
-    marginBottom: 24,
+    marginBottom: spacing.xl,
   },
   sectionTitle: {
-    fontSize: 13,
+    fontSize: typography.caption.fontSize,
     fontWeight: '600',
-    color: '#6D6D72',
     textTransform: 'uppercase',
-    marginLeft: 16,
-    marginBottom: 8,
+    marginLeft: spacing.base,
+    marginBottom: spacing.sm,
   },
   sectionContent: {
-    backgroundColor: '#FFFFFF',
     borderTopWidth: 1,
     borderBottomWidth: 1,
-    borderColor: '#E5E5EA',
   },
   // Toggle Item
   toggleItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.base,
   },
   toggleIcon: {
-    fontSize: 24,
-    marginRight: 12,
+    fontSize: spacing.xl,
+    marginRight: spacing.md,
   },
   toggleInfo: {
     flex: 1,
   },
   toggleLabel: {
-    fontSize: 16,
+    fontSize: typography.body.fontSize,
     fontWeight: '500',
-    color: '#000000',
   },
   toggleStatus: {
-    fontSize: 13,
-    color: '#8E8E93',
+    fontSize: typography.caption.fontSize,
     marginTop: 2,
   },
   // Frequency Item
@@ -642,130 +984,116 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-  },
-  borderTop: {
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: '#E5E5EA',
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.base,
   },
   frequencyLabel: {
-    fontSize: 16,
-    color: '#000000',
+    fontSize: typography.body.fontSize,
   },
   frequencyValue: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   frequencyText: {
-    fontSize: 16,
-    color: '#8E8E93',
-    marginRight: 8,
+    fontSize: typography.body.fontSize,
+    marginRight: spacing.sm,
   },
-  disabledText: {
-    color: '#C7C7CC',
+  disabledOpacity: {
+    opacity: 0.4,
   },
   chevron: {
-    fontSize: 20,
-    color: '#C7C7CC',
+    fontSize: spacing.lg,
   },
   // Preview Item
   previewItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.base,
   },
   previewIcon: {
-    fontSize: 20,
-    marginRight: 12,
+    fontSize: spacing.lg,
+    marginRight: spacing.md,
   },
   previewInfo: {
     flex: 1,
   },
   previewText: {
-    fontSize: 16,
-    color: '#000000',
+    fontSize: typography.body.fontSize,
   },
   // Hint
   hint: {
-    fontSize: 13,
-    color: '#8E8E93',
+    fontSize: typography.caption.fontSize,
     textAlign: 'center',
-    paddingHorizontal: 32,
-    marginTop: 8,
+    paddingHorizontal: spacing['2xl'],
+    marginTop: spacing.sm,
+  },
+  // Duplicate message
+  duplicateMessage: {
+    fontSize: typography.caption.fontSize,
+    marginTop: spacing.sm,
+    marginHorizontal: spacing.base,
   },
   // Modal styles
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
     justifyContent: 'flex-end',
   },
   modalContent: {
-    backgroundColor: '#FFFFFF',
-    borderTopLeftRadius: 16,
-    borderTopRightRadius: 16,
+    borderTopLeftRadius: borderRadius.lg,
+    borderTopRightRadius: borderRadius.lg,
     maxHeight: '70%',
   },
   modalHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 16,
+    paddingHorizontal: spacing.base,
+    paddingVertical: spacing.base,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#E5E5EA',
   },
   modalTitle: {
-    fontSize: 17,
+    fontSize: typography.body.fontSize + 1,
     fontWeight: '600',
-    color: '#000000',
   },
   modalClose: {
-    fontSize: 17,
-    color: '#007AFF',
+    fontSize: typography.body.fontSize + 1,
   },
   modalCancel: {
-    fontSize: 17,
-    color: '#007AFF',
+    fontSize: typography.body.fontSize + 1,
   },
   modalDone: {
-    fontSize: 17,
-    color: '#007AFF',
+    fontSize: typography.body.fontSize + 1,
     fontWeight: '600',
   },
   modalOption: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 14,
-    paddingHorizontal: 16,
+    paddingVertical: spacing.md + 2,
+    paddingHorizontal: spacing.base,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#E5E5EA',
   },
   modalOptionText: {
-    fontSize: 17,
-    color: '#000000',
+    fontSize: typography.body.fontSize + 1,
   },
   checkmark: {
-    fontSize: 17,
-    color: '#007AFF',
+    fontSize: typography.body.fontSize + 1,
     fontWeight: '600',
   },
   // Time Picker
   timePickerContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
-    paddingVertical: 16,
+    paddingVertical: spacing.base,
   },
   timeColumn: {
     alignItems: 'center',
-    marginHorizontal: 20,
+    marginHorizontal: spacing.lg,
   },
   timeColumnLabel: {
-    fontSize: 13,
-    color: '#8E8E93',
-    marginBottom: 8,
+    fontSize: typography.caption.fontSize,
+    marginBottom: spacing.sm,
     textTransform: 'uppercase',
   },
   timeList: {
@@ -780,28 +1108,19 @@ const styles = StyleSheet.create({
     height: 44,
     justifyContent: 'center',
     alignItems: 'center',
-    borderRadius: 8,
+    borderRadius: borderRadius.sm,
   },
-  timeOptionSelected: {
-    backgroundColor: '#007AFF',
-  },
+  timeOptionSelected: {},
   timeOptionText: {
-    fontSize: 20,
-    color: '#000000',
-  },
-  timeOptionTextSelected: {
-    color: '#FFFFFF',
-    fontWeight: '600',
+    fontSize: spacing.lg,
   },
   selectedTimePreview: {
     alignItems: 'center',
-    paddingVertical: 16,
+    paddingVertical: spacing.base,
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: '#E5E5EA',
   },
   selectedTimeText: {
-    fontSize: 32,
+    fontSize: spacing['2xl'],
     fontWeight: '600',
-    color: '#007AFF',
   },
 });

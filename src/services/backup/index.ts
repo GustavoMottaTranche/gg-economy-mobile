@@ -57,3 +57,5 @@ export {
   type RestoreProgressCallback,
   type RestoreOptions,
 } from './RestoreService';
+
+export { createCustomServerBackup, restoreFromCustomServer } from './CustomServerIntegration';

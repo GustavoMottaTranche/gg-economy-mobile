@@ -314,7 +314,7 @@ describe('List Optimization Utilities', () => {
 
   describe('memoize', () => {
     it('should cache function results', () => {
-      const fn = jest.fn((x: number) => x * 2);
+      const fn = jest.fn((x: unknown) => (x as number) * 2);
       const memoizedFn = memoize(fn);
 
       expect(memoizedFn(5)).toBe(10);
@@ -323,7 +323,7 @@ describe('List Optimization Utilities', () => {
     });
 
     it('should compute new results for different arguments', () => {
-      const fn = jest.fn((x: number) => x * 2);
+      const fn = jest.fn((x: unknown) => (x as number) * 2);
       const memoizedFn = memoize(fn);
 
       expect(memoizedFn(5)).toBe(10);
@@ -332,7 +332,7 @@ describe('List Optimization Utilities', () => {
     });
 
     it('should handle multiple arguments', () => {
-      const fn = jest.fn((a: number, b: number) => a + b);
+      const fn = jest.fn((a: unknown, b: unknown) => (a as number) + (b as number));
       const memoizedFn = memoize(fn);
 
       expect(memoizedFn(1, 2)).toBe(3);
@@ -343,7 +343,7 @@ describe('List Optimization Utilities', () => {
     });
 
     it('should handle object arguments', () => {
-      const fn = jest.fn((obj: { x: number }) => obj.x * 2);
+      const fn = jest.fn((obj: unknown) => (obj as { x: number }).x * 2);
       const memoizedFn = memoize(fn);
 
       expect(memoizedFn({ x: 5 })).toBe(10);
@@ -407,7 +407,7 @@ describe('List Optimization Utilities', () => {
 
     it('should return false if loading completes before delay', () => {
       const { result, rerender } = renderHook(
-        ({ isLoading }) => useDelayedLoading(isLoading, 500),
+        (props: { isLoading: boolean }) => useDelayedLoading(props.isLoading, 500),
         { initialProps: { isLoading: true } }
       );
 
@@ -436,7 +436,7 @@ describe('List Optimization Utilities', () => {
 
     it('should reset when loading stops and starts again', () => {
       const { result, rerender } = renderHook(
-        ({ isLoading }) => useDelayedLoading(isLoading, 500),
+        (props: { isLoading: boolean }) => useDelayedLoading(props.isLoading, 500),
         { initialProps: { isLoading: true } }
       );
 

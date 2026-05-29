@@ -28,6 +28,8 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
+      "navigationBarColor": "#FFFFFF",
+      "navigationBarStyle": "dark",
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
       "permissions": [
@@ -120,6 +122,7 @@
       "expo-secure-store",
       "expo-localization",
       "expo-web-browser",
+      "expo-navigation-bar",
       [
         "expo-router",
         {
@@ -138,8 +141,8 @@
         "projectId": "8330e90e-6a7a-49a2-8b8d-940d89aeddbd"
       },
       "googleOAuth": {
-        "webClientId": "YOUR_WEB_CLIENT_ID.apps.googleusercontent.com",
-        "androidClientId": "YOUR_ANDROID_CLIENT_ID.apps.googleusercontent.com",
+        "webClientId": "316079469489-7oq375t2g6ph8b2ahq56611pjejc3oq7.apps.googleusercontent.com",
+        "androidClientId": "316079469489-ht2ts297l15agje9fm8n3vfck093kb1a.apps.googleusercontent.com",
         "iosClientId": "YOUR_IOS_CLIENT_ID.apps.googleusercontent.com"
       },
       "router": {

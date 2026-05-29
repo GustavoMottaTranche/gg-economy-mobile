@@ -13,8 +13,8 @@ import * as FileSystem from 'expo-file-system/legacy';
 import { DATABASE_NAME, resetDbClient, getExpoDatabase } from '../../db/client';
 import { runMigrations, getCurrentSchemaVersion } from '../../db/migrate';
 import { oAuthService, OAuthError } from './OAuthService';
-import { googleDriveClient, DriveError, BACKUP_CONFIG } from './GoogleDriveClient';
-import { backupService, BackupError, parseBackupTimestamp } from './BackupService';
+import { googleDriveClient, DriveError } from './GoogleDriveClient';
+import { parseBackupTimestamp } from './BackupService';
 import type { BackupMetadata, RestoreResult } from '../../types/backup';
 
 /**

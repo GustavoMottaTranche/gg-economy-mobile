@@ -103,19 +103,16 @@ export class OAuthService {
 
   /**
    * Get the appropriate client ID based on platform
+   *
+   * IMPORTANT: expo-auth-session on Android requires the WEB client ID
+   * for the authorization request and token exchange (PKCE flow).
+   * The Android client ID is only used by Google to validate the app's
+   * package name and SHA-1 fingerprint, but the actual OAuth flow
+   * must use the Web client ID.
    */
   private getClientId(): string {
     const clientIds = getGoogleClientIds();
-
-    // In Expo, we can detect platform at runtime
-    // For now, return the web client ID which works for development
-    // In production, use platform-specific client IDs
-    if (clientIds.androidClientId) {
-      return clientIds.androidClientId;
-    }
-    if (clientIds.iosClientId) {
-      return clientIds.iosClientId;
-    }
+    // Always use the web client ID for expo-auth-session OAuth flow
     return clientIds.webClientId;
   }
 

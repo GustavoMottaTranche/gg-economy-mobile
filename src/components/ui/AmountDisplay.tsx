@@ -11,6 +11,7 @@
 import React, { memo, useMemo } from 'react';
 import { Text, StyleSheet, TextStyle, ViewStyle, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
+import { useThemeColors } from '../../hooks/useThemeColors';
 import {
   formatCurrencyLocale,
   getCurrentLocale,
@@ -57,15 +58,6 @@ export interface AmountDisplayProps {
   /** Test ID for testing */
   testID?: string;
 }
-
-/**
- * Color constants for amount types
- */
-const COLORS = {
-  positive: '#166534', // Green for income
-  negative: '#991b1b', // Red for expenses
-  neutral: '#374151', // Gray for neutral
-};
 
 /**
  * Font sizes for different size variants
@@ -130,9 +122,10 @@ function AmountDisplayComponent({
   containerStyle,
   numberOfLines = 1,
   testID,
-}: AmountDisplayProps): JSX.Element {
+}: AmountDisplayProps): React.JSX.Element {
   const { t } = useTranslation();
   const locale = getCurrentLocale();
+  const themeColors = useThemeColors();
 
   // Convert from cents if needed
   const displayAmount = inCents ? amount / 100 : amount;
@@ -141,18 +134,18 @@ function AmountDisplayComponent({
   const textColor = useMemo(() => {
     switch (colorVariant) {
       case 'positive':
-        return COLORS.positive;
+        return themeColors.semantic.success.dark;
       case 'negative':
-        return COLORS.negative;
+        return themeColors.semantic.danger.dark;
       case 'neutral':
-        return COLORS.neutral;
+        return themeColors.text.primary;
       case 'auto':
       default:
-        if (amount > 0) return COLORS.positive;
-        if (amount < 0) return COLORS.negative;
-        return COLORS.neutral;
+        if (amount > 0) return themeColors.semantic.success.dark;
+        if (amount < 0) return themeColors.semantic.danger.dark;
+        return themeColors.text.primary;
     }
-  }, [colorVariant, amount]);
+  }, [colorVariant, amount, themeColors]);
 
   // Format the amount
   const formattedAmount = useMemo(() => {
@@ -238,7 +231,7 @@ export const AmountDisplay = memo(AmountDisplayComponent);
  */
 export const IncomeAmount = memo(function IncomeAmount(
   props: Omit<AmountDisplayProps, 'colorVariant'>
-): JSX.Element {
+): React.JSX.Element {
   return <AmountDisplay {...props} colorVariant="positive" />;
 });
 
@@ -247,7 +240,7 @@ export const IncomeAmount = memo(function IncomeAmount(
  */
 export const ExpenseAmount = memo(function ExpenseAmount(
   props: Omit<AmountDisplayProps, 'colorVariant'>
-): JSX.Element {
+): React.JSX.Element {
   return <AmountDisplay {...props} colorVariant="negative" />;
 });
 
@@ -256,7 +249,7 @@ export const ExpenseAmount = memo(function ExpenseAmount(
  */
 export const BalanceAmount = memo(function BalanceAmount(
   props: Omit<AmountDisplayProps, 'colorVariant' | 'showSign'>
-): JSX.Element {
+): React.JSX.Element {
   return <AmountDisplay {...props} colorVariant="auto" showSign />;
 });
 

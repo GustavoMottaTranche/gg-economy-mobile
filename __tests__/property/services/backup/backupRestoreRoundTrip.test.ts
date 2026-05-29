@@ -269,9 +269,6 @@ function areDatabaseStatesEquivalent(
 }
 
 describe('Property 4: Backup/Restore Round-Trip', () => {
-  let backupService: BackupService;
-  let restoreService: RestoreService;
-
   beforeEach(() => {
     // Clear all mock storages
     mockFileStorage.clear();
@@ -282,9 +279,9 @@ describe('Property 4: Backup/Restore Round-Trip', () => {
       schemaVersion: 1,
     };
 
-    // Create fresh service instances
-    backupService = new BackupService();
-    restoreService = new RestoreService();
+    // Create fresh service instances to ensure mocks are properly initialized
+    new BackupService();
+    new RestoreService();
 
     jest.clearAllMocks();
   });
@@ -690,7 +687,7 @@ describe('Property 4: Backup/Restore Round-Trip', () => {
         const restoredContent = await FileSystem.readAsStringAsync(dbPath);
         const restoredState = deserializeDatabaseState(restoredContent);
 
-        expect(restoredState.transactions[0].description).toBe(description);
+        expect(restoredState.transactions[0]!.description).toBe(description);
       }),
       { numRuns: 100 }
     );
@@ -768,7 +765,7 @@ describe('Property 4: Backup/Restore Round-Trip', () => {
         const restoredContent = await FileSystem.readAsStringAsync(dbPath);
         const restoredState = deserializeDatabaseState(restoredContent);
 
-        expect(restoredState.transactions[0].amount).toBe(amount);
+        expect(restoredState.transactions[0]!.amount).toBe(amount);
       }),
       { numRuns: 100 }
     );

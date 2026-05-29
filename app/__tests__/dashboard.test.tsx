@@ -1,7 +1,8 @@
 /**
  * Dashboard Screen Tests
  *
- * Tests for the main Dashboard screen component.
+ * Tests for the main Dashboard screen component with the new layout:
+ * MonthSelector → SummaryCard → ExpenseChart with ChartFilter → Seção_Fixo → Seção_Variável
  */
 
 import React from 'react';
@@ -32,10 +33,13 @@ jest.mock('react-i18next', () => ({
         'dashboard.last6Months': 'Last 6 months',
         'dashboard.last12Months': 'Last 12 months',
         'dashboard.viewAll': 'View all',
+        'dashboard.futureMonth': 'Future',
         'common.error': 'Error',
         'common.retry': 'Retry',
         'common.previous': 'Previous',
         'common.next': 'Next',
+        'common.loading': 'Loading',
+        'common.refresh': 'Refresh',
         'empty.transactionsHint': 'Import a statement or add manually',
         'fileImport.selectFile': 'Select File',
         'transactions.referenceMonth': 'Reference month',
@@ -75,8 +79,34 @@ jest.mock('../../src/i18n', () => ({
 // Mock useDashboardData hook
 const mockRefresh = jest.fn();
 const mockSetTrendPeriod = jest.fn();
+const mockSetChartFilter = jest.fn();
 const mockPreviousMonth = jest.fn();
 const mockNextMonth = jest.fn();
+
+// Mock paymentStatusStore
+const mockLoadPendingItemsForMonth = jest.fn().mockResolvedValue(undefined);
+const mockTogglePaymentStatus = jest.fn().mockResolvedValue(undefined);
+const mockLoadPaymentTotalsForMonth = jest.fn().mockResolvedValue(undefined);
+jest.mock('../../src/stores/paymentStatusStore', () => {
+  const mockState = {
+    loadPendingItemsForMonth: jest.fn().mockResolvedValue(undefined),
+    togglePaymentStatus: jest.fn().mockResolvedValue(undefined),
+    loadPaymentTotalsForMonth: jest.fn().mockResolvedValue(undefined),
+    pendingItems: {},
+    paymentTotals: {},
+    isLoading: false,
+    error: null,
+  };
+  const usePaymentStatusStore = (selector: (state: unknown) => unknown) => {
+    return selector ? selector(mockState) : mockState;
+  };
+  usePaymentStatusStore.getState = () => mockState;
+  return {
+    usePaymentStatusStore,
+    usePendingItems: () => [],
+    usePaymentTotals: () => null,
+  };
+});
 
 const mockDashboardData = {
   summary: {
@@ -93,9 +123,10 @@ const mockDashboardData = {
       categoryType: 'expense',
       categoryColor: '#FF5733',
       categoryIcon: 'utensils',
+      expenseGroup: 'variable',
       total: 150000,
       count: 25,
-      percentage: 42.86,
+      percentage: 43,
     },
     {
       categoryId: 'cat-2',
@@ -103,11 +134,64 @@ const mockDashboardData = {
       categoryType: 'expense',
       categoryColor: '#33FF57',
       categoryIcon: 'car',
+      expenseGroup: 'variable',
       total: 100000,
       count: 15,
-      percentage: 28.57,
+      percentage: 29,
+    },
+    {
+      categoryId: 'cat-3',
+      categoryName: 'Rent',
+      categoryType: 'expense',
+      categoryColor: '#3357FF',
+      categoryIcon: 'home',
+      expenseGroup: 'fixed',
+      total: 100000,
+      count: 1,
+      percentage: 29,
     },
   ],
+  fixedBreakdown: [
+    {
+      categoryId: 'cat-3',
+      categoryName: 'Rent',
+      categoryType: 'expense',
+      categoryColor: '#3357FF',
+      categoryIcon: 'home',
+      expenseGroup: 'fixed',
+      total: 100000,
+      count: 1,
+      percentage: 100,
+    },
+  ],
+  variableBreakdown: [
+    {
+      categoryId: 'cat-1',
+      categoryName: 'Food',
+      categoryType: 'expense',
+      categoryColor: '#FF5733',
+      categoryIcon: 'utensils',
+      expenseGroup: 'variable',
+      total: 150000,
+      count: 25,
+      percentage: 60,
+    },
+    {
+      categoryId: 'cat-2',
+      categoryName: 'Transport',
+      categoryType: 'expense',
+      categoryColor: '#33FF57',
+      categoryIcon: 'car',
+      expenseGroup: 'variable',
+      total: 100000,
+      count: 15,
+      percentage: 40,
+    },
+  ],
+  fixedTotal: 100000,
+  variableTotal: 250000,
+  chartFilter: 'all' as const,
+  setChartFilter: mockSetChartFilter,
   incomeBreakdown: [],
   trendData: [
     { month: '2023-11', income: 450000, expenses: 300000, balance: 150000 },
@@ -127,31 +211,71 @@ const mockDashboardData = {
 };
 
 jest.mock('../../src/hooks/useDashboardData', () => ({
+  __esModule: true,
   useDashboardData: () => mockDashboardData,
 }));
 
-// Mock chart components
-jest.mock('../../src/components/charts/PieChart', () => ({
-  DonutChart: ({ testID }: { testID?: string }) => {
-    const { View, Text } = require('react-native');
-    return (
-      <View testID={testID}>
-        <Text>Mocked DonutChart</Text>
-      </View>
-    );
+// Mock weeklyRecurringStore (imported by useDashboardData)
+jest.mock('../../src/stores/weeklyRecurringStore', () => ({
+  useWeeklyRecurringStore: jest.fn(() => ({
+    groups: [],
+    occurrences: [],
+    expandedGroupIds: new Set(),
+    toggleGroupExpansion: jest.fn(),
+    collapseAllGroups: jest.fn(),
+    loadOccurrencesForMonth: jest.fn(),
+    updateOccurrence: jest.fn(),
+  })),
+  useWeeklyMonthlyTotal: () => 0,
+}));
+
+// Mock db schema to prevent real schema access
+jest.mock('../../src/db/schema', () => ({
+  transactions: {
+    referenceMonth: 'reference_month',
+    amount: 'amount',
+    isExcludedFromTotals: 'is_excluded_from_totals',
+    categoryId: 'category_id',
+    isPaid: 'is_paid',
+  },
+  categories: {
+    id: 'id',
+    name: 'name',
+    type: 'type',
+    color: 'color',
+    icon: 'icon',
+    expenseGroup: 'expense_group',
+  },
+  weeklyRecurringGroups: {
+    id: 'id',
+    categoryId: 'category_id',
+    name: 'name',
+    defaultAmount: 'default_amount',
+  },
+  weeklyOccurrences: {
+    id: 'id',
+    weeklyGroupId: 'weekly_group_id',
+    amount: 'amount',
+    referenceMonth: 'reference_month',
+    isPaid: 'is_paid',
   },
 }));
 
-jest.mock('../../src/components/charts/BarChart', () => ({
-  BarChart: ({ testID }: { testID?: string }) => {
-    const { View, Text } = require('react-native');
-    return (
-      <View testID={testID}>
-        <Text>Mocked BarChart</Text>
-      </View>
-    );
-  },
-}));
+// Mock react-native-svg for chart rendering
+jest.mock('react-native-svg', () => {
+  const { View } = require('react-native');
+  return {
+    __esModule: true,
+    default: ({ children, ...props }: any) => <View {...props}>{children}</View>,
+    Svg: ({ children, ...props }: any) => <View {...props}>{children}</View>,
+    G: ({ children, ...props }: any) => <View {...props}>{children}</View>,
+    Path: (props: any) => <View {...props} />,
+    Circle: (props: any) => <View {...props} />,
+    Rect: (props: any) => <View {...props} />,
+    Line: (props: any) => <View {...props} />,
+    Text: (props: any) => <View {...props} />,
+  };
+});
 
 // Import the component after mocks
 import DashboardScreen from '../(tabs)/index';
@@ -164,11 +288,13 @@ describe('DashboardScreen', () => {
   it('renders correctly with data', () => {
     render(<DashboardScreen />);
 
-    // Check main sections are rendered
+    // Check main sections are rendered in correct order
     expect(screen.getByTestId('dashboard-month-selector')).toBeTruthy();
-    expect(screen.getByTestId('dashboard-summary')).toBeTruthy();
-    expect(screen.getByTestId('dashboard-category-breakdown')).toBeTruthy();
-    expect(screen.getByTestId('dashboard-trend-chart')).toBeTruthy();
+    expect(screen.getByTestId('dashboard-expense-summary')).toBeTruthy();
+    expect(screen.getByTestId('dashboard-chart-filter')).toBeTruthy();
+    expect(screen.getByTestId('dashboard-expense-chart')).toBeTruthy();
+    expect(screen.getByTestId('dashboard-fixed-section')).toBeTruthy();
+    expect(screen.getByTestId('dashboard-variable-section')).toBeTruthy();
   });
 
   it('renders month selector with correct month', () => {
@@ -195,52 +321,40 @@ describe('DashboardScreen', () => {
     expect(mockNextMonth).toHaveBeenCalledTimes(1);
   });
 
-  it('navigates to transactions when category is pressed', () => {
-    render(<DashboardScreen />);
-
-    const foodCategory = screen.getByTestId('dashboard-category-breakdown-category-cat-1');
-    fireEvent.press(foodCategory);
-
-    expect(mockPush).toHaveBeenCalledWith({
-      pathname: '/transactions',
-      params: {
-        categoryId: 'cat-1',
-        categoryName: 'Food',
-        month: '2024-01',
-      },
-    });
-  });
-
-  it('changes trend period when period button is pressed', () => {
-    render(<DashboardScreen />);
-
-    const period6Button = screen.getByTestId('dashboard-trend-chart-period-6');
-    fireEvent.press(period6Button);
-
-    expect(mockSetTrendPeriod).toHaveBeenCalledWith(6);
-  });
-
   it('renders summary card with correct values', () => {
     render(<DashboardScreen />);
 
-    expect(screen.getByText('Balance')).toBeTruthy();
-    expect(screen.getByText('Income')).toBeTruthy();
-    expect(screen.getByText('Expenses')).toBeTruthy();
+    expect(screen.getByText('Pago')).toBeTruthy();
+    expect(screen.getByText('Pendente')).toBeTruthy();
+    expect(screen.getByText('Total previsto')).toBeTruthy();
   });
 
-  it('renders category breakdown', () => {
+  it('renders collapsible sections with correct titles', () => {
     render(<DashboardScreen />);
 
-    expect(screen.getByText('By Category')).toBeTruthy();
+    expect(screen.getByTestId('dashboard-fixed-section-header')).toBeTruthy();
+    expect(screen.getByTestId('dashboard-variable-section-header')).toBeTruthy();
+  });
+
+  it('renders fixed section categories', () => {
+    render(<DashboardScreen />);
+
+    expect(screen.getByText('Rent')).toBeTruthy();
+  });
+
+  it('renders variable section categories', () => {
+    render(<DashboardScreen />);
+
     expect(screen.getByText('Food')).toBeTruthy();
     expect(screen.getByText('Transport')).toBeTruthy();
   });
 
-  it('renders trend chart', () => {
+  it('renders chart filter with all options', () => {
     render(<DashboardScreen />);
 
-    expect(screen.getByText('Trend')).toBeTruthy();
-    expect(screen.getByTestId('dashboard-trend-chart-chart')).toBeTruthy();
+    expect(screen.getByText('Todos')).toBeTruthy();
+    expect(screen.getByText('Somente Fixo')).toBeTruthy();
+    expect(screen.getByText('Somente Variável')).toBeTruthy();
   });
 });
 

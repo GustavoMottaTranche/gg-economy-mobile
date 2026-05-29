@@ -8,11 +8,7 @@
  */
 
 import fc from 'fast-check';
-import {
-  DedupeEngine,
-  FileTransactions,
-  CrossFileDedupeResult,
-} from '../../../services/import/DedupeEngine';
+import { DedupeEngine, FileTransactions } from '../../../services/import/DedupeEngine';
 import { RawTransaction } from '../../../types/transaction';
 
 describe('DedupeEngine Cross-File Property Tests', () => {
@@ -212,8 +208,8 @@ describe('DedupeEngine Cross-File Property Tests', () => {
 
             // Should detect as duplicate due to FITID match
             expect(result.crossFileDuplicates.length).toBe(1);
-            expect(result.crossFileDuplicates[0].matchReason).toBe('fitid');
-            expect(result.crossFileDuplicates[0].confidence).toBe(1.0);
+            expect(result.crossFileDuplicates[0]!.matchReason).toBe('fitid');
+            expect(result.crossFileDuplicates[0]!.confidence).toBe(1.0);
             expect(result.totalUnique).toBe(1);
           }
         ),
@@ -245,8 +241,8 @@ describe('DedupeEngine Cross-File Property Tests', () => {
 
             // Should detect as duplicate
             expect(result.crossFileDuplicates.length).toBe(1);
-            expect(result.crossFileDuplicates[0].matchReason).toBe('date_amount_description');
-            expect(result.crossFileDuplicates[0].confidence).toBeGreaterThanOrEqual(0.9);
+            expect(result.crossFileDuplicates[0]!.matchReason).toBe('date_amount_description');
+            expect(result.crossFileDuplicates[0]!.confidence).toBeGreaterThanOrEqual(0.9);
             expect(result.totalUnique).toBe(1);
           }
         ),
@@ -299,7 +295,7 @@ describe('DedupeEngine Cross-File Property Tests', () => {
 
           expect(result.crossFileDuplicates.length).toBe(1);
 
-          const duplicate = result.crossFileDuplicates[0];
+          const duplicate = result.crossFileDuplicates[0]!;
           expect(duplicate.originalFileId).toBe('source-file');
           expect(duplicate.duplicateFileId).toBe('duplicate-file');
         }),
@@ -314,16 +310,21 @@ describe('DedupeEngine Cross-File Property Tests', () => {
           transactionArbitrary,
           transactionArbitrary,
           (sharedTx, uniqueTx1, uniqueTx2) => {
-            // Make unique transactions actually unique
+            // Make unique transactions actually unique by using distinct fitIds,
+            // different descriptions, and different amounts to avoid accidental collisions
             const unique1: RawTransaction = {
               ...uniqueTx1,
-              fitId: 'unique-1',
-              amount: uniqueTx1.amount + 50000,
+              fitId: 'unique-fitid-1',
+              description: 'completely-unique-description-one',
+              amount: 99901,
+              date: new Date('2019-03-15T00:00:00.000Z'),
             };
             const unique2: RawTransaction = {
               ...uniqueTx2,
-              fitId: 'unique-2',
-              amount: uniqueTx2.amount + 60000,
+              fitId: 'unique-fitid-2',
+              description: 'completely-unique-description-two',
+              amount: 99902,
+              date: new Date('2019-06-20T00:00:00.000Z'),
             };
 
             const files: FileTransactions[] = [
@@ -346,10 +347,10 @@ describe('DedupeEngine Cross-File Property Tests', () => {
             expect(result.totalUnique).toBe(3);
 
             // File 1 should have 2 transactions (shared + unique1)
-            expect(result.fileResults.get('file-1')?.length).toBe(2);
+            expect(result.fileResults.get('file-1')!.length).toBe(2);
 
             // File 2 should have 1 transaction (only unique2, shared is duplicate)
-            expect(result.fileResults.get('file-2')?.length).toBe(1);
+            expect(result.fileResults.get('file-2')!.length).toBe(1);
           }
         ),
         { numRuns: 100 }
@@ -469,11 +470,11 @@ describe('DedupeEngine Cross-File Property Tests', () => {
 
           // All results should be identical
           for (let i = 1; i < results.length; i++) {
-            expect(results[i].totalUnique).toBe(results[0].totalUnique);
-            expect(results[i].crossFileDuplicates.length).toBe(
-              results[0].crossFileDuplicates.length
+            expect(results[i]!.totalUnique).toBe(results[0]!.totalUnique);
+            expect(results[i]!.crossFileDuplicates.length).toBe(
+              results[0]!.crossFileDuplicates.length
             );
-            expect(results[i].totalProcessed).toBe(results[0].totalProcessed);
+            expect(results[i]!.totalProcessed).toBe(results[0]!.totalProcessed);
           }
         }),
         { numRuns: 100 }

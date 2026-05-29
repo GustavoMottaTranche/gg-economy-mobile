@@ -99,10 +99,10 @@ describe('errorLogger', () => {
       const sanitized = sanitizeContext(context);
       const items = sanitized?.items as Array<Record<string, unknown>>;
 
-      expect(items[0].name).toBe('Item 1');
-      expect(items[0].secretKey).toBe('[REDACTED]');
-      expect(items[1].name).toBe('Item 2');
-      expect(items[1].secretKey).toBe('[REDACTED]');
+      expect(items[0]!.name).toBe('Item 1');
+      expect(items[0]!.secretKey).toBe('[REDACTED]');
+      expect(items[1]!.name).toBe('Item 2');
+      expect(items[1]!.secretKey).toBe('[REDACTED]');
     });
   });
 
@@ -113,10 +113,10 @@ describe('errorLogger', () => {
 
       const log = getErrorLog();
       expect(log).toHaveLength(1);
-      expect(log[0].message).toBe('Test error');
-      expect(log[0].errorCode).toBe('DATABASE_ERROR');
-      expect(log[0].name).toBe('AppError');
-      expect(log[0].recoverable).toBe(true);
+      expect(log[0]!.message).toBe('Test error');
+      expect(log[0]!.errorCode).toBe('DATABASE_ERROR');
+      expect(log[0]!.name).toBe('AppError');
+      expect(log[0]!.recoverable).toBe(true);
     });
 
     it('should log a regular Error', () => {
@@ -125,8 +125,8 @@ describe('errorLogger', () => {
 
       const log = getErrorLog();
       expect(log).toHaveLength(1);
-      expect(log[0].message).toBe('Regular error');
-      expect(log[0].errorCode).toBe('UNKNOWN_ERROR');
+      expect(log[0]!.message).toBe('Regular error');
+      expect(log[0]!.errorCode).toBe('UNKNOWN_ERROR');
     });
 
     it('should sanitize context in logged errors', () => {
@@ -140,8 +140,8 @@ describe('errorLogger', () => {
       logError(error);
 
       const log = getErrorLog();
-      expect(log[0].context?.accessToken).toBe('[REDACTED]');
-      expect(log[0].context?.operation).toBe('test');
+      expect(log[0]!.context?.accessToken).toBe('[REDACTED]');
+      expect(log[0]!.context?.operation).toBe('test');
     });
 
     it('should include timestamp', () => {
@@ -150,8 +150,8 @@ describe('errorLogger', () => {
       const after = new Date().toISOString();
 
       const log = getErrorLog();
-      expect(log[0].timestamp >= before).toBe(true);
-      expect(log[0].timestamp <= after).toBe(true);
+      expect(log[0]!.timestamp >= before).toBe(true);
+      expect(log[0]!.timestamp <= after).toBe(true);
     });
 
     it('should limit log size to MAX_LOG_ENTRIES', () => {
@@ -171,7 +171,7 @@ describe('errorLogger', () => {
 
       const log = getErrorLog();
       // Most recent error should be Error 109
-      expect(log[0].message).toBe('Error 109');
+      expect(log[0]!.message).toBe('Error 109');
     });
   });
 
@@ -181,14 +181,14 @@ describe('errorLogger', () => {
 
       const log = getErrorLog();
       expect(log).toHaveLength(1);
-      expect(log[0].message).toBe('String error');
+      expect(log[0]!.message).toBe('String error');
     });
 
     it('should use default message for null', () => {
       logUnknownError(null, 'Default message');
 
       const log = getErrorLog();
-      expect(log[0].message).toBe('Default message');
+      expect(log[0]!.message).toBe('Default message');
     });
   });
 
@@ -212,8 +212,8 @@ describe('errorLogger', () => {
 
       const recent = getRecentErrors(5);
       expect(recent).toHaveLength(5);
-      expect(recent[0].message).toBe('Error 19');
-      expect(recent[4].message).toBe('Error 15');
+      expect(recent[0]!.message).toBe('Error 19');
+      expect(recent[4]!.message).toBe('Error 15');
     });
 
     it('should return all errors if count exceeds log size', () => {
@@ -234,8 +234,8 @@ describe('errorLogger', () => {
 
       const dbErrors = getErrorsByCode('DATABASE_ERROR');
       expect(dbErrors).toHaveLength(2);
-      expect(dbErrors[0].message).toBe('DB error 2');
-      expect(dbErrors[1].message).toBe('DB error 1');
+      expect(dbErrors[0]!.message).toBe('DB error 2');
+      expect(dbErrors[1]!.message).toBe('DB error 1');
     });
 
     it('should return empty array if no matching errors', () => {
@@ -329,7 +329,7 @@ describe('errorLogger', () => {
 
       const log = getErrorLog();
       expect(log).toHaveLength(1);
-      expect(log[0].message).toBe('Async error');
+      expect(log[0]!.message).toBe('Async error');
     });
 
     it('should not log when function succeeds', async () => {

@@ -78,14 +78,15 @@ jest.mock('../../../../src/services/backup/BackupService', () => {
         /gg-economy-backup-(\d{4})(\d{2})(\d{2})-(\d{2})(\d{2})(\d{2})\.db$/
       );
       if (!match) return null;
-      const [, year, month, day, hours, minutes, seconds] = match;
+      const [, yearStr, monthStr, dayStr, hoursStr, minutesStr, secondsStr] = match;
+      if (!yearStr || !monthStr || !dayStr || !hoursStr || !minutesStr || !secondsStr) return null;
       return new Date(
-        parseInt(year, 10),
-        parseInt(month, 10) - 1,
-        parseInt(day, 10),
-        parseInt(hours, 10),
-        parseInt(minutes, 10),
-        parseInt(seconds, 10)
+        parseInt(yearStr, 10),
+        parseInt(monthStr, 10) - 1,
+        parseInt(dayStr, 10),
+        parseInt(hoursStr, 10),
+        parseInt(minutesStr, 10),
+        parseInt(secondsStr, 10)
       );
     }),
   };
@@ -152,10 +153,10 @@ describe('RestoreService', () => {
 
       expect(backups).toHaveLength(2);
       // Should be sorted newest first
-      expect(backups[0].id).toBe('file-2');
-      expect(backups[0].fileName).toBe('gg-economy-backup-20240115-103045.db');
-      expect(backups[0].sizeBytes).toBe(2048);
-      expect(backups[1].id).toBe('file-1');
+      expect(backups[0]!.id).toBe('file-2');
+      expect(backups[0]!.fileName).toBe('gg-economy-backup-20240115-103045.db');
+      expect(backups[0]!.sizeBytes).toBe(2048);
+      expect(backups[1]!.id).toBe('file-1');
     });
 
     it('should throw error when not authenticated', async () => {

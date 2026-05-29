@@ -34,7 +34,8 @@ export async function getAllOrigins() {
 export async function getOriginById(id: string) {
   const db = getDb();
   const results = await db.select().from(origins).where(eq(origins.id, id)).limit(1);
-  return results.length > 0 ? toOrigin(results[0]) : null;
+  const first = results[0];
+  return first ? toOrigin(first) : null;
 }
 
 /**
@@ -43,7 +44,8 @@ export async function getOriginById(id: string) {
 export async function getOriginByName(name: string) {
   const db = getDb();
   const results = await db.select().from(origins).where(eq(origins.name, name)).limit(1);
-  return results.length > 0 ? toOrigin(results[0]) : null;
+  const first = results[0];
+  return first ? toOrigin(first) : null;
 }
 
 /**
@@ -127,8 +129,9 @@ export async function getOriginWithTransactionCount(id: string) {
   const db = getDb();
 
   const originResult = await db.select().from(origins).where(eq(origins.id, id)).limit(1);
+  const firstOrigin = originResult[0];
 
-  if (originResult.length === 0) return null;
+  if (!firstOrigin) return null;
 
   const countResult = await db
     .select({ count: sql<number>`count(*)` })
@@ -136,7 +139,7 @@ export async function getOriginWithTransactionCount(id: string) {
     .where(eq(transactions.originId, id));
 
   return {
-    ...toOrigin(originResult[0]),
+    ...toOrigin(firstOrigin),
     transactionCount: countResult[0]?.count ?? 0,
   };
 }

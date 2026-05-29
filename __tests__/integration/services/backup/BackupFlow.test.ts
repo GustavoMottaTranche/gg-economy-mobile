@@ -313,10 +313,10 @@ describe('Backup Flow Integration', () => {
       const backups = await backupService.listBackups();
 
       expect(backups).toHaveLength(2);
-      expect(backups[0].id).toBe('backup-1');
-      expect(backups[0].fileName).toBe('gg-economy-backup-20240115-103045.db');
-      expect(backups[0].sizeBytes).toBe(1024);
-      expect(backups[0].createdAt).toBeInstanceOf(Date);
+      expect(backups[0]!.id).toBe('backup-1');
+      expect(backups[0]!.fileName).toBe('gg-economy-backup-20240115-103045.db');
+      expect(backups[0]!.sizeBytes).toBe(1024);
+      expect(backups[0]!.createdAt).toBeInstanceOf(Date);
     });
 
     it('should download backup file', async () => {

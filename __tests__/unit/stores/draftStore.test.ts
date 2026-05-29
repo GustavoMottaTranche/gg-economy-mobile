@@ -3,7 +3,7 @@
  *
  * Tests the draft state management with debounced auto-save.
  */
-import { act, renderHook, waitFor } from '@testing-library/react-native';
+import { act, renderHook } from '@testing-library/react-native';
 import {
   useDraftStore,
   useManualEntryDraft,
@@ -294,7 +294,7 @@ describe('draftStore', () => {
       setDraft<ManualEntryDraft>('manual-entry', { description: 'Immediate save' });
 
       // Don't wait for debounce
-      await saveDraftNow<ManualEntryDraft>('manual-entry');
+      await saveDraftNow('manual-entry');
 
       expect(draftStorage.saveDraft).toHaveBeenCalled();
     });
@@ -302,7 +302,7 @@ describe('draftStore', () => {
     it('should not save if draft is not dirty', async () => {
       const { saveDraftNow } = useDraftStore.getState();
 
-      await saveDraftNow<ManualEntryDraft>('manual-entry');
+      await saveDraftNow('manual-entry');
 
       expect(draftStorage.saveDraft).not.toHaveBeenCalled();
     });
@@ -317,7 +317,7 @@ describe('draftStore', () => {
       const { setDraft, saveDraftNow } = useDraftStore.getState();
 
       setDraft<ManualEntryDraft>('manual-entry', { description: 'Test' });
-      await saveDraftNow<ManualEntryDraft>('manual-entry');
+      await saveDraftNow('manual-entry');
 
       expect(useDraftStore.getState().drafts['manual-entry']?.lastSavedAt).toBe(savedAt);
     });
@@ -331,7 +331,7 @@ describe('draftStore', () => {
       const { setDraft, saveDraftNow } = useDraftStore.getState();
 
       setDraft<ManualEntryDraft>('manual-entry', { description: 'Test' });
-      await saveDraftNow<ManualEntryDraft>('manual-entry');
+      await saveDraftNow('manual-entry');
 
       expect(useDraftStore.getState().drafts['manual-entry']?.error).toBe('Save failed');
     });
@@ -362,7 +362,7 @@ describe('draftStore', () => {
       setDraft<ManualEntryDraft>('manual-entry', { description: 'Test' });
       expect(isDirty('manual-entry')).toBe(true);
 
-      await saveDraftNow<ManualEntryDraft>('manual-entry');
+      await saveDraftNow('manual-entry');
       expect(isDirty('manual-entry')).toBe(false);
     });
   });

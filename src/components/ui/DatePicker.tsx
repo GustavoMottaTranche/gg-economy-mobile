@@ -21,6 +21,8 @@ import {
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { formatDateLocale, getCurrentLocale, type DateStyle } from '../../i18n';
+import { useThemeColors } from '../../hooks/useThemeColors';
+import { spacing, borderRadius, typography } from '../../constants/theme';
 
 /**
  * Props for the DatePicker component
@@ -74,8 +76,9 @@ const CalendarPicker = memo(function CalendarPicker({
   minimumDate,
   maximumDate,
   onClose,
-}: CalendarPickerProps): JSX.Element {
+}: CalendarPickerProps): React.JSX.Element {
   const { t } = useTranslation();
+  const colors = useThemeColors();
   const locale = getCurrentLocale();
   const [viewDate, setViewDate] = useState(value);
 
@@ -165,7 +168,7 @@ const CalendarPicker = memo(function CalendarPicker({
   }
 
   return (
-    <View style={calendarStyles.container}>
+    <View style={[calendarStyles.container, { backgroundColor: colors.surface.card }]}>
       {/* Header */}
       <View style={calendarStyles.header}>
         <TouchableOpacity
@@ -174,9 +177,9 @@ const CalendarPicker = memo(function CalendarPicker({
           accessibilityRole="button"
           accessibilityLabel={t('common.previous')}
         >
-          <Text style={calendarStyles.navButtonText}>◀</Text>
+          <Text style={[calendarStyles.navButtonText, { color: colors.interactive.primary }]}>◀</Text>
         </TouchableOpacity>
-        <Text style={calendarStyles.monthYear}>
+        <Text style={[calendarStyles.monthYear, { color: colors.text.primary }]}>
           {monthName} {year}
         </Text>
         <TouchableOpacity
@@ -185,7 +188,7 @@ const CalendarPicker = memo(function CalendarPicker({
           accessibilityRole="button"
           accessibilityLabel={t('common.next')}
         >
-          <Text style={calendarStyles.navButtonText}>▶</Text>
+          <Text style={[calendarStyles.navButtonText, { color: colors.interactive.primary }]}>▶</Text>
         </TouchableOpacity>
       </View>
 
@@ -193,7 +196,7 @@ const CalendarPicker = memo(function CalendarPicker({
       <View style={calendarStyles.weekdayRow}>
         {weekdays.map((day, index) => (
           <View key={index} style={calendarStyles.weekdayCell}>
-            <Text style={calendarStyles.weekdayText}>{day}</Text>
+            <Text style={[calendarStyles.weekdayText, { color: colors.text.secondary }]}>{day}</Text>
           </View>
         ))}
       </View>
@@ -208,8 +211,8 @@ const CalendarPicker = memo(function CalendarPicker({
                 disabled={isDateDisabled(day)}
                 style={[
                   calendarStyles.dayButton,
-                  isSelectedDay(day) && calendarStyles.selectedDay,
-                  isToday(day) && !isSelectedDay(day) && calendarStyles.todayDay,
+                  isSelectedDay(day) && { backgroundColor: colors.interactive.primary },
+                  isToday(day) && !isSelectedDay(day) && { borderWidth: 1, borderColor: colors.interactive.primary },
                   isDateDisabled(day) && calendarStyles.disabledDay,
                 ]}
                 accessibilityRole="button"
@@ -222,9 +225,10 @@ const CalendarPicker = memo(function CalendarPicker({
                 <Text
                   style={[
                     calendarStyles.dayText,
-                    isSelectedDay(day) && calendarStyles.selectedDayText,
-                    isToday(day) && !isSelectedDay(day) && calendarStyles.todayDayText,
-                    isDateDisabled(day) && calendarStyles.disabledDayText,
+                    { color: colors.text.primary },
+                    isSelectedDay(day) && { color: colors.text.inverse, fontWeight: '600' },
+                    isToday(day) && !isSelectedDay(day) && { color: colors.interactive.primary, fontWeight: '600' },
+                    isDateDisabled(day) && { color: colors.text.tertiary },
                   ]}
                 >
                   {day}
@@ -242,11 +246,11 @@ const CalendarPicker = memo(function CalendarPicker({
           onChange(today);
           onClose();
         }}
-        style={calendarStyles.todayButton}
+        style={[calendarStyles.todayButton, { borderTopColor: colors.border.default }]}
         accessibilityRole="button"
         accessibilityLabel={t('common.today')}
       >
-        <Text style={calendarStyles.todayButtonText}>{t('common.today')}</Text>
+        <Text style={[calendarStyles.todayButtonText, { color: colors.interactive.primary }]}>{t('common.today')}</Text>
       </TouchableOpacity>
     </View>
   );
@@ -257,42 +261,38 @@ const CalendarPicker = memo(function CalendarPicker({
  */
 const calendarStyles = StyleSheet.create({
   container: {
-    backgroundColor: '#ffffff',
-    borderRadius: 12,
-    padding: 16,
+    borderRadius: borderRadius.md,
+    padding: spacing.base,
     width: 320,
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: spacing.base,
   },
   navButton: {
-    padding: 8,
+    padding: spacing.sm,
   },
   navButtonText: {
-    fontSize: 16,
-    color: '#3b82f6',
+    fontSize: typography.body.fontSize,
   },
   monthYear: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#111827',
   },
   weekdayRow: {
     flexDirection: 'row',
-    marginBottom: 8,
+    marginBottom: spacing.sm,
   },
   weekdayCell: {
     flex: 1,
     alignItems: 'center',
-    paddingVertical: 4,
+    paddingVertical: spacing.xs,
   },
   weekdayText: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#6b7280',
   },
   grid: {
     flexDirection: 'row',
@@ -311,39 +311,18 @@ const calendarStyles = StyleSheet.create({
   },
   dayText: {
     fontSize: 14,
-    color: '#111827',
-  },
-  selectedDay: {
-    backgroundColor: '#3b82f6',
-  },
-  selectedDayText: {
-    color: '#ffffff',
-    fontWeight: '600',
-  },
-  todayDay: {
-    borderWidth: 1,
-    borderColor: '#3b82f6',
-  },
-  todayDayText: {
-    color: '#3b82f6',
-    fontWeight: '600',
   },
   disabledDay: {
     opacity: 0.3,
   },
-  disabledDayText: {
-    color: '#9ca3af',
-  },
   todayButton: {
-    marginTop: 16,
-    paddingVertical: 12,
+    marginTop: spacing.base,
+    paddingVertical: spacing.md,
     alignItems: 'center',
     borderTopWidth: 1,
-    borderTopColor: '#e5e7eb',
   },
   todayButtonText: {
-    fontSize: 16,
-    color: '#3b82f6',
+    fontSize: typography.body.fontSize,
     fontWeight: '500',
   },
 });
@@ -375,8 +354,9 @@ function DatePickerComponent({
   labelStyle,
   valueStyle,
   testID,
-}: DatePickerProps): JSX.Element {
+}: DatePickerProps): React.JSX.Element {
   const { t } = useTranslation();
+  const colors = useThemeColors();
   const locale = getCurrentLocale();
   const [isPickerVisible, setIsPickerVisible] = useState(false);
 
@@ -405,15 +385,16 @@ function DatePickerComponent({
 
   return (
     <View style={[styles.container, style]} testID={testID}>
-      {label && <Text style={[styles.label, labelStyle]}>{label}</Text>}
+      {label && <Text style={[styles.label, { color: colors.text.primary }, labelStyle]}>{label}</Text>}
 
       <TouchableOpacity
         onPress={handlePress}
         disabled={disabled}
         style={[
           styles.inputContainer,
-          disabled && styles.inputDisabled,
-          error && styles.inputError,
+          { backgroundColor: colors.surface.card, borderColor: colors.border.strong },
+          disabled && { backgroundColor: colors.background.tertiary, borderColor: colors.border.default },
+          error && { borderColor: colors.semantic.danger.base },
         ]}
         accessibilityRole="button"
         accessibilityLabel={accessibilityLabel}
@@ -424,8 +405,9 @@ function DatePickerComponent({
         <Text
           style={[
             styles.value,
-            !value && styles.placeholder,
-            disabled && styles.valueDisabled,
+            { color: colors.text.primary },
+            !value && { color: colors.text.tertiary },
+            disabled && { color: colors.text.tertiary },
             valueStyle,
           ]}
           numberOfLines={1}
@@ -436,7 +418,7 @@ function DatePickerComponent({
       </TouchableOpacity>
 
       {error && (
-        <Text style={styles.errorText} accessibilityRole="alert">
+        <Text style={[styles.errorText, { color: colors.semantic.danger.base }]} accessibilityRole="alert">
           {error}
         </Text>
       )}
@@ -451,16 +433,21 @@ function DatePickerComponent({
       >
         <SafeAreaView style={styles.modalOverlay}>
           <TouchableOpacity style={styles.modalBackdrop} onPress={handleClose} activeOpacity={1} />
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>{t('manual.selectDate')}</Text>
+          <View
+            style={[
+              styles.modalContent,
+              { backgroundColor: colors.surface.card },
+            ]}
+          >
+            <View style={[styles.modalHeader, { borderBottomColor: colors.border.default }]}>
+              <Text style={[styles.modalTitle, { color: colors.text.primary }]}>{t('manual.selectDate')}</Text>
               <TouchableOpacity
                 onPress={handleClose}
                 style={styles.closeButton}
                 accessibilityRole="button"
                 accessibilityLabel={t('common.close')}
               >
-                <Text style={styles.closeButtonText}>{t('common.close')}</Text>
+                <Text style={[styles.closeButtonText, { color: colors.interactive.primary }]}>{t('common.close')}</Text>
               </TouchableOpacity>
             </View>
             <CalendarPicker
@@ -482,52 +469,34 @@ function DatePickerComponent({
  */
 const styles = StyleSheet.create({
   container: {
-    marginBottom: 16,
+    marginBottom: spacing.base,
   },
   label: {
     fontSize: 14,
     fontWeight: '500',
-    color: '#374151',
     marginBottom: 6,
   },
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#ffffff',
     borderWidth: 1,
-    borderColor: '#d1d5db',
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 12,
+    borderRadius: borderRadius.sm,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.md,
     minHeight: 48,
-  },
-  inputDisabled: {
-    backgroundColor: '#f3f4f6',
-    borderColor: '#e5e7eb',
-  },
-  inputError: {
-    borderColor: '#ef4444',
   },
   value: {
     flex: 1,
-    fontSize: 16,
-    color: '#111827',
-  },
-  placeholder: {
-    color: '#9ca3af',
-  },
-  valueDisabled: {
-    color: '#9ca3af',
+    fontSize: typography.body.fontSize,
   },
   icon: {
     fontSize: 18,
-    marginLeft: 8,
+    marginLeft: spacing.sm,
   },
   errorText: {
     fontSize: 12,
-    color: '#ef4444',
-    marginTop: 4,
+    marginTop: spacing.xs,
   },
   modalOverlay: {
     flex: 1,
@@ -539,8 +508,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
   },
   modalContent: {
-    backgroundColor: '#ffffff',
-    borderRadius: 16,
+    borderRadius: borderRadius.lg,
     overflow: 'hidden',
     ...Platform.select({
       ios: {
@@ -558,22 +526,19 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingHorizontal: spacing.base,
+    paddingVertical: spacing.md,
     borderBottomWidth: 1,
-    borderBottomColor: '#e5e7eb',
   },
   modalTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#111827',
   },
   closeButton: {
-    padding: 8,
+    padding: spacing.sm,
   },
   closeButtonText: {
-    fontSize: 16,
-    color: '#3b82f6',
+    fontSize: typography.body.fontSize,
     fontWeight: '500',
   },
 });

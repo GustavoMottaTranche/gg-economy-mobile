@@ -14,7 +14,6 @@ import {
   type CategoryDraft,
   type RuleDraft,
   type DraftData,
-  type StoredDraft,
 } from '../services/draft';
 
 /**
@@ -81,7 +80,7 @@ interface DraftStoreActions {
   /**
    * Forces immediate save of draft
    */
-  saveDraftNow: <T extends DraftData>(formType: DraftFormType, formId?: string) => Promise<void>;
+  saveDraftNow: (formType: DraftFormType, formId?: string) => Promise<void>;
 
   /**
    * Gets the current draft data for a form
@@ -178,7 +177,7 @@ export const useDraftStore = create<DraftStore>((set, get) => ({
 
     // Set up debounced save
     debounceTimers[key] = setTimeout(async () => {
-      await get().saveDraftNow<T>(formType, formId);
+      await get().saveDraftNow(formType, formId);
     }, get().debounceInterval);
   },
 
@@ -205,7 +204,7 @@ export const useDraftStore = create<DraftStore>((set, get) => ({
 
     // Set up debounced save
     debounceTimers[key] = setTimeout(async () => {
-      await get().saveDraftNow<T>(formType, formId);
+      await get().saveDraftNow(formType, formId);
     }, get().debounceInterval);
   },
 
@@ -302,7 +301,7 @@ export const useDraftStore = create<DraftStore>((set, get) => ({
     });
   },
 
-  saveDraftNow: async <T extends DraftData>(formType: DraftFormType, formId?: string) => {
+  saveDraftNow: async (formType: DraftFormType, formId?: string) => {
     const key = getDraftStateKey(formType, formId);
     const currentState = get().drafts[key];
 
@@ -322,44 +321,57 @@ export const useDraftStore = create<DraftStore>((set, get) => ({
     }));
 
     try {
-      const result = await draftStorage.saveDraft<T>(formType, currentState.data as T, formId);
+      const result = await draftStorage.saveDraft(formType, currentState.data as DraftData, formId);
 
       if (result.success) {
-        set((state) => ({
-          drafts: {
-            ...state.drafts,
-            [key]: {
-              ...state.drafts[key],
-              isDirty: false,
-              isSaving: false,
-              lastSavedAt: result.draft?.savedAt || new Date().toISOString(),
-              error: null,
+        set((state) => {
+          const existingDraft = state.drafts[key] ?? createEmptyDraftState();
+          return {
+            drafts: {
+              ...state.drafts,
+              [key]: {
+                data: existingDraft.data,
+                isDirty: false,
+                isSaving: false,
+                lastSavedAt: result.draft?.savedAt || new Date().toISOString(),
+                error: null,
+              },
             },
-          },
-        }));
+          };
+        });
       } else {
-        set((state) => ({
-          drafts: {
-            ...state.drafts,
-            [key]: {
-              ...state.drafts[key],
-              isSaving: false,
-              error: result.error || 'Failed to save draft',
+        set((state) => {
+          const existingDraft = state.drafts[key] ?? createEmptyDraftState();
+          return {
+            drafts: {
+              ...state.drafts,
+              [key]: {
+                data: existingDraft.data,
+                isDirty: existingDraft.isDirty,
+                isSaving: false,
+                lastSavedAt: existingDraft.lastSavedAt,
+                error: result.error || 'Failed to save draft',
+              },
             },
-          },
-        }));
+          };
+        });
       }
     } catch (error) {
-      set((state) => ({
-        drafts: {
-          ...state.drafts,
-          [key]: {
-            ...state.drafts[key],
-            isSaving: false,
-            error: error instanceof Error ? error.message : 'Failed to save draft',
+      set((state) => {
+        const existingDraft = state.drafts[key] ?? createEmptyDraftState();
+        return {
+          drafts: {
+            ...state.drafts,
+            [key]: {
+              data: existingDraft.data,
+              isDirty: existingDraft.isDirty,
+              isSaving: false,
+              lastSavedAt: existingDraft.lastSavedAt,
+              error: error instanceof Error ? error.message : 'Failed to save draft',
+            },
           },
-        },
-      }));
+        };
+      });
     }
   },
 
@@ -417,7 +429,7 @@ export function useManualEntryDraft() {
     updateDraft: (data: Partial<ManualEntryDraft>) => updateDraft('manual-entry', data),
     restoreDraft: () => restoreDraft<ManualEntryDraft>('manual-entry'),
     clearDraft: () => clearDraft('manual-entry'),
-    saveDraftNow: () => saveDraftNow<ManualEntryDraft>('manual-entry'),
+    saveDraftNow: () => saveDraftNow('manual-entry'),
   };
 }
 
@@ -442,7 +454,7 @@ export function useCategoryDraft(formId?: string) {
     updateDraft: (data: Partial<CategoryDraft>) => updateDraft(formType, data, formId),
     restoreDraft: () => restoreDraft<CategoryDraft>(formType, formId),
     clearDraft: () => clearDraft(formType, formId),
-    saveDraftNow: () => saveDraftNow<CategoryDraft>(formType, formId),
+    saveDraftNow: () => saveDraftNow(formType, formId),
   };
 }
 
@@ -467,6 +479,6 @@ export function useRuleDraft(formId?: string) {
     updateDraft: (data: Partial<RuleDraft>) => updateDraft(formType, data, formId),
     restoreDraft: () => restoreDraft<RuleDraft>(formType, formId),
     clearDraft: () => clearDraft(formType, formId),
-    saveDraftNow: () => saveDraftNow<RuleDraft>(formType, formId),
+    saveDraftNow: () => saveDraftNow(formType, formId),
   };
 }

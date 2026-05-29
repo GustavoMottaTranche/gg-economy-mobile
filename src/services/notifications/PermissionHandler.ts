@@ -9,26 +9,10 @@
  * @module services/notifications/PermissionHandler
  */
 
-import Constants from 'expo-constants';
 import { Linking } from 'react-native';
 import type { PermissionStatus } from '../../stores/notificationStore';
 import { logger } from '../logging';
-
-// Check if running in Expo Go (notifications not supported since SDK 53)
-const isExpoGo = Constants.appOwnership === 'expo';
-
-// Lazy import of expo-notifications to avoid crash in Expo Go
-let Notifications: typeof import('expo-notifications') | null = null;
-
-async function getNotifications() {
-  if (isExpoGo) {
-    return null;
-  }
-  if (!Notifications) {
-    Notifications = await import('expo-notifications');
-  }
-  return Notifications;
-}
+import { getNotifications } from './NotificationsModuleLoader';
 
 /**
  * Permission handler interface for notification permissions
@@ -59,13 +43,6 @@ export interface IPermissionHandler {
 function mapExpoPermissionStatus(
   status: import('expo-notifications').PermissionStatus
 ): PermissionStatus {
-  // Import the enum values dynamically
-  const PermissionStatusEnum = {
-    GRANTED: 'granted',
-    DENIED: 'denied',
-    UNDETERMINED: 'undetermined',
-  };
-
   if (status === 'granted') return 'granted';
   if (status === 'denied') return 'denied';
   return 'undetermined';

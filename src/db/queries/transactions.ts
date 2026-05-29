@@ -4,7 +4,7 @@
  * Provides CRUD operations and specialized queries for transactions.
  * Uses Drizzle's type-safe query builder with expo-sqlite.
  */
-import { eq, and, desc, asc, sql, isNull, isNotNull } from 'drizzle-orm';
+import { eq, and, desc, sql, isNull } from 'drizzle-orm';
 import { randomUUID } from 'expo-crypto';
 import { getDb, withTransaction } from '../client';
 import {
@@ -33,7 +33,8 @@ function toTransaction(record: TransactionRecord) {
  * Format a Date to ISO string for database storage
  */
 function formatDateForDb(date: Date): string {
-  return date.toISOString().split('T')[0];
+  const isoString = date.toISOString().split('T')[0];
+  return isoString ?? '';
 }
 
 /**
@@ -51,7 +52,8 @@ export async function getAllTransactions() {
 export async function getTransactionById(id: string) {
   const db = getDb();
   const results = await db.select().from(transactions).where(eq(transactions.id, id)).limit(1);
-  return results.length > 0 ? toTransaction(results[0]) : null;
+  const first = results[0];
+  return first ? toTransaction(first) : null;
 }
 
 /**
@@ -75,7 +77,8 @@ export async function getTransactionWithRelations(id: string) {
 
   if (results.length === 0) return null;
 
-  const { transaction, category, origin, importBatch } = results[0];
+  const firstResult = results[0]!;
+  const { transaction, category, origin, importBatch } = firstResult;
   return {
     ...toTransaction(transaction),
     category: category ? { ...category, createdAt: new Date(category.createdAt) } : null,
@@ -220,6 +223,7 @@ export async function createTransaction(data: CreateTransactionDTO) {
 
   const newTransaction: NewTransactionRecord = {
     id,
+    title: data.title,
     date: formatDateForDb(data.date),
     amount: data.amount,
     description: data.description,
@@ -229,7 +233,9 @@ export async function createTransaction(data: CreateTransactionDTO) {
     referenceMonth: data.referenceMonth,
     needsReview: data.needsReview ?? true,
     isExcludedFromTotals: data.isExcludedFromTotals ?? false,
+    isPaid: data.isPaid ?? false,
     duplicateOf: null,
+    installmentGroupId: data.installmentGroupId ?? null,
     createdAt: now,
     updatedAt: now,
   };
@@ -256,6 +262,7 @@ export async function createTransactions(dataList: CreateTransactionDTO[]) {
       const id = randomUUID();
       const newTransaction: NewTransactionRecord = {
         id,
+        title: data.title,
         date: formatDateForDb(data.date),
         amount: data.amount,
         description: data.description,
@@ -265,7 +272,9 @@ export async function createTransactions(dataList: CreateTransactionDTO[]) {
         referenceMonth: data.referenceMonth,
         needsReview: data.needsReview ?? true,
         isExcludedFromTotals: data.isExcludedFromTotals ?? false,
+        isPaid: data.isPaid ?? false,
         duplicateOf: null,
+        installmentGroupId: data.installmentGroupId ?? null,
         createdAt: now,
         updatedAt: now,
       };
@@ -295,6 +304,9 @@ export async function updateTransaction(id: string, data: UpdateTransactionDTO) 
 
   if (data.date !== undefined) {
     updateData.date = formatDateForDb(data.date);
+  }
+  if (data.title !== undefined) {
+    updateData.title = data.title;
   }
   if (data.amount !== undefined) {
     updateData.amount = data.amount;
@@ -412,7 +424,8 @@ export async function getMonthlySummary(referenceMonth: string) {
     .from(transactions)
     .where(eq(transactions.referenceMonth, referenceMonth));
 
-  const { totalIncome, totalExpenses, transactionCount } = results[0];
+  const firstResult = results[0]!;
+  const { totalIncome, totalExpenses, transactionCount } = firstResult;
   return {
     totalIncome: totalIncome ?? 0,
     totalExpenses: totalExpenses ?? 0,

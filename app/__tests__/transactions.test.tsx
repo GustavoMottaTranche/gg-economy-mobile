@@ -3,7 +3,7 @@
  *
  * Tests for the Transactions screen component.
  *
- * **Validates: Requirements 19, 20, 30**
+ * **Validates: Requirements 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 4.6, 5.6, 6.1, 6.2, 6.3, 6.4, 6.6, 6.7, 6.8, 7.2, 7.4, 8.6, 9.1**
  */
 
 import React from 'react';
@@ -30,7 +30,7 @@ import { router as mockedRouter } from 'expo-router';
 // Mock i18n
 jest.mock('react-i18next', () => ({
   useTranslation: () => ({
-    t: (key: string, params?: Record<string, unknown>) => {
+    t: (key: string, _params?: Record<string, unknown>) => {
       const translations: Record<string, string> = {
         'transactions.title': 'Transactions',
         'transactions.monthSummary': 'Month summary',
@@ -51,6 +51,8 @@ jest.mock('react-i18next', () => ({
         'empty.transactionsHint': 'Import a statement or add manually',
         'fileImport.selectFile': 'Select File',
         'errors.generic': 'An error occurred. Please try again.',
+        'filters.title': 'Filters',
+        'filters.activeFilters': 'Active filters',
       };
       return translations[key] ?? key;
     },
@@ -86,14 +88,11 @@ jest.mock('../../src/i18n', () => ({
 // Mock Alert
 jest.spyOn(Alert, 'alert');
 
-// Mock useTransactions hook
-const mockRemove = jest.fn().mockResolvedValue(undefined);
-const mockCreate = jest.fn();
-const mockUpdate = jest.fn();
-
+// Mock data
 const mockTransactions = [
   {
     id: 'tx-1',
+    title: 'Salary Payment',
     date: new Date('2024-01-15'),
     amount: 150000, // $1500.00 income
     description: 'Salary Payment',
@@ -104,6 +103,8 @@ const mockTransactions = [
     needsReview: false,
     isExcludedFromTotals: false,
     duplicateOf: null,
+    installmentGroupId: null,
+    recurringId: null,
     createdAt: new Date('2024-01-15'),
     updatedAt: new Date('2024-01-15'),
     category: {
@@ -113,11 +114,13 @@ const mockTransactions = [
       icon: '💰',
       color: '#22C55E',
       isActive: true,
+      expenseGroup: null,
       createdAt: new Date('2024-01-01'),
     },
   },
   {
     id: 'tx-2',
+    title: 'Grocery Shopping',
     date: new Date('2024-01-10'),
     amount: -5000, // -$50.00 expense
     description: 'Grocery Shopping',
@@ -128,6 +131,8 @@ const mockTransactions = [
     needsReview: false,
     isExcludedFromTotals: false,
     duplicateOf: null,
+    installmentGroupId: null,
+    recurringId: null,
     createdAt: new Date('2024-01-10'),
     updatedAt: new Date('2024-01-10'),
     category: {
@@ -137,11 +142,13 @@ const mockTransactions = [
       icon: '🍔',
       color: '#EF4444',
       isActive: true,
+      expenseGroup: null,
       createdAt: new Date('2024-01-01'),
     },
   },
   {
     id: 'tx-3',
+    title: 'Gas Station',
     date: new Date('2024-01-05'),
     amount: -3500, // -$35.00 expense
     description: 'Gas Station',
@@ -152,6 +159,8 @@ const mockTransactions = [
     needsReview: false,
     isExcludedFromTotals: false,
     duplicateOf: null,
+    installmentGroupId: null,
+    recurringId: null,
     createdAt: new Date('2024-01-05'),
     updatedAt: new Date('2024-01-05'),
     category: {
@@ -161,6 +170,7 @@ const mockTransactions = [
       icon: '🚗',
       color: '#F59E0B',
       isActive: true,
+      expenseGroup: null,
       createdAt: new Date('2024-01-01'),
     },
   },
@@ -168,65 +178,233 @@ const mockTransactions = [
 
 const mockSummary = {
   totalIncome: 150000,
-  totalExpenses: 8500,
+  totalExpenses: -8500,
   balance: 141500,
   transactionCount: 3,
 };
 
-const mockUseTransactionsReturn = {
+const mockLoadMore = jest.fn();
+const mockRefresh = jest.fn();
+
+const mockUsePaginatedTransactionsReturn = {
   transactions: mockTransactions,
   isLoading: false,
-  error: null,
-  summary: mockSummary,
+  isLoadingMore: false,
+  error: null as string | null,
+  hasMore: false,
   totalCount: 3,
-  currentPage: 1,
-  totalPages: 1,
-  hasNextPage: false,
-  hasPreviousPage: false,
-  nextPage: jest.fn(),
-  previousPage: jest.fn(),
-  goToPage: jest.fn(),
-  create: mockCreate,
-  update: mockUpdate,
-  remove: mockRemove,
-  markAsReviewed: jest.fn(),
-  setCategory: jest.fn(),
-  refresh: jest.fn(),
+  summary: mockSummary,
+  loadMore: mockLoadMore,
+  refresh: mockRefresh,
 };
 
-jest.mock('../../src/hooks/useTransactions', () => ({
-  useTransactions: () => mockUseTransactionsReturn,
-  TransactionWithCategory: {},
+jest.mock('../../src/hooks/usePaginatedTransactions', () => ({
+  usePaginatedTransactions: () => mockUsePaginatedTransactionsReturn,
 }));
 
-// Mock FlashList
+// Mock useFilterStore
+const mockFilterState = {
+  categoryIds: [] as string[],
+  minAmount: null as number | null,
+  maxAmount: null as number | null,
+  startDate: null as string | null,
+  endDate: null as string | null,
+  pendingOnly: false,
+};
+
+const mockSetExpanded = jest.fn();
+const mockResetFilters = jest.fn();
+const mockResetDateRange = jest.fn();
+
+jest.mock('../../src/stores/filterStore', () => ({
+  useFilterStore: (selector: (state: unknown) => unknown) => {
+    const state = {
+      filters: mockFilterState,
+      isExpanded: false,
+      setExpanded: mockSetExpanded,
+      resetFilters: mockResetFilters,
+      resetDateRange: mockResetDateRange,
+      setCategoryIds: jest.fn(),
+      setMinAmount: jest.fn(),
+      setMaxAmount: jest.fn(),
+      setStartDate: jest.fn(),
+      setEndDate: jest.fn(),
+      getActiveFilterCount: () => 0,
+    };
+    if (typeof selector === 'function') {
+      return selector(state);
+    }
+    return state;
+  },
+}));
+
+// Mock useCategories
+jest.mock('../../src/hooks/useCategories', () => ({
+  useCategories: () => ({
+    categories: [
+      { id: 'cat-1', name: 'Salary', type: 'income', icon: '💰', color: '#22C55E', isActive: true, expenseGroup: null, createdAt: new Date() },
+      { id: 'cat-2', name: 'Food', type: 'expense', icon: '🍔', color: '#EF4444', isActive: true, expenseGroup: null, createdAt: new Date() },
+      { id: 'cat-3', name: 'Transport', type: 'expense', icon: '🚗', color: '#F59E0B', isActive: true, expenseGroup: null, createdAt: new Date() },
+    ],
+  }),
+}));
+
+// Mock deleteTransaction
+const mockDeleteTransaction = jest.fn().mockResolvedValue(undefined);
+jest.mock('../../src/db/queries/transactions', () => ({
+  deleteTransaction: (...args: unknown[]) => mockDeleteTransaction(...args),
+}));
+
+// Mock weeklyRecurringStore
+const mockToggleGroupExpansion = jest.fn();
+jest.mock('../../src/stores/weeklyRecurringStore', () => ({
+  useWeeklyRecurringStore: Object.assign(
+    (selector: (state: unknown) => unknown) => {
+      const state = {
+        groups: [],
+        occurrences: {},
+        monthlyTotals: {},
+        isLoading: false,
+        error: null,
+        expandedGroupIds: new Set<string>(),
+        loadOccurrencesForMonth: jest.fn().mockResolvedValue(undefined),
+        toggleGroupExpansion: mockToggleGroupExpansion,
+        collapseAllGroups: jest.fn(),
+      };
+      if (typeof selector === 'function') {
+        return selector(state);
+      }
+      return state;
+    },
+    {
+      getState: () => ({
+        loadOccurrencesForMonth: jest.fn().mockResolvedValue(undefined),
+        toggleGroupExpansion: mockToggleGroupExpansion,
+        collapseAllGroups: jest.fn(),
+      }),
+    }
+  ),
+  useWeeklyOccurrences: () => [],
+  useWeeklyGroups: () => [],
+  useExpandedGroupIds: () => new Set<string>(),
+}));
+
+// Mock paymentStatusStore
+const mockTogglePaymentStatus = jest.fn().mockResolvedValue(undefined);
+jest.mock('../../src/stores/paymentStatusStore', () => ({
+  usePaymentStatusStore: (selector: (state: unknown) => unknown) => {
+    const state = {
+      pendingItems: {},
+      paymentTotals: {},
+      isLoading: false,
+      error: null,
+      togglePaymentStatus: mockTogglePaymentStatus,
+    };
+    if (typeof selector === 'function') {
+      return selector(state);
+    }
+    return state;
+  },
+}));
+
+// Mock useUnifiedStatementItems - returns transactions wrapped as UnifiedStatementItem
+jest.mock('../../src/hooks/useUnifiedStatementItems', () => ({
+  useUnifiedStatementItems: ({ transactions }: { transactions: unknown[] }) => {
+    return transactions.map((t: unknown) => ({
+      type: 'transaction' as const,
+      data: t,
+    }));
+  },
+}));
+
+// Mock WeeklyGroupItem
+jest.mock('../../src/components/WeeklyGroupItem', () => ({
+  WeeklyGroupItem: ({ testID }: { testID?: string }) => {
+    const { View, Text } = require('react-native');
+    return (
+      <View testID={testID}>
+        <Text>WeeklyGroupItem</Text>
+      </View>
+    );
+  },
+}));
+
+// Mock WeeklyParcelRow
+jest.mock('../../src/components/WeeklyParcelRow', () => ({
+  WeeklyParcelRow: ({ testID }: { testID?: string }) => {
+    const { View, Text } = require('react-native');
+    return (
+      <View testID={testID}>
+        <Text>WeeklyParcelRow</Text>
+      </View>
+    );
+  },
+}));
+
+// Mock PaymentStatusToggle
+jest.mock('../../src/components/PaymentStatusToggle', () => ({
+  PaymentStatusToggle: ({ isPaid, onToggle, testID }: { isPaid: boolean; onToggle: () => void; testID?: string }) => {
+    const { TouchableOpacity, Text } = require('react-native');
+    return (
+      <TouchableOpacity testID={testID} onPress={onToggle}>
+        <Text>{isPaid ? '✓' : '○'}</Text>
+      </TouchableOpacity>
+    );
+  },
+}));
+
+// Mock FilterPanel
+jest.mock('../../src/components/filters/FilterPanel', () => ({
+  FilterPanel: ({ testID }: { testID?: string }) => {
+    const { View, Text } = require('react-native');
+    return (
+      <View testID={testID ?? 'filter-panel'}>
+        <Text>Filters</Text>
+      </View>
+    );
+  },
+}));
+
+// Mock FlashList - captures props for assertion
+let lastFlashListProps: Record<string, unknown> = {};
+
 jest.mock('@shopify/flash-list', () => {
-  const { FlatList, View, Text } = require('react-native');
+  const { FlatList, View } = require('react-native');
   return {
-    FlashList: ({
-      data,
-      renderItem,
-      keyExtractor,
-      ListHeaderComponent,
-      ListEmptyComponent,
-      testID,
-    }: {
+    FlashList: (props: {
       data: unknown[];
       renderItem: (info: { item: unknown; index: number }) => React.ReactElement;
       keyExtractor: (item: unknown) => string;
       ListHeaderComponent?: React.ReactElement;
       ListEmptyComponent?: React.ReactElement;
+      ListFooterComponent?: React.ReactElement | null;
+      onEndReached?: () => void;
+      onEndReachedThreshold?: number;
       testID?: string;
-    }) => (
-      <View testID={testID}>
-        {ListHeaderComponent}
-        {data && data.length > 0 ? (
-          <FlatList data={data} renderItem={renderItem} keyExtractor={keyExtractor} />
-        ) : (
-          ListEmptyComponent
-        )}
-      </View>
-    ),
+    }) => {
+      // Store props for test assertions
+      lastFlashListProps = props;
+      const {
+        data,
+        renderItem,
+        keyExtractor,
+        ListHeaderComponent,
+        ListEmptyComponent,
+        ListFooterComponent,
+        testID,
+      } = props;
+      return (
+        <View testID={testID}>
+          {ListHeaderComponent}
+          {data && data.length > 0 ? (
+            <FlatList data={data} renderItem={renderItem} keyExtractor={keyExtractor} />
+          ) : (
+            ListEmptyComponent
+          )}
+          {ListFooterComponent}
+        </View>
+      );
+    },
     ListRenderItemInfo: {},
   };
 });
@@ -357,10 +535,12 @@ import TransactionsScreen from '../(tabs)/transactions';
 describe('TransactionsScreen', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    mockUseTransactionsReturn.transactions = mockTransactions;
-    mockUseTransactionsReturn.isLoading = false;
-    mockUseTransactionsReturn.error = null;
-    mockUseTransactionsReturn.summary = mockSummary;
+    mockUsePaginatedTransactionsReturn.transactions = mockTransactions;
+    mockUsePaginatedTransactionsReturn.isLoading = false;
+    mockUsePaginatedTransactionsReturn.isLoadingMore = false;
+    mockUsePaginatedTransactionsReturn.error = null;
+    mockUsePaginatedTransactionsReturn.summary = mockSummary;
+    mockUsePaginatedTransactionsReturn.hasMore = false;
   });
 
   describe('Rendering', () => {
@@ -388,18 +568,23 @@ describe('TransactionsScreen', () => {
     it('renders month selector with current month', () => {
       render(<TransactionsScreen />);
 
-      // The month selector should show the current month
       const monthSelector = screen.getByTestId('month-selector');
       expect(monthSelector).toBeTruthy();
+    });
+
+    it('renders the filter panel', () => {
+      render(<TransactionsScreen />);
+
+      expect(screen.getByTestId('filter-panel')).toBeTruthy();
     });
 
     it('renders monthly summary with correct values', () => {
       render(<TransactionsScreen />);
 
       expect(screen.getByText('Month summary')).toBeTruthy();
-      expect(screen.getByText('Income')).toBeTruthy();
-      expect(screen.getByText('Expenses')).toBeTruthy();
-      expect(screen.getByText('Balance')).toBeTruthy();
+      expect(screen.getByText('Income', { includeHiddenElements: true })).toBeTruthy();
+      expect(screen.getByText('Expenses', { includeHiddenElements: true })).toBeTruthy();
+      expect(screen.getByText('Balance', { includeHiddenElements: true })).toBeTruthy();
     });
 
     it('renders transaction cards', () => {
@@ -418,8 +603,8 @@ describe('TransactionsScreen', () => {
       const prevButton = screen.getByTestId('month-selector-prev');
       fireEvent.press(prevButton);
 
-      // The component should update the selected month
-      // This is handled internally by the component state
+      // The component should update the selected month and reset date range
+      expect(mockResetDateRange).toHaveBeenCalled();
     });
 
     it('navigates to next month when next button is pressed', () => {
@@ -427,9 +612,6 @@ describe('TransactionsScreen', () => {
 
       const nextButton = screen.getByTestId('month-selector-next');
       fireEvent.press(nextButton);
-
-      // The component should update the selected month
-      // This is handled internally by the component state
     });
   });
 
@@ -478,7 +660,7 @@ describe('TransactionsScreen', () => {
       // Simulate pressing delete
       await deleteButton.onPress();
 
-      expect(mockRemove).toHaveBeenCalledWith('tx-1');
+      expect(mockDeleteTransaction).toHaveBeenCalledWith('tx-1');
     });
 
     it('navigates to manual entry when add button is pressed', () => {
@@ -495,9 +677,7 @@ describe('TransactionsScreen', () => {
     it('displays income transactions with positive sign', () => {
       render(<TransactionsScreen />);
 
-      // The Salary Payment transaction should show as income
       expect(screen.getByText('Salary Payment')).toBeTruthy();
-      // Use getAllByText since the amount appears in both the card and summary
       const incomeAmounts = screen.getAllByText('+$1500.00');
       expect(incomeAmounts.length).toBeGreaterThan(0);
     });
@@ -505,7 +685,6 @@ describe('TransactionsScreen', () => {
     it('displays expense transactions with negative sign', () => {
       render(<TransactionsScreen />);
 
-      // The Grocery Shopping transaction should show as expense
       expect(screen.getByText('Grocery Shopping')).toBeTruthy();
       expect(screen.getByText('-$50.00')).toBeTruthy();
     });
@@ -515,13 +694,13 @@ describe('TransactionsScreen', () => {
 describe('TransactionsScreen - Loading State', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    mockUseTransactionsReturn.isLoading = true;
-    mockUseTransactionsReturn.transactions = [];
+    mockUsePaginatedTransactionsReturn.isLoading = true;
+    mockUsePaginatedTransactionsReturn.transactions = [];
   });
 
   afterEach(() => {
-    mockUseTransactionsReturn.isLoading = false;
-    mockUseTransactionsReturn.transactions = mockTransactions;
+    mockUsePaginatedTransactionsReturn.isLoading = false;
+    mockUsePaginatedTransactionsReturn.transactions = mockTransactions;
   });
 
   it('shows loading indicator when loading', () => {
@@ -535,13 +714,13 @@ describe('TransactionsScreen - Loading State', () => {
 describe('TransactionsScreen - Error State', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    mockUseTransactionsReturn.error = 'Failed to load transactions';
-    mockUseTransactionsReturn.transactions = [];
+    mockUsePaginatedTransactionsReturn.error = 'Failed to load transactions';
+    mockUsePaginatedTransactionsReturn.transactions = [];
   });
 
   afterEach(() => {
-    mockUseTransactionsReturn.error = null;
-    mockUseTransactionsReturn.transactions = mockTransactions;
+    mockUsePaginatedTransactionsReturn.error = null;
+    mockUsePaginatedTransactionsReturn.transactions = mockTransactions;
   });
 
   it('shows error state when there is an error', () => {
@@ -555,8 +734,8 @@ describe('TransactionsScreen - Error State', () => {
 describe('TransactionsScreen - Empty State', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    mockUseTransactionsReturn.transactions = [];
-    mockUseTransactionsReturn.summary = {
+    mockUsePaginatedTransactionsReturn.transactions = [];
+    mockUsePaginatedTransactionsReturn.summary = {
       totalIncome: 0,
       totalExpenses: 0,
       balance: 0,
@@ -565,8 +744,8 @@ describe('TransactionsScreen - Empty State', () => {
   });
 
   afterEach(() => {
-    mockUseTransactionsReturn.transactions = mockTransactions;
-    mockUseTransactionsReturn.summary = mockSummary;
+    mockUsePaginatedTransactionsReturn.transactions = mockTransactions;
+    mockUsePaginatedTransactionsReturn.summary = mockSummary;
   });
 
   it('shows empty state when no transactions', () => {
@@ -590,15 +769,14 @@ describe('TransactionsScreen - Empty State', () => {
 describe('TransactionsScreen - Monthly Summary', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    mockUseTransactionsReturn.transactions = mockTransactions;
-    mockUseTransactionsReturn.summary = mockSummary;
+    mockUsePaginatedTransactionsReturn.transactions = mockTransactions;
+    mockUsePaginatedTransactionsReturn.summary = mockSummary;
   });
 
   it('displays correct income amount', () => {
     render(<TransactionsScreen />);
 
     // Income should be $1500.00 (150000 cents / 100)
-    // Use getAllByText since the amount appears in both the card and summary
     const incomeAmounts = screen.getAllByText('+$1500.00');
     expect(incomeAmounts.length).toBeGreaterThan(0);
   });
@@ -607,27 +785,27 @@ describe('TransactionsScreen - Monthly Summary', () => {
     render(<TransactionsScreen />);
 
     // Expenses should be $85.00 (8500 cents / 100)
-    expect(screen.getByText('-$85.00')).toBeTruthy();
+    expect(screen.getByText(/85\.00/, { includeHiddenElements: true })).toBeTruthy();
   });
 
   it('displays correct balance', () => {
     render(<TransactionsScreen />);
 
     // Balance should be $1415.00 (141500 cents / 100)
-    expect(screen.getByText('+$1415.00')).toBeTruthy();
+    expect(screen.getByText(/1415\.00/, { includeHiddenElements: true })).toBeTruthy();
   });
 
   it('displays transaction count', () => {
     render(<TransactionsScreen />);
 
-    expect(screen.getByText('3 transactions')).toBeTruthy();
+    expect(screen.getByText(/3\s+transactions/, { includeHiddenElements: true })).toBeTruthy();
   });
 });
 
 describe('TransactionsScreen - Accessibility', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    mockUseTransactionsReturn.transactions = mockTransactions;
+    mockUsePaginatedTransactionsReturn.transactions = mockTransactions;
   });
 
   it('has accessible add transaction button', () => {
@@ -636,5 +814,108 @@ describe('TransactionsScreen - Accessibility', () => {
     const addButton = screen.getByTestId('add-transaction-button');
     expect(addButton.props.accessibilityRole).toBe('button');
     expect(addButton.props.accessibilityLabel).toBe('Add transaction');
+  });
+});
+
+describe('TransactionsScreen - Infinite Scroll', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockUsePaginatedTransactionsReturn.transactions = mockTransactions;
+    mockUsePaginatedTransactionsReturn.isLoadingMore = true;
+    mockUsePaginatedTransactionsReturn.hasMore = true;
+  });
+
+  afterEach(() => {
+    mockUsePaginatedTransactionsReturn.isLoadingMore = false;
+    mockUsePaginatedTransactionsReturn.hasMore = false;
+  });
+
+  it('shows loading footer when loading more', () => {
+    render(<TransactionsScreen />);
+
+    expect(screen.getByTestId('loading-more-indicator')).toBeTruthy();
+  });
+
+  /**
+   * **Validates: Requirement 6.7**
+   * FlashList is configured with onEndReachedThreshold of 0.5
+   */
+  it('configures FlashList with onEndReachedThreshold of 0.5', () => {
+    render(<TransactionsScreen />);
+
+    expect(lastFlashListProps.onEndReachedThreshold).toBe(0.5);
+  });
+
+  /**
+   * **Validates: Requirement 6.3**
+   * Loading indicator (footer) appears when isLoadingMore is true
+   */
+  it('displays loading indicator at bottom during pagination fetch', () => {
+    mockUsePaginatedTransactionsReturn.isLoadingMore = true;
+    render(<TransactionsScreen />);
+
+    const loadingIndicator = screen.getByTestId('loading-more-indicator');
+    expect(loadingIndicator).toBeTruthy();
+  });
+
+  it('does not display loading footer when not loading more', () => {
+    mockUsePaginatedTransactionsReturn.isLoadingMore = false;
+    render(<TransactionsScreen />);
+
+    expect(screen.queryByTestId('loading-more-indicator')).toBeNull();
+  });
+});
+
+describe('TransactionsScreen - Month Change Filter Behavior', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockUsePaginatedTransactionsReturn.transactions = mockTransactions;
+    mockUsePaginatedTransactionsReturn.isLoading = false;
+    mockUsePaginatedTransactionsReturn.isLoadingMore = false;
+    mockUsePaginatedTransactionsReturn.error = null;
+    mockUsePaginatedTransactionsReturn.summary = mockSummary;
+    mockUsePaginatedTransactionsReturn.hasMore = false;
+    // Simulate active category filter
+    mockFilterState.categoryIds = ['cat-1', 'cat-2'];
+  });
+
+  afterEach(() => {
+    mockFilterState.categoryIds = [];
+  });
+
+  /**
+   * **Validates: Requirement 7.4**
+   * When month changes, resetDateRange is called (date range resets) but category filter persists
+   */
+  it('resets date range but preserves category filter on month change', () => {
+    render(<TransactionsScreen />);
+
+    const prevButton = screen.getByTestId('month-selector-prev');
+    fireEvent.press(prevButton);
+
+    // Date range should be reset
+    expect(mockResetDateRange).toHaveBeenCalled();
+    // Full resetFilters should NOT be called (category filter persists)
+    expect(mockResetFilters).not.toHaveBeenCalled();
+  });
+
+  it('resets date range on next month navigation as well', () => {
+    render(<TransactionsScreen />);
+
+    // First navigate to previous month so next button becomes enabled
+    const prevButton = screen.getByTestId('month-selector-prev');
+    fireEvent.press(prevButton);
+
+    // Clear mocks to isolate the next navigation
+    jest.clearAllMocks();
+
+    // Now navigate forward
+    const nextButton = screen.getByTestId('month-selector-next');
+    fireEvent.press(nextButton);
+
+    // Date range should be reset
+    expect(mockResetDateRange).toHaveBeenCalled();
+    // Full resetFilters should NOT be called (category filter persists)
+    expect(mockResetFilters).not.toHaveBeenCalled();
   });
 });

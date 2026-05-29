@@ -13,7 +13,7 @@
  */
 
 import fc from 'fast-check';
-import { DedupeEngine, DuplicateResult } from '../../services/import/DedupeEngine';
+import { DedupeEngine } from '../../services/import/DedupeEngine';
 import type { RawTransaction, Transaction } from '../../types/transaction';
 
 describe('Manual Entry Duplicate Detection Property Tests', () => {
@@ -132,6 +132,7 @@ describe('Manual Entry Duplicate Detection Property Tests', () => {
 
     return {
       id: `tx-${Math.random().toString(36).substring(7)}`,
+      title: '',
       date: raw.date,
       amount: raw.amount,
       description: raw.description,
@@ -142,6 +143,8 @@ describe('Manual Entry Duplicate Detection Property Tests', () => {
       needsReview: false,
       isExcludedFromTotals: false,
       duplicateOf: null,
+      installmentGroupId: null,
+      recurringId: null,
       createdAt: new Date(),
       updatedAt: new Date(),
     };
@@ -181,7 +184,7 @@ describe('Manual Entry Duplicate Detection Property Tests', () => {
 
           // Should detect as duplicate with high confidence
           expect(result.duplicates.length).toBe(1);
-          expect(result.duplicates[0].confidence).toBeGreaterThanOrEqual(0.9);
+          expect(result.duplicates[0]!.confidence).toBeGreaterThanOrEqual(0.9);
           expect(result.uniqueTransactions.length).toBe(0);
         }),
         { numRuns: 100 }
@@ -225,7 +228,7 @@ describe('Manual Entry Duplicate Detection Property Tests', () => {
 
             // Should detect as potential duplicate (date + amount match)
             expect(result.duplicates.length).toBe(1);
-            expect(result.duplicates[0].confidence).toBeGreaterThanOrEqual(0.5);
+            expect(result.duplicates[0]!.confidence).toBeGreaterThanOrEqual(0.5);
           }
         ),
         { numRuns: 100 }
@@ -395,8 +398,9 @@ describe('Manual Entry Duplicate Detection Property Tests', () => {
 
             // Should detect the exact match as duplicate
             expect(result.duplicates.length).toBe(1);
-            expect(result.duplicates[0].existingTransaction.id).toBe(exactMatch.id);
-            expect(result.duplicates[0].confidence).toBeGreaterThanOrEqual(0.9);
+            const existingTx = result.duplicates[0]!.existingTransaction;
+            expect('id' in existingTx ? existingTx.id : undefined).toBe(exactMatch.id);
+            expect(result.duplicates[0]!.confidence).toBeGreaterThanOrEqual(0.9);
           }
         ),
         { numRuns: 100 }
@@ -448,9 +452,10 @@ describe('Manual Entry Duplicate Detection Property Tests', () => {
           // Verify duplicate result structure
           expect(result.duplicates.length).toBe(1);
 
-          const duplicate = result.duplicates[0];
+          const duplicate = result.duplicates[0]!;
           expect(duplicate.newTransaction).toEqual(manualEntry);
-          expect(duplicate.existingTransaction.id).toBe(existingTransaction.id);
+          const existingTx = duplicate.existingTransaction;
+          expect('id' in existingTx ? existingTx.id : undefined).toBe(existingTransaction.id);
           expect(duplicate.confidence).toBeGreaterThanOrEqual(0);
           expect(duplicate.confidence).toBeLessThanOrEqual(1);
           expect(['fitid', 'date_amount_description', 'date_amount']).toContain(
@@ -472,7 +477,7 @@ describe('Manual Entry Duplicate Detection Property Tests', () => {
           validAmountArbitrary,
           validDescriptionArbitrary,
           fc.double({ min: 0.5, max: 0.99, noNaN: true }),
-          (date, amount, description, threshold) => {
+          (date, amount, description, _threshold) => {
             // Create existing transaction
             const existingTransaction = createExistingTransaction({
               date,
@@ -546,10 +551,10 @@ describe('Manual Entry Duplicate Detection Property Tests', () => {
 
             // Should detect as potential duplicate (date + amount match)
             expect(result.duplicates.length).toBe(1);
-            expect(result.duplicates[0].confidence).toBeGreaterThanOrEqual(0.5);
+            expect(result.duplicates[0]!.confidence).toBeGreaterThanOrEqual(0.5);
             // Match reason should be date_amount or date_amount_description
             expect(['date_amount', 'date_amount_description']).toContain(
-              result.duplicates[0].matchReason
+              result.duplicates[0]!.matchReason
             );
           }
         ),

@@ -2,27 +2,38 @@
  * Dashboard Screen (Tab: index)
  *
  * The main dashboard showing financial overview including:
- * - Month selector for navigating between months
+ * - Month selector for navigating between months (unrestricted future navigation)
  * - Summary card with income, expenses, and balance
- * - Category breakdown with donut chart
- * - Trend charts for income vs expenses over time
+ * - Expense chart with filter (Todos / Somente Fixo / Somente Variável)
+ * - Collapsible sections for Fixed and Variable expense categories
  *
- * **Validates: Requirements 21, 22, 30**
+ * Layout order: MonthSelector → SummaryCard → ExpenseChart with ChartFilter → Seção_Fixo → Seção_Variável
+ * Uses theme system for all colors, spacing, typography, and shadows.
+ * SummaryCard uses elevated shadow (lg) while other components use lower elevation (sm/md).
+ *
+ * **Validates: Requirements 1.2, 4.6, 5.1, 5.4, 5.5, 6.1, 6.2, 6.3, 6.4, 6.5, 6.6**
  */
-import { useCallback } from 'react';
-import { View, ScrollView, StyleSheet, RefreshControl } from 'react-native';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { View, ScrollView, StyleSheet, RefreshControl, TouchableOpacity, Text } from 'react-native';
+import { StatusBar } from 'expo-status-bar';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 
 import { useDashboardData } from '../../src/hooks/useDashboardData';
+import { useThemeColors } from '../../src/hooks/useThemeColors';
+import { useThemeStore } from '../../src/stores/themeStore';
+import { spacing, shadows, borderRadius, typography } from '../../src/constants/theme';
 import { LoadingIndicator } from '../../src/components/ui/LoadingIndicator';
 import { EmptyState } from '../../src/components/ui/EmptyState';
 import {
-  SummaryCard,
   MonthSelector,
-  CategoryBreakdown,
-  TrendChart,
+  CollapsibleSection,
+  ChartFilter,
+  ExpenseChart,
+  PendingSection,
+  ExpenseSummaryCard,
 } from '../../src/components/dashboard';
+import { usePaymentStatusStore, usePendingItems } from '../../src/stores/paymentStatusStore';
 
 /**
  * Get current month in YYYY-MM format
@@ -40,61 +51,148 @@ function getCurrentMonth(): string {
 export default function DashboardScreen() {
   const { t } = useTranslation();
   const router = useRouter();
+  const colors = useThemeColors();
+  const resolvedScheme = useThemeStore((s) => s.resolvedScheme);
 
   // Get dashboard data from hook
   const {
     summary,
-    expenseBreakdown,
-    trendData,
+    fixedBreakdown,
+    variableBreakdown,
+    fixedTotal,
+    variableTotal,
+    weeklyTotal,
+    chartFilter,
+    setChartFilter,
     selectedMonth,
-    trendPeriod,
     isLoading,
     error,
-    setTrendPeriod,
     previousMonth,
     nextMonth,
     refresh,
   } = useDashboardData();
 
-  // Check if next month should be disabled (can't go beyond current month)
-  const currentMonth = getCurrentMonth();
-  const isNextDisabled = selectedMonth >= currentMonth;
+  // Payment status store - pending items for the selected month
+  const pendingItems = usePendingItems(selectedMonth);
 
-  // Handle category press - navigate to filtered transactions
-  const handleCategoryPress = useCallback(
-    (categoryId: string | null, categoryName: string) => {
-      // Navigate to transactions screen with category filter
-      if (categoryId) {
-        router.push({
-          pathname: '/transactions',
-          params: {
-            categoryId,
-            categoryName,
-            month: selectedMonth,
-          },
-        });
-      } else {
-        // Navigate to all transactions for the month
-        router.push({
-          pathname: '/transactions',
-          params: {
-            month: selectedMonth,
-          },
-        });
-      }
-    },
-    [router, selectedMonth]
-  );
+  // Load pending items and payment totals when month changes (Requirement 4.7, 5.2)
+  useEffect(() => {
+    const store = usePaymentStatusStore.getState();
+    store.loadPendingItemsForMonth(selectedMonth);
+    store.loadPaymentTotalsForMonth(selectedMonth);
+  }, [selectedMonth]);
+
+  // Local state for collapsible sections (expanded by default)
+  const [isFixedExpanded, setFixedExpanded] = useState(true);
+  const [isVariableExpanded, setVariableExpanded] = useState(true);
+  const [expandedCategoryId, setExpandedCategoryId] = useState<string | null>(null);
+
+  // Check if selected month is in the future
+  const currentMonth = getCurrentMonth();
+  const isFutureMonth = selectedMonth > currentMonth;
+
+  // Handle category press in collapsible sections (toggle transaction list)
+  const handleCategoryPress = useCallback((categoryId: string) => {
+    setExpandedCategoryId((prev) => (prev === categoryId ? null : categoryId));
+  }, []);
 
   // Handle refresh
   const handleRefresh = useCallback(() => {
     refresh();
-  }, [refresh]);
+    usePaymentStatusStore.getState().loadPendingItemsForMonth(selectedMonth);
+  }, [refresh, selectedMonth]);
+
+  // Handle toggle payment status from PendingSection (Requirement 4.2)
+  const handleTogglePaymentStatus = useCallback(
+    (id: string, type: 'weekly' | 'monthly') => {
+      usePaymentStatusStore.getState().togglePaymentStatus(id, type);
+    },
+    []
+  );
+
+  // Handle item press - navigate to Entry_Screen (Requirement 4.6)
+  const handlePendingItemPress = useCallback(
+    (groupId: string, type: 'weekly' | 'monthly') => {
+      if (type === 'weekly') {
+        router.push(`/weekly-recurring/${groupId}`);
+      } else {
+        router.push(`/transaction/${groupId}`);
+      }
+    },
+    [router]
+  );
+
+  // Get shadow styles based on theme
+  const chartShadow = shadows[resolvedScheme].md;
+
+  // Dynamic styles based on theme colors
+  const dynamicStyles = useMemo(
+    () =>
+      StyleSheet.create({
+        container: {
+          flex: 1,
+          backgroundColor: colors.background.secondary,
+        },
+        contentContainer: {
+          paddingHorizontal: spacing.base,
+          paddingTop: spacing.base,
+          paddingBottom: spacing['2xl'],
+        },
+        loadingContainer: {
+          flex: 1,
+          alignItems: 'center',
+          justifyContent: 'center',
+          backgroundColor: colors.background.secondary,
+        },
+        errorContainer: {
+          flex: 1,
+          alignItems: 'center',
+          justifyContent: 'center',
+          backgroundColor: colors.background.secondary,
+          padding: spacing.lg,
+        },
+        monthSelector: {
+          marginBottom: spacing.base,
+        },
+        summaryCard: {
+          marginBottom: spacing.base,
+        },
+        pendingSection: {
+          marginBottom: spacing.base,
+        },
+        chartSection: {
+          marginBottom: spacing.base,
+          backgroundColor: colors.surface.card,
+          borderRadius: borderRadius.lg,
+          padding: spacing.base,
+          ...chartShadow,
+        },
+        chartFilter: {
+          marginBottom: spacing.base,
+        },
+        fixedSection: {
+          marginBottom: spacing.base,
+        },
+        variableSection: {
+          marginBottom: spacing.base,
+        },
+        emptyStateContainer: {
+          marginTop: spacing['2xl'],
+          alignItems: 'center',
+        },
+      }),
+    [colors, chartShadow]
+  );
 
   // Loading state
   if (isLoading && !summary) {
     return (
-      <View style={styles.loadingContainer} accessible accessibilityLabel={t('common.loading')}>
+      <View
+        style={dynamicStyles.loadingContainer}
+        accessible
+        accessibilityLabel={t('common.loading')}
+      >
+        <StatusBar style={resolvedScheme === 'dark' ? 'light' : 'dark'} />
         <LoadingIndicator size="large" />
       </View>
     );
@@ -103,7 +201,8 @@ export default function DashboardScreen() {
   // Error state
   if (error) {
     return (
-      <View style={styles.errorContainer} accessible accessibilityLabel={t('common.error')}>
+      <View style={dynamicStyles.errorContainer} accessible accessibilityLabel={t('common.error')}>
+        <StatusBar style={resolvedScheme === 'dark' ? 'light' : 'dark'} />
         <EmptyState
           icon="⚠️"
           title={t('common.error')}
@@ -119,18 +218,18 @@ export default function DashboardScreen() {
 
   // Check if there's any data
   const hasData =
-    summary.totalIncome > 0 || summary.totalExpenses > 0 || summary.transactionCount > 0;
+    summary.totalIncome > 0 || summary.totalExpenses > 0 || summary.transactionCount > 0 || weeklyTotal > 0;
 
   return (
     <ScrollView
-      style={styles.container}
-      contentContainerStyle={styles.contentContainer}
+      style={dynamicStyles.container}
+      contentContainerStyle={dynamicStyles.contentContainer}
       showsVerticalScrollIndicator={false}
       refreshControl={
         <RefreshControl
           refreshing={isLoading}
           onRefresh={handleRefresh}
-          tintColor="#3B82F6"
+          tintColor={colors.interactive.primary}
           accessibilityLabel={t('common.refresh')}
         />
       }
@@ -138,50 +237,88 @@ export default function DashboardScreen() {
       accessibilityLabel={t('dashboard.title')}
       accessibilityRole="scrollbar"
     >
-      {/* Month Selector */}
+      <StatusBar style={resolvedScheme === 'dark' ? 'light' : 'dark'} />
+
+      {/* 1. Month Selector - unrestricted forward navigation */}
       <MonthSelector
         selectedMonth={selectedMonth}
         onPreviousMonth={previousMonth}
         onNextMonth={nextMonth}
-        disableNext={isNextDisabled}
-        style={styles.monthSelector}
+        isFutureMonth={isFutureMonth}
+        style={dynamicStyles.monthSelector}
         testID="dashboard-month-selector"
       />
 
-      {/* Summary Card */}
-      <SummaryCard
-        income={summary.totalIncome}
-        expenses={summary.totalExpenses}
-        balance={summary.balance}
-        transactionCount={summary.transactionCount}
-        style={styles.summaryCard}
-        testID="dashboard-summary"
-      />
-
-      {/* Content based on data availability */}
-      {hasData ? (
+      {/* Expense Chart with ChartFilter - top of the page after month selector */}
+      {hasData || pendingItems.length > 0 ? (
         <>
-          {/* Category Breakdown */}
-          <CategoryBreakdown
-            data={expenseBreakdown}
-            totalExpenses={summary.totalExpenses}
-            onCategoryPress={handleCategoryPress}
-            style={styles.categoryBreakdown}
-            testID="dashboard-category-breakdown"
+          {/* Expense Summary - Paid vs Pending (uses same filter as chart) */}
+          <ExpenseSummaryCard
+            paid={chartFilter === 'fixed' ? fixedTotal : chartFilter === 'variable' ? (variableTotal + weeklyTotal) : (summary.totalExpenses + weeklyTotal)}
+            pending={pendingItems.reduce((sum, item) => sum + item.amount, 0)}
+            testID="dashboard-expense-summary"
           />
 
-          {/* Trend Chart */}
-          <TrendChart
-            data={trendData}
-            selectedPeriod={trendPeriod}
-            onPeriodChange={setTrendPeriod}
-            style={styles.trendChart}
-            testID="dashboard-trend-chart"
-          />
+          <View style={dynamicStyles.chartSection}>
+            <ChartFilter
+              selected={chartFilter}
+              onSelect={setChartFilter}
+              style={dynamicStyles.chartFilter}
+              testID="dashboard-chart-filter"
+            />
+            <ExpenseChart
+              fixedTotal={fixedTotal}
+              variableTotal={variableTotal}
+              fixedCategories={fixedBreakdown}
+              variableCategories={variableBreakdown}
+              filter={chartFilter}
+              testID="dashboard-expense-chart"
+            />
+          </View>
+
+          {/* 4. Seção Fixo - low elevation (sm shadow via CollapsibleSection) */}
+          <View style={dynamicStyles.fixedSection}>
+            <CollapsibleSection
+              title="Fixo"
+              total={fixedTotal}
+              categories={fixedBreakdown}
+              isExpanded={isFixedExpanded}
+              onToggle={() => setFixedExpanded((prev) => !prev)}
+              onCategoryPress={handleCategoryPress}
+              expandedCategoryId={expandedCategoryId}
+              selectedMonth={selectedMonth}
+              testID="dashboard-fixed-section"
+            />
+          </View>
+
+          {/* 5. Seção Variável - low elevation (sm shadow via CollapsibleSection) */}
+          <View style={dynamicStyles.variableSection}>
+            <CollapsibleSection
+              title="Variável"
+              total={variableTotal}
+              categories={variableBreakdown}
+              isExpanded={isVariableExpanded}
+              onToggle={() => setVariableExpanded((prev) => !prev)}
+              onCategoryPress={handleCategoryPress}
+              expandedCategoryId={expandedCategoryId}
+              selectedMonth={selectedMonth}
+              testID="dashboard-variable-section"
+            />
+          </View>
+
+          {/* Pending Section */}
+          <View style={dynamicStyles.pendingSection}>
+            <PendingSection
+              items={pendingItems}
+              onToggleStatus={handleTogglePaymentStatus}
+              onItemPress={handlePendingItemPress}
+              testID="dashboard-pending-section"
+            />
+          </View>
         </>
       ) : (
         /* Empty State */
-        <View style={styles.emptyStateContainer}>
+        <View style={dynamicStyles.emptyStateContainer}>
           <EmptyState
             icon="📊"
             title={t('dashboard.noData')}
@@ -198,41 +335,22 @@ export default function DashboardScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#F2F2F7',
-  },
-  contentContainer: {
-    padding: 16,
-    paddingBottom: 32,
-  },
-  loadingContainer: {
-    flex: 1,
+  weeklyRecurringLink: {
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#F2F2F7',
+    justifyContent: 'space-between',
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.base,
+    borderRadius: borderRadius.md,
+    borderWidth: StyleSheet.hairlineWidth,
+    marginBottom: spacing.base,
   },
-  errorContainer: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#F2F2F7',
-    padding: 20,
+  weeklyRecurringLinkText: {
+    fontSize: typography.body.fontSize,
+    fontWeight: '500',
   },
-  monthSelector: {
-    marginBottom: 16,
-  },
-  summaryCard: {
-    marginBottom: 16,
-  },
-  categoryBreakdown: {
-    marginBottom: 16,
-  },
-  trendChart: {
-    marginBottom: 16,
-  },
-  emptyStateContainer: {
-    marginTop: 32,
-    alignItems: 'center',
+  weeklyRecurringLinkChevron: {
+    fontSize: 22,
+    fontWeight: '600',
   },
 });

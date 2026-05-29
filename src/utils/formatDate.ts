@@ -118,25 +118,37 @@ export function parseDate(dateString: string, options: FormatDateOptions = {}): 
       case 'DD/MM/YYYY': {
         const parts = trimmed.split('/');
         if (parts.length !== 3) return null;
-        day = parseInt(parts[0], 10);
-        month = parseInt(parts[1], 10);
-        year = parseInt(parts[2], 10);
+        const part0 = parts[0];
+        const part1 = parts[1];
+        const part2 = parts[2];
+        if (!part0 || !part1 || !part2) return null;
+        day = parseInt(part0, 10);
+        month = parseInt(part1, 10);
+        year = parseInt(part2, 10);
         break;
       }
       case 'MM/DD/YYYY': {
         const parts = trimmed.split('/');
         if (parts.length !== 3) return null;
-        month = parseInt(parts[0], 10);
-        day = parseInt(parts[1], 10);
-        year = parseInt(parts[2], 10);
+        const part0 = parts[0];
+        const part1 = parts[1];
+        const part2 = parts[2];
+        if (!part0 || !part1 || !part2) return null;
+        month = parseInt(part0, 10);
+        day = parseInt(part1, 10);
+        year = parseInt(part2, 10);
         break;
       }
       case 'YYYY-MM-DD': {
         const parts = trimmed.split('-');
         if (parts.length !== 3) return null;
-        year = parseInt(parts[0], 10);
-        month = parseInt(parts[1], 10);
-        day = parseInt(parts[2], 10);
+        const part0 = parts[0];
+        const part1 = parts[1];
+        const part2 = parts[2];
+        if (!part0 || !part1 || !part2) return null;
+        year = parseInt(part0, 10);
+        month = parseInt(part1, 10);
+        day = parseInt(part2, 10);
         break;
       }
       default:
@@ -198,8 +210,11 @@ export function detectDateFormat(dateString: string): DateFormat | null {
     // Could be DD/MM/YYYY or MM/DD/YYYY
     // Try to disambiguate by checking if first part > 12
     const parts = trimmed.split('/');
-    const first = parseInt(parts[0], 10);
-    const second = parseInt(parts[1], 10);
+    const part0 = parts[0];
+    const part1 = parts[1];
+    if (!part0 || !part1) return null;
+    const first = parseInt(part0, 10);
+    const second = parseInt(part1, 10);
 
     // If first part > 12, it must be day (DD/MM/YYYY)
     if (first > 12) {
@@ -295,8 +310,12 @@ export function parseReferenceMonth(referenceMonth: string): Date | null {
     return null;
   }
 
-  const year = parseInt(match[1], 10);
-  const month = parseInt(match[2], 10);
+  const yearStr = match[1];
+  const monthStr = match[2];
+  if (!yearStr || !monthStr) return null;
+
+  const year = parseInt(yearStr, 10);
+  const month = parseInt(monthStr, 10);
 
   if (month < 1 || month > 12) {
     return null;

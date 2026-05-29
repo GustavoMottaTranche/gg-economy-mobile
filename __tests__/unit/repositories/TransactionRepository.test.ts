@@ -31,6 +31,7 @@ describe('TransactionRepository', () => {
     date: new Date('2024-01-15'),
     amount: -5000, // -50.00 in cents
     description: 'Test Transaction',
+    title: '',
     categoryId: 'cat-001',
     originId: null,
     batchId: 'batch-001',
@@ -38,6 +39,9 @@ describe('TransactionRepository', () => {
     needsReview: false,
     isExcludedFromTotals: false,
     duplicateOf: null,
+    installmentGroupId: null,
+    recurringId: null,
+    isPaid: false,
     createdAt: new Date('2024-01-15T10:00:00Z'),
     updatedAt: new Date('2024-01-15T10:00:00Z'),
   };
@@ -46,6 +50,7 @@ describe('TransactionRepository', () => {
     date: new Date('2024-01-15'),
     amount: -5000,
     description: 'New Transaction',
+    title: '',
     referenceMonth: '2024-01',
     categoryId: 'cat-001',
     needsReview: true,

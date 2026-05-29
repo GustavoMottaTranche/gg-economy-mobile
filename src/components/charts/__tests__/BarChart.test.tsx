@@ -82,8 +82,8 @@ describe('BarChart', () => {
       <BarChart data={mockData} onBarPress={onBarPress} testID="bar-chart" />
     );
 
-    // Find and press the first income bar (green color)
-    const incomeBars = getAllByTestId('bar-#16a34a');
+    // Find and press the first income bar (green color from theme)
+    const incomeBars = getAllByTestId('bar-#16A34A');
     fireEvent(incomeBars[0], 'touchEnd');
 
     expect(onBarPress).toHaveBeenCalledWith(expect.objectContaining({ label: 'Jan' }), 'income');
@@ -95,8 +95,8 @@ describe('BarChart', () => {
       <BarChart data={mockData} onBarPress={onBarPress} testID="bar-chart" />
     );
 
-    // Find and press the first expense bar (red color)
-    const expenseBars = getAllByTestId('bar-#dc2626');
+    // Find and press the first expense bar (red color from theme)
+    const expenseBars = getAllByTestId('bar-#DC2626');
     fireEvent(expenseBars[0], 'touchEnd');
 
     expect(onBarPress).toHaveBeenCalledWith(expect.objectContaining({ label: 'Jan' }), 'expense');

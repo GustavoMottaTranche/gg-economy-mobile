@@ -10,6 +10,8 @@
 import React, { memo } from 'react';
 import { View, Text, StyleSheet, ActivityIndicator, ViewStyle, TextStyle } from 'react-native';
 import { useTranslation } from 'react-i18next';
+import { useThemeColors } from '../../hooks/useThemeColors';
+import { spacing, borderRadius, typography } from '../../constants/theme';
 
 /**
  * Size variants for the loading indicator
@@ -48,18 +50,8 @@ const SIZE_MAP: Record<LoadingSize, 'small' | 'large'> = {
 };
 
 /**
- * Spinner dimensions for different sizes
+ * Default color is derived from theme at render time
  */
-const SPINNER_DIMENSIONS: Record<LoadingSize, number> = {
-  small: 20,
-  medium: 36,
-  large: 48,
-};
-
-/**
- * Default colors
- */
-const DEFAULT_COLOR = '#3b82f6';
 
 /**
  * LoadingIndicator component
@@ -85,14 +77,16 @@ const DEFAULT_COLOR = '#3b82f6';
 function LoadingIndicatorComponent({
   message,
   size = 'medium',
-  color = DEFAULT_COLOR,
+  color,
   fullScreen = false,
   inline = false,
   style,
   messageStyle,
   testID,
-}: LoadingIndicatorProps): JSX.Element {
+}: LoadingIndicatorProps): React.JSX.Element {
   const { t } = useTranslation();
+  const themeColors = useThemeColors();
+  const spinnerColor = color ?? themeColors.interactive.primary;
 
   const displayMessage = message ?? t('common.loading');
   const accessibilityLabel = displayMessage;
@@ -104,7 +98,7 @@ function LoadingIndicatorComponent({
     return (
       <ActivityIndicator
         size={spinnerSize}
-        color={color}
+        color={spinnerColor}
         accessibilityRole="progressbar"
         accessibilityLabel={accessibilityLabel}
         testID={testID}
@@ -122,14 +116,14 @@ function LoadingIndicatorComponent({
         accessibilityLiveRegion="polite"
         testID={testID}
       >
-        <View style={styles.fullScreenContent}>
+        <View style={[styles.fullScreenContent, { backgroundColor: themeColors.surface.card, shadowColor: '#000' }]}>
           <ActivityIndicator
             size={spinnerSize}
-            color={color}
+            color={spinnerColor}
             style={{ transform: [{ scale: size === 'large' ? 1.5 : 1 }] }}
           />
           {message !== undefined && (
-            <Text style={[styles.fullScreenMessage, messageStyle]}>{displayMessage}</Text>
+            <Text style={[styles.fullScreenMessage, { color: themeColors.text.primary }, messageStyle]}>{displayMessage}</Text>
           )}
         </View>
       </View>
@@ -147,11 +141,11 @@ function LoadingIndicatorComponent({
     >
       <ActivityIndicator
         size={spinnerSize}
-        color={color}
+        color={spinnerColor}
         style={{ transform: [{ scale: size === 'large' ? 1.3 : 1 }] }}
       />
       {message !== undefined && (
-        <Text style={[styles.message, messageStyle]}>{displayMessage}</Text>
+        <Text style={[styles.message, { color: themeColors.text.secondary }, messageStyle]}>{displayMessage}</Text>
       )}
     </View>
   );
@@ -165,12 +159,11 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 20,
+    padding: spacing.lg,
   },
   message: {
-    marginTop: 12,
-    fontSize: 14,
-    color: '#6b7280',
+    marginTop: spacing.md,
+    fontSize: typography.caption.fontSize + 1,
     textAlign: 'center',
   },
   fullScreenContainer: {
@@ -182,19 +175,16 @@ const styles = StyleSheet.create({
   },
   fullScreenContent: {
     alignItems: 'center',
-    padding: 24,
-    backgroundColor: '#ffffff',
-    borderRadius: 16,
-    shadowColor: '#000',
+    padding: spacing.xl,
+    borderRadius: borderRadius.lg,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 8,
     elevation: 4,
   },
   fullScreenMessage: {
-    marginTop: 16,
-    fontSize: 16,
-    color: '#374151',
+    marginTop: spacing.base,
+    fontSize: typography.body.fontSize,
     textAlign: 'center',
     fontWeight: '500',
   },
@@ -210,7 +200,7 @@ export const LoadingIndicator = memo(LoadingIndicatorComponent);
  */
 export const InlineLoader = memo(function InlineLoader(
   props: Omit<LoadingIndicatorProps, 'inline' | 'fullScreen'>
-): JSX.Element {
+): React.JSX.Element {
   return <LoadingIndicator {...props} inline />;
 });
 
@@ -219,7 +209,7 @@ export const InlineLoader = memo(function InlineLoader(
  */
 export const FullScreenLoader = memo(function FullScreenLoader(
   props: Omit<LoadingIndicatorProps, 'inline' | 'fullScreen'>
-): JSX.Element {
+): React.JSX.Element {
   return <LoadingIndicator {...props} fullScreen />;
 });
 
@@ -227,9 +217,9 @@ export const FullScreenLoader = memo(function FullScreenLoader(
  * Convenience component for button loading state
  */
 export const ButtonLoader = memo(function ButtonLoader({
-  color = '#ffffff',
+  color,
   ...props
-}: Omit<LoadingIndicatorProps, 'inline' | 'fullScreen' | 'message' | 'size'>): JSX.Element {
+}: Omit<LoadingIndicatorProps, 'inline' | 'fullScreen' | 'message' | 'size'>): React.JSX.Element {
   return <LoadingIndicator {...props} inline size="small" color={color} />;
 });
 

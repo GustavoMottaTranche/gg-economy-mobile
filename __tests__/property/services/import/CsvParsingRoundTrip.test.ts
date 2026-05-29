@@ -157,7 +157,9 @@ describe('Property 1: CSV Parsing Round-Trip', () => {
             const t1 = result1.transactions[i];
             const t2 = result2.transactions[i];
 
-            expect(transactionsEqual(t1, t2)).toBe(true);
+            if (t1 && t2) {
+              expect(transactionsEqual(t1, t2)).toBe(true);
+            }
           }
         }
       ),
@@ -184,7 +186,7 @@ describe('Property 1: CSV Parsing Round-Trip', () => {
         const result = parser.parse(csv, { dateFormat });
 
         for (let i = 0; i < transactions.length; i++) {
-          expect(datesEqual(transactions[i].date, result.transactions[i].date)).toBe(true);
+          expect(datesEqual(transactions[i]!.date, result.transactions[i]!.date)).toBe(true);
         }
       }),
       { numRuns: 100 }
@@ -198,7 +200,7 @@ describe('Property 1: CSV Parsing Round-Trip', () => {
         const result = parser.parse(csv);
 
         for (let i = 0; i < transactions.length; i++) {
-          expect(amountsEqual(transactions[i].amount, result.transactions[i].amount)).toBe(true);
+          expect(amountsEqual(transactions[i]!.amount, result.transactions[i]!.amount)).toBe(true);
         }
       }),
       { numRuns: 100 }
@@ -212,7 +214,7 @@ describe('Property 1: CSV Parsing Round-Trip', () => {
         const result = parser.parse(csv);
 
         for (let i = 0; i < transactions.length; i++) {
-          expect(result.transactions[i].description).toBe(transactions[i].description);
+          expect(result.transactions[i]!.description).toBe(transactions[i]!.description);
         }
       }),
       { numRuns: 100 }
@@ -242,7 +244,7 @@ describe('Property 1: CSV Parsing Round-Trip', () => {
           expect(result.transactions.length).toBe(transactions.length);
 
           for (let i = 0; i < transactions.length; i++) {
-            expect(result.transactions[i].description).toBe(transactions[i].description);
+            expect(result.transactions[i]!.description).toBe(transactions[i]!.description);
           }
         }
       ),
@@ -270,8 +272,8 @@ describe('Property 1: CSV Parsing Round-Trip', () => {
         expect(result3.transactions.length).toBe(result2.transactions.length);
 
         for (let i = 0; i < result1.transactions.length; i++) {
-          expect(transactionsEqual(result1.transactions[i], result2.transactions[i])).toBe(true);
-          expect(transactionsEqual(result2.transactions[i], result3.transactions[i])).toBe(true);
+          expect(transactionsEqual(result1.transactions[i]!, result2.transactions[i]!)).toBe(true);
+          expect(transactionsEqual(result2.transactions[i]!, result3.transactions[i]!)).toBe(true);
         }
       }),
       { numRuns: 100 }

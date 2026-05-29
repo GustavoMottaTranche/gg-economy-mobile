@@ -7,7 +7,7 @@
  */
 
 import { renderHook, act } from '@testing-library/react-native';
-import { AppState, AppStateStatus } from 'react-native';
+import { AppStateStatus } from 'react-native';
 import {
   useAppStateCleanup,
   sensitiveDataCache,

@@ -8,6 +8,48 @@
       "when": 1777734850556,
       "tag": "0000_jittery_zodiak",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1778500000000,
+      "tag": "0001_add_batch_group_id",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1779000000000,
+      "tag": "0002_add_expense_groups",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1779500000000,
+      "tag": "0003_add_installment_group_id",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1780000000000,
+      "tag": "0004_add_title_and_recurring",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "6",
+      "when": 1780500000000,
+      "tag": "0005_add_weekly_recurring",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1781000000000,
+      "tag": "0006_add_payment_status",
+      "breakpoints": true
     }
   ]
 }

@@ -62,7 +62,7 @@ const mockRecordDelivery = jest.fn();
 
 const defaultUseNotificationSettingsReturn = {
   isEnabled: false,
-  frequency: 'disabled' as const,
+  frequency: 'disabled' as 'disabled' | 'daily' | 'weekly' | 'monthly',
   preferredHour: 9,
   preferredMinute: 0,
   scheduledNotificationId: null as string | null,

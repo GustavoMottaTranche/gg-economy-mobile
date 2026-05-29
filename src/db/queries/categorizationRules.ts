@@ -64,7 +64,8 @@ export async function getCategorizationRuleById(id: string) {
     .from(categorizationRules)
     .where(eq(categorizationRules.id, id))
     .limit(1);
-  return results.length > 0 ? toCategorizationRule(results[0]) : null;
+  const first = results[0];
+  return first ? toCategorizationRule(first) : null;
 }
 
 /**
@@ -210,7 +211,8 @@ export async function getCategorizationRuleWithCategory(id: string) {
 
   if (results.length === 0) return null;
 
-  const { rule, category } = results[0];
+  const firstResult = results[0]!;
+  const { rule, category } = firstResult;
   return {
     ...toCategorizationRule(rule),
     category: category ? { ...category, createdAt: new Date(category.createdAt) } : null,

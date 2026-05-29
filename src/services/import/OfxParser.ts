@@ -115,7 +115,7 @@ export class OfxParser {
     }
 
     // Normalize line endings and remove BOM if present
-    let normalizedContent = content
+    const normalizedContent = content
       .replace(/^\uFEFF/, '') // Remove BOM
       .replace(/\r\n/g, '\n')
       .replace(/\r/g, '\n');
@@ -151,8 +151,11 @@ export class OfxParser {
 
     // Parse each STMTTRN element
     for (let i = 0; i < stmtTrnElements.length; i++) {
+      const stmtTrnElement = stmtTrnElements[i];
+      if (!stmtTrnElement) continue;
+
       try {
-        const rawTrn = this.parseStmtTrnElement(stmtTrnElements[i]);
+        const rawTrn = this.parseStmtTrnElement(stmtTrnElement);
         const transaction = this.convertToRawTransaction(rawTrn, i);
 
         if (transaction) {
@@ -162,7 +165,7 @@ export class OfxParser {
         errors.push({
           message: error instanceof Error ? error.message : 'Unknown parsing error',
           transactionIndex: i,
-          rawContent: stmtTrnElements[i].substring(0, 200),
+          rawContent: stmtTrnElement.substring(0, 200),
         });
       }
     }
@@ -197,19 +200,19 @@ export class OfxParser {
 
     // Extract BANKID
     const bankIdMatch = content.match(/<BANKID>([^<\n]+)/i);
-    if (bankIdMatch) {
+    if (bankIdMatch?.[1]) {
       info.bankId = bankIdMatch[1].trim();
     }
 
     // Extract ACCTID
     const acctIdMatch = content.match(/<ACCTID>([^<\n]+)/i);
-    if (acctIdMatch) {
+    if (acctIdMatch?.[1]) {
       info.accountId = acctIdMatch[1].trim();
     }
 
     // Extract ACCTTYPE
     const acctTypeMatch = content.match(/<ACCTTYPE>([^<\n]+)/i);
-    if (acctTypeMatch) {
+    if (acctTypeMatch?.[1]) {
       info.accountType = acctTypeMatch[1].trim();
     }
 
@@ -231,7 +234,7 @@ export class OfxParser {
 
     let match;
     while ((match = stmtTrnRegex.exec(content)) !== null) {
-      const element = match[1].trim();
+      const element = match[1]?.trim();
       if (element) {
         elements.push(element);
       }
@@ -248,49 +251,49 @@ export class OfxParser {
 
     // Extract TRNTYPE
     const trnTypeMatch = element.match(/<TRNTYPE>([^<\n]+)/i);
-    if (trnTypeMatch) {
+    if (trnTypeMatch?.[1]) {
       raw.trnType = trnTypeMatch[1].trim();
     }
 
     // Extract DTPOSTED
     const dtPostedMatch = element.match(/<DTPOSTED>([^<\n]+)/i);
-    if (dtPostedMatch) {
+    if (dtPostedMatch?.[1]) {
       raw.dtPosted = dtPostedMatch[1].trim();
     }
 
     // Extract TRNAMT
     const trnAmtMatch = element.match(/<TRNAMT>([^<\n]+)/i);
-    if (trnAmtMatch) {
+    if (trnAmtMatch?.[1]) {
       raw.trnAmt = trnAmtMatch[1].trim();
     }
 
     // Extract FITID
     const fitIdMatch = element.match(/<FITID>([^<\n]+)/i);
-    if (fitIdMatch) {
+    if (fitIdMatch?.[1]) {
       raw.fitId = fitIdMatch[1].trim();
     }
 
     // Extract NAME
     const nameMatch = element.match(/<NAME>([^<\n]+)/i);
-    if (nameMatch) {
+    if (nameMatch?.[1]) {
       raw.name = this.unescapeOfxValue(nameMatch[1].trim());
     }
 
     // Extract MEMO
     const memoMatch = element.match(/<MEMO>([^<\n]+)/i);
-    if (memoMatch) {
+    if (memoMatch?.[1]) {
       raw.memo = this.unescapeOfxValue(memoMatch[1].trim());
     }
 
     // Extract CHECKNUM
     const checkNumMatch = element.match(/<CHECKNUM>([^<\n]+)/i);
-    if (checkNumMatch) {
+    if (checkNumMatch?.[1]) {
       raw.checkNum = checkNumMatch[1].trim();
     }
 
     // Extract REFNUM
     const refNumMatch = element.match(/<REFNUM>([^<\n]+)/i);
-    if (refNumMatch) {
+    if (refNumMatch?.[1]) {
       raw.refNum = refNumMatch[1].trim();
     }
 

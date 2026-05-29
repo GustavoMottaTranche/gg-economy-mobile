@@ -8,7 +8,7 @@
  * - Manual backup/restore actions
  * - Backup status display (last backup time, status)
  *
- * **Validates: Requirements 7, 8, 9, 10, 26, 30**
+ * **Validates: Requirements 7, 8, 9, 10, 26, 30, 5.5, 6.1, 10.1, 10.2, 10.3, 10.4**
  */
 import { useState, useCallback, useEffect, useRef } from 'react';
 import {
@@ -21,14 +21,20 @@ import {
   ActivityIndicator,
   Alert,
   FlatList,
+  TextInput,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
-import { useBackup, type RestoreProgress } from '../../../src/hooks/useBackup';
+import { useBackup } from '../../../src/hooks/useBackup';
 import { oAuthService } from '../../../src/services/backup/OAuthService';
 import { useBackupConnection } from '../../../src/stores/backupStore';
 import type { BackupMetadata } from '../../../src/types/backup';
 import type { BackupFrequency } from '../../../src/stores/backupStore';
+import { useThemeColors } from '../../../src/hooks/useThemeColors';
+import { spacing, typography, borderRadius } from '../../../src/constants/theme';
+import { customServerSettingsStore } from '../../../src/services/backup/CustomServerSettingsStore';
+import { testConnection, listBackups as fetchCustomBackups, mapServerToAppMetadata, deleteBackup } from '../../../src/services/backup/CustomServerClient';
+import { createCustomServerBackup, restoreFromCustomServer } from '../../../src/services/backup/CustomServerIntegration';
 
 /**
  * Format file size in human-readable format
@@ -92,26 +98,21 @@ const HOUR_OPTIONS = Array.from({ length: 24 }, (_, i) => ({
 
 export default function BackupSettingsScreen() {
   const { t } = useTranslation();
+  const colors = useThemeColors();
   const {
-    // Status
     lastBackupTime,
     lastBackupStatus,
     lastBackupError,
-    // Operation state
     isBackingUp,
     isRestoring,
     backupProgress,
     restoreProgress,
-    // Connection state
     isConnected,
     connectedEmail,
-    // Scheduled backup
     backupFrequency,
     preferredHour,
-    // Available backups
     backups,
     isLoadingBackups,
-    // Actions
     connect,
     disconnect,
     backupNow,
@@ -121,61 +122,69 @@ export default function BackupSettingsScreen() {
     setPreferredHour,
   } = useBackup();
 
-  // Get connection setter from store for initialization
   const { setConnectionStatus } = useBackupConnection();
 
-  // Modal states
   const [showFrequencyModal, setShowFrequencyModal] = useState(false);
   const [showTimeModal, setShowTimeModal] = useState(false);
   const [showRestoreModal, setShowRestoreModal] = useState(false);
   const [showProgressModal, setShowProgressModal] = useState(false);
-  const [selectedBackup, setSelectedBackup] = useState<BackupMetadata | null>(null);
+  const [_selectedBackup, setSelectedBackup] = useState<BackupMetadata | null>(null);
   const [isInitializing, setIsInitializing] = useState(true);
 
-  // Track if initialization has run
+  // Custom Server state
+  const [customServerExpanded, setCustomServerExpanded] = useState(false);
+  const [customServerUrl, setCustomServerUrl] = useState('');
+  const [customApiKey, setCustomApiKey] = useState('');
+  const [customServerUrlError, setCustomServerUrlError] = useState<string | null>(null);
+  const [customApiKeyError, setCustomApiKeyError] = useState<string | null>(null);
+  const [customServerSaveSuccess, setCustomServerSaveSuccess] = useState(false);
+  const [isSavingCustomServer, setIsSavingCustomServer] = useState(false);
+
+  // Connection test state
+  const [isTestingConnection, setIsTestingConnection] = useState(false);
+  const [connectionTestResult, setConnectionTestResult] = useState<'success' | 'error' | null>(null);
+  const [connectionTestError, setConnectionTestError] = useState<string | null>(null);
+
+  // Custom server backup list state
+  const [customBackups, setCustomBackups] = useState<BackupMetadata[]>([]);
+  const [isLoadingCustomBackups, setIsLoadingCustomBackups] = useState(false);
+  const [customBackupsError, setCustomBackupsError] = useState<string | null>(null);
+
+  // Custom server action state
+  const [isCustomBackingUp, setIsCustomBackingUp] = useState(false);
+  const [isCustomRestoring, setIsCustomRestoring] = useState(false);
+
   const hasInitialized = useRef(false);
 
-  /**
-   * Initialize connection state from OAuthService on mount
-   * This ensures the UI reflects the actual OAuth state (tokens may have expired)
-   */
   useEffect(() => {
     if (hasInitialized.current) return;
     hasInitialized.current = true;
 
     const initializeConnectionState = async () => {
       try {
-        // Check if user is actually signed in (has valid tokens)
         const signedIn = await oAuthService.isSignedIn();
-
         if (signedIn) {
-          // Get current user info
           const user = await oAuthService.getCurrentUser();
           if (user) {
             setConnectionStatus(true, user.email);
           } else {
-            // Tokens exist but can't get user - try to refresh
             try {
               await oAuthService.getAccessToken();
               const refreshedUser = await oAuthService.getCurrentUser();
               if (refreshedUser) {
                 setConnectionStatus(true, refreshedUser.email);
               } else {
-                // Can't get user info, mark as disconnected
                 setConnectionStatus(false, null);
               }
             } catch {
-              // Token refresh failed, mark as disconnected
               setConnectionStatus(false, null);
             }
           }
         } else {
-          // Not signed in, ensure store reflects this
           setConnectionStatus(false, null);
         }
       } catch (error) {
         console.error('[BackupSettings] Failed to initialize connection state:', error);
-        // On error, assume disconnected
         setConnectionStatus(false, null);
       } finally {
         setIsInitializing(false);
@@ -185,23 +194,37 @@ export default function BackupSettingsScreen() {
     initializeConnectionState();
   }, [setConnectionStatus]);
 
-  // Load backups when restore modal opens
   useEffect(() => {
     if (showRestoreModal && isConnected) {
       listBackups();
     }
   }, [showRestoreModal, isConnected, listBackups]);
 
-  // Show progress modal when backup/restore starts
+  // Load custom server settings on mount
+  useEffect(() => {
+    const loadCustomServerSettings = async () => {
+      try {
+        const settings = await customServerSettingsStore.getSettings();
+        if (settings.serverUrl) {
+          setCustomServerUrl(settings.serverUrl);
+        }
+        if (settings.apiKey) {
+          setCustomApiKey(settings.apiKey);
+        }
+      } catch (error) {
+        console.error('[BackupSettings] Failed to load custom server settings:', error);
+      }
+    };
+
+    loadCustomServerSettings();
+  }, []);
+
   useEffect(() => {
     if (isBackingUp || isRestoring) {
       setShowProgressModal(true);
     }
   }, [isBackingUp, isRestoring]);
 
-  /**
-   * Handle Google account connection
-   */
   const handleConnect = useCallback(async () => {
     try {
       const success = await connect();
@@ -213,9 +236,6 @@ export default function BackupSettingsScreen() {
     }
   }, [connect, t]);
 
-  /**
-   * Handle Google account disconnection
-   */
   const handleDisconnect = useCallback(async () => {
     Alert.alert(
       t('backup.disconnect'),
@@ -234,9 +254,6 @@ export default function BackupSettingsScreen() {
     );
   }, [disconnect, t]);
 
-  /**
-   * Handle backup now action
-   */
   const handleBackupNow = useCallback(async () => {
     const result = await backupNow();
     if (!result.success) {
@@ -244,14 +261,10 @@ export default function BackupSettingsScreen() {
     }
   }, [backupNow, t]);
 
-  /**
-   * Handle restore action
-   */
   const handleRestore = useCallback(
     async (backup: BackupMetadata) => {
       setSelectedBackup(backup);
       setShowRestoreModal(false);
-
       Alert.alert(t('backup.confirmRestore'), t('backup.restoreWarning'), [
         { text: t('common.cancel'), style: 'cancel' },
         {
@@ -271,9 +284,6 @@ export default function BackupSettingsScreen() {
     [restore, t]
   );
 
-  /**
-   * Handle frequency selection
-   */
   const handleFrequencySelect = useCallback(
     (frequency: BackupFrequency) => {
       setBackupFrequency(frequency);
@@ -282,9 +292,6 @@ export default function BackupSettingsScreen() {
     [setBackupFrequency]
   );
 
-  /**
-   * Handle time selection
-   */
   const handleTimeSelect = useCallback(
     (hour: number) => {
       setPreferredHour(hour);
@@ -293,9 +300,6 @@ export default function BackupSettingsScreen() {
     [setPreferredHour]
   );
 
-  /**
-   * Get frequency display text
-   */
   const getFrequencyText = useCallback(
     (frequency: BackupFrequency): string => {
       const option = FREQUENCY_OPTIONS.find((opt) => opt.value === frequency);
@@ -304,102 +308,299 @@ export default function BackupSettingsScreen() {
     [t]
   );
 
-  /**
-   * Get backup status display
-   */
+  const handleSaveCustomServer = useCallback(async () => {
+    setCustomServerUrlError(null);
+    setCustomApiKeyError(null);
+    setCustomServerSaveSuccess(false);
+
+    const urlValidation = customServerSettingsStore.validateServerUrl(customServerUrl);
+    const apiKeyValidation = customServerSettingsStore.validateApiKey(customApiKey);
+
+    let hasError = false;
+    if (!urlValidation.valid) {
+      setCustomServerUrlError(urlValidation.error ?? t('backup.customServer.invalidUrl'));
+      hasError = true;
+    }
+    if (!apiKeyValidation.valid) {
+      setCustomApiKeyError(apiKeyValidation.error ?? t('backup.customServer.invalidApiKey'));
+      hasError = true;
+    }
+
+    if (hasError) return;
+
+    setIsSavingCustomServer(true);
+    try {
+      await customServerSettingsStore.saveSettings(customServerUrl, customApiKey);
+      setCustomServerSaveSuccess(true);
+      setTimeout(() => setCustomServerSaveSuccess(false), 3000);
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : t('backup.errors.unknownError');
+      Alert.alert(t('common.error'), errorMessage);
+    } finally {
+      setIsSavingCustomServer(false);
+    }
+  }, [customServerUrl, customApiKey, t]);
+
+  const fetchCustomBackupList = useCallback(async () => {
+    setIsLoadingCustomBackups(true);
+    setCustomBackupsError(null);
+
+    try {
+      const settings = await customServerSettingsStore.getSettings();
+      const serverUrl = settings.serverUrl || customServerUrl;
+      const apiKey = settings.apiKey || customApiKey;
+      const deviceId = await customServerSettingsStore.getOrCreateDeviceId();
+
+      const backupList = await fetchCustomBackups({ serverUrl, apiKey, deviceId });
+      // Limit display to 50 items (API already returns sorted by date descending)
+      const mappedBackups = backupList.slice(0, 50).map(mapServerToAppMetadata);
+      setCustomBackups(mappedBackups);
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : t('backup.errors.unknownError');
+      setCustomBackupsError(errorMessage);
+    } finally {
+      setIsLoadingCustomBackups(false);
+    }
+  }, [customServerUrl, customApiKey, t]);
+
+  const handleTestConnection = useCallback(async () => {
+    setIsTestingConnection(true);
+    setConnectionTestResult(null);
+    setConnectionTestError(null);
+
+    try {
+      const settings = await customServerSettingsStore.getSettings();
+      const serverUrl = settings.serverUrl || customServerUrl;
+      const apiKey = settings.apiKey || customApiKey;
+      const deviceId = await customServerSettingsStore.getOrCreateDeviceId();
+
+      // Use a 15-second timeout wrapper
+      const timeoutPromise = new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error(t('backup.customServer.connectionFailed') + ': timeout')), 15000)
+      );
+
+      await Promise.race([
+        testConnection({ serverUrl, apiKey, deviceId }),
+        timeoutPromise,
+      ]);
+
+      setConnectionTestResult('success');
+
+      // Automatically fetch backup list after successful connection test
+      fetchCustomBackupList();
+    } catch (error) {
+      setConnectionTestResult('error');
+      const errorMessage = error instanceof Error ? error.message : t('backup.customServer.connectionFailed');
+      setConnectionTestError(errorMessage);
+    } finally {
+      setIsTestingConnection(false);
+    }
+  }, [customServerUrl, customApiKey, t, fetchCustomBackupList]);
+
+  const handleCustomBackupNow = useCallback(async () => {
+    setIsCustomBackingUp(true);
+    try {
+      const settings = await customServerSettingsStore.getSettings();
+      const serverUrl = settings.serverUrl || customServerUrl;
+      const apiKey = settings.apiKey || customApiKey;
+      const deviceId = await customServerSettingsStore.getOrCreateDeviceId();
+
+      await createCustomServerBackup({ serverUrl, apiKey, deviceId });
+
+      Alert.alert(t('common.success'), t('backup.customServer.backupSuccess'));
+      // Refresh the backup list on success
+      fetchCustomBackupList();
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : t('backup.errors.unknownError');
+      Alert.alert(t('common.error'), errorMessage);
+    } finally {
+      setIsCustomBackingUp(false);
+    }
+  }, [customServerUrl, customApiKey, t, fetchCustomBackupList]);
+
+  const handleCustomRestore = useCallback(async (item: BackupMetadata) => {
+    Alert.alert(
+      t('backup.customServer.confirmRestore'),
+      t('backup.customServer.confirmRestoreMessage'),
+      [
+        { text: t('common.cancel'), style: 'cancel' },
+        {
+          text: t('backup.customServer.restore'),
+          style: 'destructive',
+          onPress: async () => {
+            setIsCustomRestoring(true);
+            try {
+              const settings = await customServerSettingsStore.getSettings();
+              const serverUrl = settings.serverUrl || customServerUrl;
+              const apiKey = settings.apiKey || customApiKey;
+              const deviceId = await customServerSettingsStore.getOrCreateDeviceId();
+
+              await restoreFromCustomServer(item.fileName, { serverUrl, apiKey, deviceId });
+
+              Alert.alert(
+                t('common.success'),
+                t('backup.customServer.restoreSuccess') + '\n\nO app será reiniciado.',
+                [
+                  {
+                    text: 'OK',
+                    onPress: () => {
+                      // Reload the app to pick up the restored database
+                      const { DevSettings } = require('react-native');
+                      if (DevSettings?.reload) {
+                        DevSettings.reload();
+                      }
+                    },
+                  },
+                ]
+              );
+            } catch (error) {
+              const errorMessage = error instanceof Error ? error.message : t('backup.errors.unknownError');
+              Alert.alert(t('common.error'), errorMessage);
+            } finally {
+              setIsCustomRestoring(false);
+            }
+          },
+        },
+      ]
+    );
+  }, [customServerUrl, customApiKey, t]);
+
+  const handleCustomDelete = useCallback(async (item: BackupMetadata) => {
+    Alert.alert(
+      t('backup.customServer.confirmDelete'),
+      t('backup.customServer.confirmDeleteMessage'),
+      [
+        { text: t('common.cancel'), style: 'cancel' },
+        {
+          text: t('backup.customServer.delete'),
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              const settings = await customServerSettingsStore.getSettings();
+              const serverUrl = settings.serverUrl || customServerUrl;
+              const apiKey = settings.apiKey || customApiKey;
+              const deviceId = await customServerSettingsStore.getOrCreateDeviceId();
+
+              await deleteBackup(item.fileName, { serverUrl, apiKey, deviceId });
+
+              // Refresh the backup list on success
+              fetchCustomBackupList();
+            } catch (error) {
+              const errorMessage = error instanceof Error ? error.message : t('backup.errors.unknownError');
+              Alert.alert(t('common.error'), errorMessage);
+            }
+          },
+        },
+      ]
+    );
+  }, [customServerUrl, customApiKey, t, fetchCustomBackupList]);
+
   const getBackupStatusDisplay = useCallback((): { text: string; color: string } => {
     if (lastBackupStatus === 'never') {
-      return { text: t('backup.never'), color: '#8E8E93' };
+      return { text: t('backup.never'), color: colors.text.tertiary };
     }
     if (lastBackupStatus === 'failed') {
       return {
         text: lastBackupError ?? t('backup.error'),
-        color: '#FF3B30',
+        color: colors.semantic.danger.base,
       };
     }
     if (lastBackupTime) {
       return {
         text: formatRelativeTime(lastBackupTime),
-        color: '#34C759',
+        color: colors.semantic.success.base,
       };
     }
-    return { text: t('backup.never'), color: '#8E8E93' };
-  }, [lastBackupStatus, lastBackupTime, lastBackupError, t]);
+    return { text: t('backup.never'), color: colors.text.tertiary };
+  }, [lastBackupStatus, lastBackupTime, lastBackupError, t, colors]);
 
-  /**
-   * Render backup item in restore list
-   */
   const renderBackupItem = useCallback(
     ({ item }: { item: BackupMetadata }) => (
       <TouchableOpacity
-        style={styles.backupItem}
+        style={[styles.backupItem, { borderBottomColor: colors.border.subtle }]}
         onPress={() => handleRestore(item)}
         accessibilityRole="button"
         accessibilityLabel={`${t('backup.restore')} ${formatBackupDate(item.createdAt)}`}
         testID={`backup-item-${item.id}`}
       >
         <View style={styles.backupItemInfo}>
-          <Text style={styles.backupItemDate}>{formatBackupDate(item.createdAt)}</Text>
-          <Text style={styles.backupItemSize}>{formatFileSize(item.sizeBytes)}</Text>
+          <Text style={[styles.backupItemDate, { color: colors.text.primary }]}>
+            {formatBackupDate(item.createdAt)}
+          </Text>
+          <Text style={[styles.backupItemSize, { color: colors.text.tertiary }]}>
+            {formatFileSize(item.sizeBytes)}
+          </Text>
         </View>
-        <Text style={styles.chevron}>›</Text>
+        <Text style={[styles.chevron, { color: colors.text.tertiary }]}>›</Text>
       </TouchableOpacity>
     ),
-    [handleRestore, t]
+    [handleRestore, t, colors]
   );
 
   const backupStatusDisplay = getBackupStatusDisplay();
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={['bottom']}>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background.secondary }]} edges={['bottom']}>
       <ScrollView
-        style={styles.container}
+        style={[styles.container, { backgroundColor: colors.background.secondary }]}
         contentContainerStyle={styles.contentContainer}
         testID="backup-settings-screen"
       >
         {/* Google Account Section */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>{t('backup.googleAccount')}</Text>
-          <View style={styles.sectionContent}>
+          <Text style={[styles.sectionTitle, { color: colors.text.secondary }]}>
+            {t('backup.googleAccount')}
+          </Text>
+          <View style={[styles.sectionContent, { backgroundColor: colors.surface.card, borderColor: colors.border.default }]}>
             <View style={styles.accountItem} testID="google-account-section">
               <Text style={styles.accountIcon}>👤</Text>
               <View style={styles.accountInfo}>
                 {isInitializing ? (
                   <View style={styles.initializingContainer}>
-                    <ActivityIndicator size="small" color="#007AFF" />
-                    <Text style={styles.initializingText}>{t('common.loading')}</Text>
+                    <ActivityIndicator size="small" color={colors.interactive.primary} />
+                    <Text style={[styles.initializingText, { color: colors.text.tertiary }]}>
+                      {t('common.loading')}
+                    </Text>
                   </View>
                 ) : isConnected ? (
                   <>
-                    <Text style={styles.accountEmail} testID="connected-email">
+                    <Text style={[styles.accountEmail, { color: colors.text.primary }]} testID="connected-email">
                       {connectedEmail}
                     </Text>
-                    <Text style={styles.accountStatus}>{t('backup.connected')}</Text>
+                    <Text style={[styles.accountStatus, { color: colors.text.tertiary }]}>
+                      {t('backup.connected')}
+                    </Text>
                   </>
                 ) : (
-                  <Text style={styles.accountStatus}>{t('backup.notConnected')}</Text>
+                  <Text style={[styles.accountStatus, { color: colors.text.tertiary }]}>
+                    {t('backup.notConnected')}
+                  </Text>
                 )}
               </View>
               {!isInitializing &&
                 (isConnected ? (
                   <TouchableOpacity
-                    style={styles.disconnectButton}
+                    style={[styles.actionBtn, { backgroundColor: colors.semantic.danger.base }]}
                     onPress={handleDisconnect}
                     accessibilityRole="button"
                     accessibilityLabel={t('backup.disconnect')}
                     testID="disconnect-button"
                   >
-                    <Text style={styles.disconnectButtonText}>{t('backup.disconnect')}</Text>
+                    <Text style={[styles.actionBtnText, { color: colors.text.inverse }]}>
+                      {t('backup.disconnect')}
+                    </Text>
                   </TouchableOpacity>
                 ) : (
                   <TouchableOpacity
-                    style={styles.connectButton}
+                    style={[styles.actionBtn, { backgroundColor: colors.interactive.primary }]}
                     onPress={handleConnect}
                     accessibilityRole="button"
                     accessibilityLabel={t('backup.connect')}
                     testID="connect-button"
                   >
-                    <Text style={styles.connectButtonText}>{t('backup.connect')}</Text>
+                    <Text style={[styles.actionBtnText, { color: colors.text.inverse }]}>
+                      {t('backup.connect')}
+                    </Text>
                   </TouchableOpacity>
                 ))}
             </View>
@@ -408,25 +609,20 @@ export default function BackupSettingsScreen() {
 
         {/* Backup Status Section */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>{t('backup.lastBackup')}</Text>
-          <View style={styles.sectionContent}>
+          <Text style={[styles.sectionTitle, { color: colors.text.secondary }]}>
+            {t('backup.lastBackup')}
+          </Text>
+          <View style={[styles.sectionContent, { backgroundColor: colors.surface.card, borderColor: colors.border.default }]}>
             <View style={styles.statusItem} testID="backup-status-section">
               <Text style={styles.statusIcon}>
-                {lastBackupStatus === 'success'
-                  ? '✅'
-                  : lastBackupStatus === 'failed'
-                    ? '❌'
-                    : '📅'}
+                {lastBackupStatus === 'success' ? '✅' : lastBackupStatus === 'failed' ? '❌' : '📅'}
               </Text>
               <View style={styles.statusInfo}>
-                <Text
-                  style={[styles.statusText, { color: backupStatusDisplay.color }]}
-                  testID="backup-status-text"
-                >
+                <Text style={[styles.statusText, { color: backupStatusDisplay.color }]} testID="backup-status-text">
                   {backupStatusDisplay.text}
                 </Text>
                 {lastBackupTime && lastBackupStatus === 'success' && (
-                  <Text style={styles.statusSubtext} testID="backup-time-text">
+                  <Text style={[styles.statusSubtext, { color: colors.text.tertiary }]} testID="backup-time-text">
                     {formatBackupDate(lastBackupTime)}
                   </Text>
                 )}
@@ -437,8 +633,10 @@ export default function BackupSettingsScreen() {
 
         {/* Backup Frequency Section */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>{t('backup.scheduledBackup')}</Text>
-          <View style={styles.sectionContent}>
+          <Text style={[styles.sectionTitle, { color: colors.text.secondary }]}>
+            {t('backup.scheduledBackup')}
+          </Text>
+          <View style={[styles.sectionContent, { backgroundColor: colors.surface.card, borderColor: colors.border.default }]}>
             <TouchableOpacity
               style={styles.frequencyItem}
               onPress={() => setShowFrequencyModal(true)}
@@ -448,17 +646,19 @@ export default function BackupSettingsScreen() {
               accessibilityState={{ disabled: !isConnected }}
               testID="frequency-selector"
             >
-              <Text style={styles.frequencyLabel}>{t('backup.frequency')}</Text>
+              <Text style={[styles.frequencyLabel, { color: colors.text.primary }]}>
+                {t('backup.frequency')}
+              </Text>
               <View style={styles.frequencyValue}>
-                <Text style={[styles.frequencyText, !isConnected && styles.disabledText]}>
+                <Text style={[styles.frequencyText, { color: colors.text.tertiary }, !isConnected && styles.disabledOpacity]}>
                   {getFrequencyText(backupFrequency)}
                 </Text>
-                <Text style={[styles.chevron, !isConnected && styles.disabledText]}>›</Text>
+                <Text style={[styles.chevron, { color: colors.text.tertiary }, !isConnected && styles.disabledOpacity]}>›</Text>
               </View>
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={[styles.frequencyItem, styles.borderTop]}
+              style={[styles.frequencyItem, { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border.subtle }]}
               onPress={() => setShowTimeModal(true)}
               disabled={!isConnected || backupFrequency === 'disabled'}
               accessibilityRole="button"
@@ -466,24 +666,14 @@ export default function BackupSettingsScreen() {
               accessibilityState={{ disabled: !isConnected || backupFrequency === 'disabled' }}
               testID="time-selector"
             >
-              <Text style={styles.frequencyLabel}>{t('backup.preferredTime')}</Text>
+              <Text style={[styles.frequencyLabel, { color: colors.text.primary }]}>
+                {t('backup.preferredTime')}
+              </Text>
               <View style={styles.frequencyValue}>
-                <Text
-                  style={[
-                    styles.frequencyText,
-                    (!isConnected || backupFrequency === 'disabled') && styles.disabledText,
-                  ]}
-                >
+                <Text style={[styles.frequencyText, { color: colors.text.tertiary }, (!isConnected || backupFrequency === 'disabled') && styles.disabledOpacity]}>
                   {`${preferredHour.toString().padStart(2, '0')}:00`}
                 </Text>
-                <Text
-                  style={[
-                    styles.chevron,
-                    (!isConnected || backupFrequency === 'disabled') && styles.disabledText,
-                  ]}
-                >
-                  ›
-                </Text>
+                <Text style={[styles.chevron, { color: colors.text.tertiary }, (!isConnected || backupFrequency === 'disabled') && styles.disabledOpacity]}>›</Text>
               </View>
             </TouchableOpacity>
           </View>
@@ -491,9 +681,9 @@ export default function BackupSettingsScreen() {
 
         {/* Actions Section */}
         <View style={styles.section}>
-          <View style={styles.sectionContent}>
+          <View style={[styles.sectionContent, { backgroundColor: colors.surface.card, borderColor: colors.border.default }]}>
             <TouchableOpacity
-              style={[styles.actionButton, !isConnected && styles.actionButtonDisabled]}
+              style={[styles.actionButton, { borderBottomColor: colors.border.subtle }, !isConnected && styles.actionButtonDisabled]}
               onPress={handleBackupNow}
               disabled={!isConnected || isBackingUp}
               accessibilityRole="button"
@@ -502,7 +692,7 @@ export default function BackupSettingsScreen() {
               testID="backup-now-button"
             >
               <Text style={styles.actionIcon}>☁️</Text>
-              <Text style={[styles.actionText, !isConnected && styles.actionTextDisabled]}>
+              <Text style={[styles.actionText, { color: colors.interactive.primary }, !isConnected && { color: colors.text.tertiary }]}>
                 {t('backup.backupNow')}
               </Text>
             </TouchableOpacity>
@@ -517,47 +707,303 @@ export default function BackupSettingsScreen() {
               testID="restore-button"
             >
               <Text style={styles.actionIcon}>📥</Text>
-              <Text style={[styles.actionText, !isConnected && styles.actionTextDisabled]}>
+              <Text style={[styles.actionText, { color: colors.interactive.primary }, !isConnected && { color: colors.text.tertiary }]}>
                 {t('backup.restore')}
               </Text>
             </TouchableOpacity>
           </View>
         </View>
 
-        <Text style={styles.hint}>{t('settings.dataStorageDescription')}</Text>
+        <Text style={[styles.hint, { color: colors.text.tertiary }]}>
+          {t('settings.dataStorageDescription')}
+        </Text>
+
+        {/* Custom Server Section */}
+        <View style={styles.section}>
+          <TouchableOpacity
+            style={styles.collapsibleHeader}
+            onPress={() => setCustomServerExpanded(!customServerExpanded)}
+            accessibilityRole="button"
+            accessibilityLabel={t('backup.customServer.title')}
+            accessibilityState={{ expanded: customServerExpanded }}
+            testID="custom-server-header"
+          >
+            <Text style={[styles.sectionTitle, { color: colors.text.secondary, marginBottom: 0, marginLeft: 0 }]}>
+              {t('backup.customServer.title')}
+            </Text>
+            <Text style={[styles.chevron, { color: colors.text.tertiary, transform: [{ rotate: customServerExpanded ? '90deg' : '0deg' }] }]}>
+              ›
+            </Text>
+          </TouchableOpacity>
+
+          {customServerExpanded && (
+            <View style={[styles.sectionContent, { backgroundColor: colors.surface.card, borderColor: colors.border.default }]} testID="custom-server-section">
+              {/* Server URL Input */}
+              <View style={styles.inputGroup}>
+                <Text style={[styles.inputLabel, { color: colors.text.primary }]}>
+                  {t('backup.customServer.serverUrl')}
+                </Text>
+                <TextInput
+                  style={[
+                    styles.textInput,
+                    { backgroundColor: colors.background.secondary, color: colors.text.primary, borderColor: customServerUrlError ? colors.semantic.danger.base : colors.border.default },
+                  ]}
+                  value={customServerUrl}
+                  onChangeText={(text) => {
+                    setCustomServerUrl(text);
+                    if (customServerUrlError) setCustomServerUrlError(null);
+                  }}
+                  placeholder={t('backup.customServer.serverUrlPlaceholder')}
+                  placeholderTextColor={colors.text.tertiary}
+                  maxLength={2048}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  keyboardType="url"
+                  testID="custom-server-url-input"
+                  accessibilityLabel={t('backup.customServer.serverUrl')}
+                />
+                {customServerUrlError && (
+                  <Text style={[styles.errorText, { color: colors.semantic.danger.base }]} testID="custom-server-url-error">
+                    {customServerUrlError}
+                  </Text>
+                )}
+              </View>
+
+              {/* API Key Input */}
+              <View style={styles.inputGroup}>
+                <Text style={[styles.inputLabel, { color: colors.text.primary }]}>
+                  {t('backup.customServer.apiKey')}
+                </Text>
+                <TextInput
+                  style={[
+                    styles.textInput,
+                    { backgroundColor: colors.background.secondary, color: colors.text.primary, borderColor: customApiKeyError ? colors.semantic.danger.base : colors.border.default },
+                  ]}
+                  value={customApiKey}
+                  onChangeText={(text) => {
+                    setCustomApiKey(text);
+                    if (customApiKeyError) setCustomApiKeyError(null);
+                  }}
+                  placeholder={t('backup.customServer.apiKeyPlaceholder')}
+                  placeholderTextColor={colors.text.tertiary}
+                  maxLength={256}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  secureTextEntry
+                  testID="custom-server-api-key-input"
+                  accessibilityLabel={t('backup.customServer.apiKey')}
+                />
+                {customApiKeyError && (
+                  <Text style={[styles.errorText, { color: colors.semantic.danger.base }]} testID="custom-server-api-key-error">
+                    {customApiKeyError}
+                  </Text>
+                )}
+              </View>
+
+              {/* Save Button */}
+              <TouchableOpacity
+                style={[styles.saveButton, { backgroundColor: colors.interactive.primary }]}
+                onPress={handleSaveCustomServer}
+                disabled={isSavingCustomServer}
+                accessibilityRole="button"
+                accessibilityLabel={t('backup.customServer.save')}
+                testID="custom-server-save-button"
+              >
+                {isSavingCustomServer ? (
+                  <ActivityIndicator size="small" color={colors.text.inverse} />
+                ) : (
+                  <Text style={[styles.saveButtonText, { color: colors.text.inverse }]}>
+                    {t('backup.customServer.save')}
+                  </Text>
+                )}
+              </TouchableOpacity>
+
+              {/* Success Message */}
+              {customServerSaveSuccess && (
+                <Text style={[styles.successText, { color: colors.semantic.success.base }]} testID="custom-server-save-success">
+                  {t('backup.customServer.saveSuccess')}
+                </Text>
+              )}
+
+              {/* Test Connection Button */}
+              <TouchableOpacity
+                style={[styles.saveButton, { backgroundColor: colors.interactive.primary, marginTop: spacing.xs }]}
+                onPress={handleTestConnection}
+                disabled={isTestingConnection}
+                accessibilityRole="button"
+                accessibilityLabel={t('backup.customServer.testConnection')}
+                testID="custom-server-test-connection-button"
+              >
+                {isTestingConnection ? (
+                  <ActivityIndicator size="small" color={colors.text.inverse} />
+                ) : (
+                  <Text style={[styles.saveButtonText, { color: colors.text.inverse }]}>
+                    {t('backup.customServer.testConnection')}
+                  </Text>
+                )}
+              </TouchableOpacity>
+
+              {/* Connection Test Status */}
+              {isTestingConnection && (
+                <Text style={[styles.successText, { color: colors.text.tertiary }]} testID="custom-server-testing-indicator">
+                  {t('backup.customServer.testing')}
+                </Text>
+              )}
+              {connectionTestResult === 'success' && (
+                <Text style={[styles.successText, { color: colors.semantic.success.base }]} testID="custom-server-connection-success">
+                  ✓ {t('backup.customServer.connectionSuccess')}
+                </Text>
+              )}
+              {connectionTestResult === 'error' && (
+                <Text style={[styles.errorText, { color: colors.semantic.danger.base, textAlign: 'center', marginBottom: spacing.md, paddingHorizontal: spacing.base }]} testID="custom-server-connection-error">
+                  {connectionTestError ?? t('backup.customServer.connectionFailed')}
+                </Text>
+              )}
+
+              {/* Custom Server Backup List */}
+              {connectionTestResult === 'success' && (
+                <View style={styles.customBackupListSection} testID="custom-server-backup-list-section">
+                  {/* Backup Now Button */}
+                  <TouchableOpacity
+                    style={[styles.saveButton, { backgroundColor: colors.interactive.primary }]}
+                    onPress={handleCustomBackupNow}
+                    disabled={isCustomBackingUp || isCustomRestoring}
+                    accessibilityRole="button"
+                    accessibilityLabel={t('backup.customServer.backupNow')}
+                    testID="custom-server-backup-now-button"
+                  >
+                    {isCustomBackingUp ? (
+                      <ActivityIndicator size="small" color={colors.text.inverse} />
+                    ) : (
+                      <Text style={[styles.saveButtonText, { color: colors.text.inverse }]}>
+                        {t('backup.customServer.backupNow')}
+                      </Text>
+                    )}
+                  </TouchableOpacity>
+
+                  <View style={styles.customBackupListHeader}>
+                    <Text style={[styles.inputLabel, { color: colors.text.primary }]}>
+                      {t('backup.customServer.backupList')}
+                    </Text>
+                    <TouchableOpacity
+                      onPress={fetchCustomBackupList}
+                      disabled={isLoadingCustomBackups}
+                      accessibilityRole="button"
+                      accessibilityLabel={t('backup.customServer.refresh')}
+                      testID="custom-server-refresh-button"
+                    >
+                      <Text style={[styles.refreshButtonText, { color: colors.interactive.primary }, isLoadingCustomBackups && styles.disabledOpacity]}>
+                        {t('backup.customServer.refresh')}
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+
+                  {isLoadingCustomBackups && (
+                    <View style={styles.loadingContainer} testID="custom-server-backups-loading">
+                      <ActivityIndicator size="small" color={colors.interactive.primary} />
+                      <Text style={[styles.loadingText, { color: colors.text.tertiary }]}>
+                        {t('backup.customServer.loadingBackups')}
+                      </Text>
+                    </View>
+                  )}
+
+                  {!isLoadingCustomBackups && customBackupsError && (
+                    <Text style={[styles.errorText, { color: colors.semantic.danger.base, textAlign: 'center', marginBottom: spacing.md, paddingHorizontal: spacing.base }]} testID="custom-server-backups-error">
+                      {customBackupsError}
+                    </Text>
+                  )}
+
+                  {!isLoadingCustomBackups && !customBackupsError && customBackups.length === 0 && (
+                    <View style={styles.emptyContainer} testID="custom-server-no-backups">
+                      <Text style={[styles.emptyText, { color: colors.text.tertiary }]}>
+                        {t('backup.customServer.noBackups')}
+                      </Text>
+                    </View>
+                  )}
+
+                  {!isLoadingCustomBackups && !customBackupsError && customBackups.length > 0 && (
+                    <View testID="custom-server-backups-list">
+                      {customBackups.map((item) => (
+                        <View
+                          key={item.id}
+                          style={[styles.customBackupItem, { borderBottomColor: colors.border.subtle }]}
+                          testID={`custom-backup-item-${item.id}`}
+                        >
+                          <View style={styles.backupItemInfo}>
+                            <Text style={[styles.backupItemDate, { color: colors.text.primary }]} numberOfLines={1}>
+                              {item.fileName}
+                            </Text>
+                            <View style={styles.customBackupItemMeta}>
+                              <Text style={[styles.backupItemSize, { color: colors.text.tertiary }]}>
+                                {formatBackupDate(item.createdAt)}
+                              </Text>
+                              <Text style={[styles.backupItemSize, { color: colors.text.tertiary }]}>
+                                {' · '}
+                                {formatFileSize(item.sizeBytes)}
+                              </Text>
+                            </View>
+                          </View>
+                          <View style={styles.customBackupItemActions}>
+                            <TouchableOpacity
+                              style={[styles.customBackupActionBtn, { backgroundColor: colors.interactive.primary }]}
+                              onPress={() => handleCustomRestore(item)}
+                              disabled={isCustomRestoring || isCustomBackingUp}
+                              accessibilityRole="button"
+                              accessibilityLabel={`${t('backup.customServer.restore')} ${item.fileName}`}
+                              testID={`custom-backup-restore-${item.id}`}
+                            >
+                              {isCustomRestoring ? (
+                                <ActivityIndicator size="small" color={colors.text.inverse} />
+                              ) : (
+                                <Text style={[styles.customBackupActionText, { color: colors.text.inverse }]}>
+                                  {t('backup.customServer.restore')}
+                                </Text>
+                              )}
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                              style={[styles.customBackupActionBtn, { backgroundColor: colors.semantic.danger.base }]}
+                              onPress={() => handleCustomDelete(item)}
+                              disabled={isCustomRestoring || isCustomBackingUp}
+                              accessibilityRole="button"
+                              accessibilityLabel={`${t('backup.customServer.delete')} ${item.fileName}`}
+                              testID={`custom-backup-delete-${item.id}`}
+                            >
+                              <Text style={[styles.customBackupActionText, { color: colors.text.inverse }]}>
+                                {t('backup.customServer.delete')}
+                              </Text>
+                            </TouchableOpacity>
+                          </View>
+                        </View>
+                      ))}
+                    </View>
+                  )}
+                </View>
+              )}
+            </View>
+          )}
+        </View>
 
         {/* Frequency Selection Modal */}
-        <Modal
-          visible={showFrequencyModal}
-          animationType="slide"
-          transparent
-          onRequestClose={() => setShowFrequencyModal(false)}
-          testID="frequency-modal"
-        >
-          <View style={styles.modalOverlay}>
-            <View style={styles.modalContent}>
-              <View style={styles.modalHeader}>
-                <Text style={styles.modalTitle}>{t('backup.frequency')}</Text>
-                <TouchableOpacity
-                  onPress={() => setShowFrequencyModal(false)}
-                  accessibilityRole="button"
-                  accessibilityLabel={t('common.close')}
-                  testID="close-frequency-modal"
-                >
-                  <Text style={styles.modalClose}>{t('common.close')}</Text>
+        <Modal visible={showFrequencyModal} animationType="slide" transparent onRequestClose={() => setShowFrequencyModal(false)} testID="frequency-modal">
+          <View style={[styles.modalOverlay, { backgroundColor: colors.surface.overlay }]}>
+            <View style={[styles.modalContent, { backgroundColor: colors.surface.card }]}>
+              <View style={[styles.modalHeader, { borderBottomColor: colors.border.subtle }]}>
+                <Text style={[styles.modalTitle, { color: colors.text.primary }]}>{t('backup.frequency')}</Text>
+                <TouchableOpacity onPress={() => setShowFrequencyModal(false)} accessibilityRole="button" accessibilityLabel={t('common.close')} testID="close-frequency-modal">
+                  <Text style={[styles.modalClose, { color: colors.interactive.primary }]}>{t('common.close')}</Text>
                 </TouchableOpacity>
               </View>
               {FREQUENCY_OPTIONS.map((option) => (
                 <TouchableOpacity
                   key={option.value}
-                  style={styles.modalOption}
+                  style={[styles.modalOption, { borderBottomColor: colors.border.subtle }]}
                   onPress={() => handleFrequencySelect(option.value)}
                   accessibilityRole="radio"
                   accessibilityState={{ selected: backupFrequency === option.value }}
                   testID={`frequency-option-${option.value}`}
                 >
-                  <Text style={styles.modalOptionText}>{t(option.labelKey)}</Text>
-                  {backupFrequency === option.value && <Text style={styles.checkmark}>✓</Text>}
+                  <Text style={[styles.modalOptionText, { color: colors.text.primary }]}>{t(option.labelKey)}</Text>
+                  {backupFrequency === option.value && <Text style={[styles.checkmark, { color: colors.interactive.primary }]}>✓</Text>}
                 </TouchableOpacity>
               ))}
             </View>
@@ -565,24 +1011,13 @@ export default function BackupSettingsScreen() {
         </Modal>
 
         {/* Time Selection Modal */}
-        <Modal
-          visible={showTimeModal}
-          animationType="slide"
-          transparent
-          onRequestClose={() => setShowTimeModal(false)}
-          testID="time-modal"
-        >
-          <View style={styles.modalOverlay}>
-            <View style={styles.modalContent}>
-              <View style={styles.modalHeader}>
-                <Text style={styles.modalTitle}>{t('backup.preferredTime')}</Text>
-                <TouchableOpacity
-                  onPress={() => setShowTimeModal(false)}
-                  accessibilityRole="button"
-                  accessibilityLabel={t('common.close')}
-                  testID="close-time-modal"
-                >
-                  <Text style={styles.modalClose}>{t('common.close')}</Text>
+        <Modal visible={showTimeModal} animationType="slide" transparent onRequestClose={() => setShowTimeModal(false)} testID="time-modal">
+          <View style={[styles.modalOverlay, { backgroundColor: colors.surface.overlay }]}>
+            <View style={[styles.modalContent, { backgroundColor: colors.surface.card }]}>
+              <View style={[styles.modalHeader, { borderBottomColor: colors.border.subtle }]}>
+                <Text style={[styles.modalTitle, { color: colors.text.primary }]}>{t('backup.preferredTime')}</Text>
+                <TouchableOpacity onPress={() => setShowTimeModal(false)} accessibilityRole="button" accessibilityLabel={t('common.close')} testID="close-time-modal">
+                  <Text style={[styles.modalClose, { color: colors.interactive.primary }]}>{t('common.close')}</Text>
                 </TouchableOpacity>
               </View>
               <FlatList
@@ -590,14 +1025,14 @@ export default function BackupSettingsScreen() {
                 keyExtractor={(item) => item.value.toString()}
                 renderItem={({ item }) => (
                   <TouchableOpacity
-                    style={styles.modalOption}
+                    style={[styles.modalOption, { borderBottomColor: colors.border.subtle }]}
                     onPress={() => handleTimeSelect(item.value)}
                     accessibilityRole="radio"
                     accessibilityState={{ selected: preferredHour === item.value }}
                     testID={`time-option-${item.value}`}
                   >
-                    <Text style={styles.modalOptionText}>{item.label}</Text>
-                    {preferredHour === item.value && <Text style={styles.checkmark}>✓</Text>}
+                    <Text style={[styles.modalOptionText, { color: colors.text.primary }]}>{item.label}</Text>
+                    {preferredHour === item.value && <Text style={[styles.checkmark, { color: colors.interactive.primary }]}>✓</Text>}
                   </TouchableOpacity>
                 )}
                 style={styles.timeList}
@@ -607,80 +1042,52 @@ export default function BackupSettingsScreen() {
         </Modal>
 
         {/* Restore Backup Modal */}
-        <Modal
-          visible={showRestoreModal}
-          animationType="slide"
-          transparent
-          onRequestClose={() => setShowRestoreModal(false)}
-          testID="restore-modal"
-        >
-          <View style={styles.modalOverlay}>
-            <View style={styles.modalContent}>
-              <View style={styles.modalHeader}>
-                <Text style={styles.modalTitle}>{t('backup.selectBackup')}</Text>
-                <TouchableOpacity
-                  onPress={() => setShowRestoreModal(false)}
-                  accessibilityRole="button"
-                  accessibilityLabel={t('common.close')}
-                  testID="close-restore-modal"
-                >
-                  <Text style={styles.modalClose}>{t('common.close')}</Text>
+        <Modal visible={showRestoreModal} animationType="slide" transparent onRequestClose={() => setShowRestoreModal(false)} testID="restore-modal">
+          <View style={[styles.modalOverlay, { backgroundColor: colors.surface.overlay }]}>
+            <View style={[styles.modalContent, { backgroundColor: colors.surface.card }]}>
+              <View style={[styles.modalHeader, { borderBottomColor: colors.border.subtle }]}>
+                <Text style={[styles.modalTitle, { color: colors.text.primary }]}>{t('backup.selectBackup')}</Text>
+                <TouchableOpacity onPress={() => setShowRestoreModal(false)} accessibilityRole="button" accessibilityLabel={t('common.close')} testID="close-restore-modal">
+                  <Text style={[styles.modalClose, { color: colors.interactive.primary }]}>{t('common.close')}</Text>
                 </TouchableOpacity>
               </View>
               {isLoadingBackups ? (
                 <View style={styles.loadingContainer} testID="backups-loading">
-                  <ActivityIndicator size="large" color="#007AFF" />
-                  <Text style={styles.loadingText}>{t('common.loading')}</Text>
+                  <ActivityIndicator size="large" color={colors.interactive.primary} />
+                  <Text style={[styles.loadingText, { color: colors.text.tertiary }]}>{t('common.loading')}</Text>
                 </View>
               ) : backups.length === 0 ? (
                 <View style={styles.emptyContainer} testID="no-backups">
-                  <Text style={styles.emptyText}>{t('backup.noBackupsFound')}</Text>
+                  <Text style={[styles.emptyText, { color: colors.text.tertiary }]}>{t('backup.noBackupsFound')}</Text>
                 </View>
               ) : (
-                <FlatList
-                  data={backups}
-                  keyExtractor={(item) => item.id}
-                  renderItem={renderBackupItem}
-                  style={styles.backupList}
-                  testID="backups-list"
-                />
+                <FlatList data={backups} keyExtractor={(item) => item.id} renderItem={renderBackupItem} style={styles.backupList} testID="backups-list" />
               )}
             </View>
           </View>
         </Modal>
 
         {/* Progress Modal */}
-        <Modal
-          visible={showProgressModal && (isBackingUp || isRestoring)}
-          animationType="fade"
-          transparent
-          onRequestClose={() => {}}
-          testID="progress-modal"
-        >
-          <View style={styles.progressOverlay}>
-            <View style={styles.progressContent}>
-              <ActivityIndicator size="large" color="#007AFF" />
-              <Text style={styles.progressTitle}>
+        <Modal visible={showProgressModal && (isBackingUp || isRestoring)} animationType="fade" transparent onRequestClose={() => {}} testID="progress-modal">
+          <View style={[styles.progressOverlay, { backgroundColor: colors.surface.overlay }]}>
+            <View style={[styles.progressContent, { backgroundColor: colors.surface.card }]}>
+              <ActivityIndicator size="large" color={colors.interactive.primary} />
+              <Text style={[styles.progressTitle, { color: colors.text.primary }]}>
                 {isBackingUp ? t('backup.inProgress') : t('backup.restoreInProgress')}
               </Text>
               {backupProgress && (
-                <Text style={styles.progressMessage} testID="backup-progress-message">
+                <Text style={[styles.progressMessage, { color: colors.text.tertiary }]} testID="backup-progress-message">
                   {backupProgress.message}
                 </Text>
               )}
               {restoreProgress && (
-                <Text style={styles.progressMessage} testID="restore-progress-message">
+                <Text style={[styles.progressMessage, { color: colors.text.tertiary }]} testID="restore-progress-message">
                   {restoreProgress.message}
                 </Text>
               )}
-              <View style={styles.progressBar}>
+              <View style={[styles.progressBar, { backgroundColor: colors.border.default }]}>
                 <View
-                  style={[
-                    styles.progressFill,
-                    {
-                      width: `${Math.round((backupProgress?.progress ?? restoreProgress?.progress ?? 0) * 100)}%`,
-                    } as const,
-                  ]}
+                  style={[styles.progressFill, { backgroundColor: colors.interactive.primary, width: `${Math.round((backupProgress?.progress ?? restoreProgress?.progress ?? 0) * 100)}%` } as const]}
                   testID="progress-bar-fill"
                 />
               </View>
@@ -695,53 +1102,46 @@ export default function BackupSettingsScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#F2F2F7',
   },
   container: {
     flex: 1,
-    backgroundColor: '#F2F2F7',
   },
   contentContainer: {
-    paddingVertical: 20,
+    paddingVertical: spacing.lg,
   },
   section: {
-    marginBottom: 24,
+    marginBottom: spacing.xl,
   },
   sectionTitle: {
-    fontSize: 13,
+    fontSize: typography.caption.fontSize,
     fontWeight: '600',
-    color: '#6D6D72',
     textTransform: 'uppercase',
-    marginLeft: 16,
-    marginBottom: 8,
+    marginLeft: spacing.base,
+    marginBottom: spacing.sm,
   },
   sectionContent: {
-    backgroundColor: '#FFFFFF',
     borderTopWidth: 1,
     borderBottomWidth: 1,
-    borderColor: '#E5E5EA',
   },
   accountItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.base,
   },
   accountIcon: {
-    fontSize: 32,
-    marginRight: 12,
+    fontSize: spacing['2xl'],
+    marginRight: spacing.md,
   },
   accountInfo: {
     flex: 1,
   },
   accountEmail: {
-    fontSize: 16,
+    fontSize: typography.body.fontSize,
     fontWeight: '600',
-    color: '#000000',
   },
   accountStatus: {
-    fontSize: 14,
-    color: '#8E8E93',
+    fontSize: typography.caption.fontSize + 1,
     marginTop: 2,
   },
   initializingContainer: {
@@ -749,159 +1149,123 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   initializingText: {
-    fontSize: 14,
-    color: '#8E8E93',
-    marginLeft: 8,
+    fontSize: typography.caption.fontSize + 1,
+    marginLeft: spacing.sm,
   },
-  connectButton: {
-    backgroundColor: '#007AFF',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 8,
+  actionBtn: {
+    paddingHorizontal: spacing.base,
+    paddingVertical: spacing.sm,
+    borderRadius: borderRadius.sm,
   },
-  connectButtonText: {
-    color: '#FFFFFF',
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  disconnectButton: {
-    backgroundColor: '#FF3B30',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 8,
-  },
-  disconnectButtonText: {
-    color: '#FFFFFF',
-    fontSize: 14,
+  actionBtnText: {
+    fontSize: typography.caption.fontSize + 1,
     fontWeight: '600',
   },
   statusItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.base,
   },
   statusIcon: {
-    fontSize: 20,
-    marginRight: 12,
+    fontSize: spacing.lg,
+    marginRight: spacing.md,
   },
   statusInfo: {
     flex: 1,
   },
   statusText: {
-    fontSize: 16,
+    fontSize: typography.body.fontSize,
   },
   statusSubtext: {
-    fontSize: 13,
-    color: '#8E8E93',
+    fontSize: typography.caption.fontSize,
     marginTop: 2,
   },
   frequencyItem: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-  },
-  borderTop: {
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: '#E5E5EA',
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.base,
   },
   frequencyLabel: {
-    fontSize: 16,
-    color: '#000000',
+    fontSize: typography.body.fontSize,
   },
   frequencyValue: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   frequencyText: {
-    fontSize: 16,
-    color: '#8E8E93',
-    marginRight: 8,
+    fontSize: typography.body.fontSize,
+    marginRight: spacing.sm,
   },
-  disabledText: {
-    color: '#C7C7CC',
+  disabledOpacity: {
+    opacity: 0.4,
   },
   chevron: {
-    fontSize: 20,
-    color: '#C7C7CC',
+    fontSize: spacing.lg,
   },
   actionButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.base,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#E5E5EA',
   },
   actionButtonDisabled: {
     opacity: 0.5,
   },
   actionIcon: {
-    fontSize: 20,
-    marginRight: 12,
+    fontSize: spacing.lg,
+    marginRight: spacing.md,
   },
   actionText: {
-    fontSize: 16,
-    color: '#007AFF',
-  },
-  actionTextDisabled: {
-    color: '#8E8E93',
+    fontSize: typography.body.fontSize,
   },
   hint: {
-    fontSize: 13,
-    color: '#8E8E93',
+    fontSize: typography.caption.fontSize,
     textAlign: 'center',
-    paddingHorizontal: 32,
-    marginTop: 8,
+    paddingHorizontal: spacing['2xl'],
+    marginTop: spacing.sm,
   },
   // Modal styles
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
     justifyContent: 'flex-end',
   },
   modalContent: {
-    backgroundColor: '#FFFFFF',
-    borderTopLeftRadius: 16,
-    borderTopRightRadius: 16,
+    borderTopLeftRadius: borderRadius.lg,
+    borderTopRightRadius: borderRadius.lg,
     maxHeight: '70%',
   },
   modalHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 16,
+    paddingHorizontal: spacing.base,
+    paddingVertical: spacing.base,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#E5E5EA',
   },
   modalTitle: {
-    fontSize: 17,
+    fontSize: typography.body.fontSize + 1,
     fontWeight: '600',
-    color: '#000000',
   },
   modalClose: {
-    fontSize: 17,
-    color: '#007AFF',
+    fontSize: typography.body.fontSize + 1,
   },
   modalOption: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 14,
-    paddingHorizontal: 16,
+    paddingVertical: spacing.md + 2,
+    paddingHorizontal: spacing.base,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#E5E5EA',
   },
   modalOptionText: {
-    fontSize: 17,
-    color: '#000000',
+    fontSize: typography.body.fontSize + 1,
   },
   checkmark: {
-    fontSize: 17,
-    color: '#007AFF',
+    fontSize: typography.body.fontSize + 1,
     fontWeight: '600',
   },
   timeList: {
@@ -914,78 +1278,160 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 14,
-    paddingHorizontal: 16,
+    paddingVertical: spacing.md + 2,
+    paddingHorizontal: spacing.base,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#E5E5EA',
   },
   backupItemInfo: {
     flex: 1,
   },
   backupItemDate: {
-    fontSize: 16,
-    color: '#000000',
+    fontSize: typography.body.fontSize,
   },
   backupItemSize: {
-    fontSize: 13,
-    color: '#8E8E93',
+    fontSize: typography.caption.fontSize,
     marginTop: 2,
   },
   loadingContainer: {
-    padding: 40,
+    padding: spacing['2xl'] + spacing.sm,
     alignItems: 'center',
   },
   loadingText: {
-    marginTop: 12,
-    fontSize: 16,
-    color: '#8E8E93',
+    marginTop: spacing.md,
+    fontSize: typography.body.fontSize,
   },
   emptyContainer: {
-    padding: 40,
+    padding: spacing['2xl'] + spacing.sm,
     alignItems: 'center',
   },
   emptyText: {
-    fontSize: 16,
-    color: '#8E8E93',
+    fontSize: typography.body.fontSize,
     textAlign: 'center',
   },
   // Progress modal styles
   progressOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
     justifyContent: 'center',
     alignItems: 'center',
   },
   progressContent: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    padding: 24,
+    borderRadius: borderRadius.lg,
+    padding: spacing.xl,
     width: '80%',
     alignItems: 'center',
   },
   progressTitle: {
-    fontSize: 17,
+    fontSize: typography.body.fontSize + 1,
     fontWeight: '600',
-    color: '#000000',
-    marginTop: 16,
-    marginBottom: 8,
+    marginTop: spacing.base,
+    marginBottom: spacing.sm,
   },
   progressMessage: {
-    fontSize: 14,
-    color: '#8E8E93',
+    fontSize: typography.caption.fontSize + 1,
     textAlign: 'center',
-    marginBottom: 16,
+    marginBottom: spacing.base,
   },
   progressBar: {
     width: '100%',
-    height: 4,
-    backgroundColor: '#E5E5EA',
+    height: spacing.xs,
     borderRadius: 2,
     overflow: 'hidden',
   },
   progressFill: {
     height: '100%',
-    backgroundColor: '#007AFF',
     borderRadius: 2,
+  },
+  // Custom Server styles
+  collapsibleHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: spacing.base,
+    paddingVertical: spacing.sm,
+    marginBottom: spacing.sm,
+  },
+  inputGroup: {
+    paddingHorizontal: spacing.base,
+    paddingVertical: spacing.sm,
+  },
+  inputLabel: {
+    fontSize: typography.caption.fontSize + 1,
+    fontWeight: '500',
+    marginBottom: spacing.xs,
+  },
+  textInput: {
+    borderRadius: borderRadius.md,
+    borderWidth: 1,
+    paddingHorizontal: spacing.base,
+    paddingVertical: spacing.md,
+    fontSize: typography.body.fontSize,
+  },
+  errorText: {
+    fontSize: typography.caption.fontSize,
+    marginTop: spacing.xs,
+  },
+  saveButton: {
+    marginHorizontal: spacing.base,
+    marginVertical: spacing.md,
+    paddingVertical: spacing.md,
+    borderRadius: borderRadius.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 44,
+  },
+  saveButtonText: {
+    fontSize: typography.body.fontSize,
+    fontWeight: '600',
+  },
+  successText: {
+    fontSize: typography.caption.fontSize + 1,
+    textAlign: 'center',
+    marginBottom: spacing.md,
+  },
+  // Custom server backup list styles
+  customBackupListSection: {
+    marginTop: spacing.md,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: '#e0e0e0',
+    paddingTop: spacing.md,
+  },
+  customBackupListHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: spacing.base,
+    marginBottom: spacing.sm,
+  },
+  refreshButtonText: {
+    fontSize: typography.caption.fontSize + 1,
+    fontWeight: '600',
+  },
+  customBackupItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: spacing.sm + 2,
+    paddingHorizontal: spacing.base,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+  customBackupItemMeta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 2,
+  },
+  customBackupItemActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
+  customBackupActionBtn: {
+    paddingHorizontal: spacing.sm + 2,
+    paddingVertical: spacing.xs + 2,
+    borderRadius: borderRadius.sm,
+    minWidth: 60,
+    alignItems: 'center',
+  },
+  customBackupActionText: {
+    fontSize: typography.caption.fontSize,
+    fontWeight: '600',
   },
 });

@@ -15,6 +15,8 @@ import React, { memo, useCallback, useMemo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, FlatList, ScrollView } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import type { MultiFileImportResult, FileImportResult } from '../../services/import/types';
+import { useThemeColors } from '../../hooks/useThemeColors';
+import { spacing, borderRadius } from '../../constants/theme';
 
 /**
  * Props for the ImportSummary component
@@ -60,8 +62,9 @@ const FileResultItem = memo(function FileResultItem({
   result,
 }: {
   result: FileImportResult;
-}): JSX.Element {
+}): React.JSX.Element {
   const { t } = useTranslation();
+  const colors = useThemeColors();
   const status = getFileStatus(result);
   const statusIcon = STATUS_ICONS[status];
 
@@ -90,7 +93,11 @@ const FileResultItem = memo(function FileResultItem({
 
   return (
     <View
-      style={[styles.fileResultItem, !result.success && styles.fileResultItemFailed]}
+      style={[
+        styles.fileResultItem,
+        { backgroundColor: colors.background.secondary },
+        !result.success && { backgroundColor: colors.semantic.danger.light },
+      ]}
       testID={`file-result-${result.fileName}`}
     >
       <View style={styles.fileResultContent}>
@@ -99,13 +106,21 @@ const FileResultItem = memo(function FileResultItem({
         </Text>
         <View style={styles.fileResultInfo}>
           <Text
-            style={[styles.fileResultName, !result.success && styles.fileResultNameFailed]}
+            style={[
+              styles.fileResultName,
+              { color: colors.text.primary },
+              !result.success && { color: colors.semantic.danger.dark },
+            ]}
             numberOfLines={1}
           >
             {result.fileName}
           </Text>
           <Text
-            style={[styles.fileResultStatus, !result.success && styles.fileResultStatusError]}
+            style={[
+              styles.fileResultStatus,
+              { color: colors.text.secondary },
+              !result.success && { color: colors.semantic.danger.base },
+            ]}
             numberOfLines={2}
             testID={`file-status-text-${result.fileName}`}
           >
@@ -161,8 +176,9 @@ function ImportSummaryComponent({
   onGoToReview,
   onRetryFailed,
   onClose,
-}: ImportSummaryProps): JSX.Element {
+}: ImportSummaryProps): React.JSX.Element {
   const { t } = useTranslation();
+  const colors = useThemeColors();
 
   // Calculate totals
   const totalDuplicates = useMemo(
@@ -235,7 +251,7 @@ function ImportSummaryComponent({
   };
 
   return (
-    <View style={styles.container} testID="import-summary">
+    <View style={[styles.container, { backgroundColor: colors.surface.card }]} testID="import-summary">
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
@@ -246,9 +262,13 @@ function ImportSummaryComponent({
           <Text style={styles.statusIcon} testID="overall-status-icon">
             {getOverallStatusIcon()}
           </Text>
-          <Text style={styles.title}>{t('fileImport.summary.title')}</Text>
+          <Text style={[styles.title, { color: colors.text.primary }]}>{t('fileImport.summary.title')}</Text>
           <Text
-            style={[styles.statusText, allFilesFailed && styles.statusTextError]}
+            style={[
+              styles.statusText,
+              { color: colors.text.secondary },
+              allFilesFailed && { color: colors.semantic.danger.base },
+            ]}
             testID="overall-status-text"
           >
             {getOverallStatusText()}
@@ -257,17 +277,20 @@ function ImportSummaryComponent({
 
         {/* All Files Failed Error Message (Requirement 7.7) */}
         {allFilesFailed && (
-          <View style={styles.errorContainer} testID="all-files-failed-error">
-            <Text style={styles.errorTitle}>{t('fileImport.summary.errorTitle')}</Text>
-            <Text style={styles.errorMessage}>{t('fileImport.summary.errorMessage')}</Text>
-            <View style={styles.troubleshootingContainer}>
-              <Text style={styles.troubleshootingTitle}>
+          <View
+            style={[styles.errorContainer, { backgroundColor: colors.semantic.danger.light, borderColor: colors.semantic.danger.base }]}
+            testID="all-files-failed-error"
+          >
+            <Text style={[styles.errorTitle, { color: colors.semantic.danger.dark }]}>{t('fileImport.summary.errorTitle')}</Text>
+            <Text style={[styles.errorMessage, { color: colors.semantic.danger.dark }]}>{t('fileImport.summary.errorMessage')}</Text>
+            <View style={[styles.troubleshootingContainer, { borderTopColor: colors.semantic.danger.base }]}>
+              <Text style={[styles.troubleshootingTitle, { color: colors.semantic.danger.dark }]}>
                 {t('fileImport.summary.troubleshootingTitle')}
               </Text>
               {TROUBLESHOOTING_SUGGESTIONS.map((suggestion) => (
                 <View key={suggestion} style={styles.suggestionItem}>
-                  <Text style={styles.suggestionBullet}>•</Text>
-                  <Text style={styles.suggestionText}>
+                  <Text style={[styles.suggestionBullet, { color: colors.semantic.danger.dark }]}>•</Text>
+                  <Text style={[styles.suggestionText, { color: colors.semantic.danger.dark }]}>
                     {t(`import.summary.troubleshooting.${suggestion}`)}
                   </Text>
                 </View>
@@ -278,60 +301,73 @@ function ImportSummaryComponent({
 
         {/* Statistics Section (Requirements 7.2, 7.3) */}
         {!allFilesFailed && (
-          <View style={styles.statsContainer} testID="import-stats">
+          <View style={[styles.statsContainer, { backgroundColor: colors.background.secondary }]} testID="import-stats">
             {/* Total Transactions Imported (Requirement 7.2) */}
             <View style={styles.statItem}>
-              <Text style={styles.statValue} testID="total-transactions">
+              <Text style={[styles.statValue, { color: colors.text.primary }]} testID="total-transactions">
                 {result.totalTransactionsImported}
               </Text>
-              <Text style={styles.statLabel}>{t('fileImport.summary.totalTransactions')}</Text>
+              <Text style={[styles.statLabel, { color: colors.text.secondary }]}>{t('fileImport.summary.totalTransactions')}</Text>
             </View>
 
             {/* Total Duplicates Found (Requirement 7.3) */}
             <View style={styles.statItem}>
               <Text
-                style={[styles.statValue, totalDuplicates > 0 && styles.statValueWarning]}
+                style={[
+                  styles.statValue,
+                  { color: colors.text.primary },
+                  totalDuplicates > 0 && { color: colors.semantic.warning.base },
+                ]}
                 testID="total-duplicates"
               >
                 {totalDuplicates}
               </Text>
-              <Text style={styles.statLabel}>{t('fileImport.summary.totalDuplicates')}</Text>
+              <Text style={[styles.statLabel, { color: colors.text.secondary }]}>{t('fileImport.summary.totalDuplicates')}</Text>
             </View>
 
             {/* Files Processed */}
             <View style={styles.statItem}>
-              <Text style={styles.statValue} testID="files-processed">
+              <Text style={[styles.statValue, { color: colors.text.primary }]} testID="files-processed">
                 {successfulFiles}/{result.fileResults.length}
               </Text>
-              <Text style={styles.statLabel}>{t('fileImport.summary.filesProcessed')}</Text>
+              <Text style={[styles.statLabel, { color: colors.text.secondary }]}>{t('fileImport.summary.filesProcessed')}</Text>
             </View>
           </View>
         )}
 
         {/* Duplicate Breakdown */}
         {!allFilesFailed && totalDuplicates > 0 && (
-          <View style={styles.duplicateBreakdown} testID="duplicate-breakdown">
-            <Text style={styles.breakdownTitle}>{t('fileImport.summary.duplicateBreakdown')}</Text>
+          <View
+            style={[styles.duplicateBreakdown, { backgroundColor: colors.semantic.warning.light, borderColor: colors.semantic.warning.base }]}
+            testID="duplicate-breakdown"
+          >
+            <Text style={[styles.breakdownTitle, { color: colors.semantic.warning.dark }]}>{t('fileImport.summary.duplicateBreakdown')}</Text>
             {result.totalDuplicatesInFile > 0 && (
               <View style={styles.breakdownItem}>
-                <Text style={styles.breakdownLabel}>{t('fileImport.summary.inFileDuplicates')}</Text>
-                <Text style={styles.breakdownValue} testID="in-file-duplicates">
+                <Text style={[styles.breakdownLabel, { color: colors.semantic.warning.dark }]}>
+                  {t('fileImport.summary.inFileDuplicates')}
+                </Text>
+                <Text style={[styles.breakdownValue, { color: colors.semantic.warning.dark }]} testID="in-file-duplicates">
                   {result.totalDuplicatesInFile}
                 </Text>
               </View>
             )}
             {result.totalCrossFileDuplicates > 0 && (
               <View style={styles.breakdownItem}>
-                <Text style={styles.breakdownLabel}>{t('fileImport.summary.crossFileDuplicates')}</Text>
-                <Text style={styles.breakdownValue} testID="cross-file-duplicates">
+                <Text style={[styles.breakdownLabel, { color: colors.semantic.warning.dark }]}>
+                  {t('fileImport.summary.crossFileDuplicates')}
+                </Text>
+                <Text style={[styles.breakdownValue, { color: colors.semantic.warning.dark }]} testID="cross-file-duplicates">
                   {result.totalCrossFileDuplicates}
                 </Text>
               </View>
             )}
             {result.totalDatabaseDuplicates > 0 && (
               <View style={styles.breakdownItem}>
-                <Text style={styles.breakdownLabel}>{t('fileImport.summary.databaseDuplicates')}</Text>
-                <Text style={styles.breakdownValue} testID="database-duplicates">
+                <Text style={[styles.breakdownLabel, { color: colors.semantic.warning.dark }]}>
+                  {t('fileImport.summary.databaseDuplicates')}
+                </Text>
+                <Text style={[styles.breakdownValue, { color: colors.semantic.warning.dark }]} testID="database-duplicates">
                   {result.totalDatabaseDuplicates}
                 </Text>
               </View>
@@ -341,7 +377,7 @@ function ImportSummaryComponent({
 
         {/* Per-File Results (Requirements 7.4, 7.5) */}
         <View style={styles.resultsContainer}>
-          <Text style={styles.resultsTitle}>{t('fileImport.summary.fileResults')}</Text>
+          <Text style={[styles.resultsTitle, { color: colors.text.primary }]}>{t('fileImport.summary.fileResults')}</Text>
           <FlatList
             data={result.fileResults}
             renderItem={renderFileResult}
@@ -353,32 +389,32 @@ function ImportSummaryComponent({
       </ScrollView>
 
       {/* Action Buttons */}
-      <View style={styles.actionContainer}>
+      <View style={[styles.actionContainer, { borderTopColor: colors.border.default }]}>
         {/* Retry Failed Button (when there are failed files) */}
         {hasFailedFiles && (
           <TouchableOpacity
-            style={styles.retryButton}
+            style={[styles.retryButton, { backgroundColor: colors.semantic.warning.light }]}
             onPress={handleRetryFailed}
             activeOpacity={0.7}
             accessibilityRole="button"
             accessibilityLabel={t('fileImport.summary.retryFailed')}
             testID="retry-failed-button"
           >
-            <Text style={styles.retryButtonText}>{t('fileImport.summary.retryFailed')}</Text>
+            <Text style={[styles.retryButtonText, { color: colors.semantic.warning.dark }]}>{t('fileImport.summary.retryFailed')}</Text>
           </TouchableOpacity>
         )}
 
         {/* Review All Button (Requirement 7.6) */}
         {hasSuccessfulImports && (
           <TouchableOpacity
-            style={styles.reviewButton}
+            style={[styles.reviewButton, { backgroundColor: colors.interactive.primary }]}
             onPress={handleGoToReview}
             activeOpacity={0.7}
             accessibilityRole="button"
             accessibilityLabel={t('fileImport.summary.reviewAll')}
             testID="review-all-button"
           >
-            <Text style={styles.reviewButtonText}>{t('fileImport.summary.reviewAll')}</Text>
+            <Text style={[styles.reviewButtonText, { color: colors.text.inverse }]}>{t('fileImport.summary.reviewAll')}</Text>
           </TouchableOpacity>
         )}
 
@@ -386,7 +422,8 @@ function ImportSummaryComponent({
         <TouchableOpacity
           style={[
             styles.closeButton,
-            !hasSuccessfulImports && !hasFailedFiles && styles.closeButtonPrimary,
+            { backgroundColor: colors.background.tertiary },
+            !hasSuccessfulImports && !hasFailedFiles && { backgroundColor: colors.interactive.primary },
           ]}
           onPress={handleClose}
           activeOpacity={0.7}
@@ -397,7 +434,8 @@ function ImportSummaryComponent({
           <Text
             style={[
               styles.closeButtonText,
-              !hasSuccessfulImports && !hasFailedFiles && styles.closeButtonTextPrimary,
+              { color: colors.text.primary },
+              !hasSuccessfulImports && !hasFailedFiles && { color: colors.text.inverse },
             ]}
           >
             {t('common.close')}
@@ -414,69 +452,57 @@ function ImportSummaryComponent({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#ffffff',
   },
   scrollView: {
     flex: 1,
   },
   scrollContent: {
-    paddingBottom: 16,
+    paddingBottom: spacing.base,
   },
   header: {
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingTop: 24,
-    paddingBottom: 16,
+    paddingHorizontal: spacing.base,
+    paddingTop: spacing.xl,
+    paddingBottom: spacing.base,
   },
   statusIcon: {
     fontSize: 48,
-    marginBottom: 12,
+    marginBottom: spacing.md,
   },
   title: {
     fontSize: 24,
     fontWeight: '700',
-    color: '#111827',
-    marginBottom: 8,
+    marginBottom: spacing.sm,
   },
   statusText: {
     fontSize: 16,
-    color: '#6b7280',
     textAlign: 'center',
   },
-  statusTextError: {
-    color: '#dc2626',
-  },
   errorContainer: {
-    marginHorizontal: 16,
-    marginTop: 8,
-    padding: 16,
-    backgroundColor: '#fef2f2',
-    borderRadius: 12,
+    marginHorizontal: spacing.base,
+    marginTop: spacing.sm,
+    padding: spacing.base,
+    borderRadius: borderRadius.md,
     borderWidth: 1,
-    borderColor: '#fecaca',
   },
   errorTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#991b1b',
-    marginBottom: 8,
+    marginBottom: spacing.sm,
   },
   errorMessage: {
     fontSize: 14,
-    color: '#b91c1c',
     lineHeight: 20,
-    marginBottom: 16,
+    marginBottom: spacing.base,
   },
   troubleshootingContainer: {
-    paddingTop: 12,
+    paddingTop: spacing.md,
     borderTopWidth: 1,
-    borderTopColor: '#fecaca',
   },
   troubleshootingTitle: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#991b1b',
-    marginBottom: 8,
+    marginBottom: spacing.sm,
   },
   suggestionItem: {
     flexDirection: 'row',
@@ -485,25 +511,22 @@ const styles = StyleSheet.create({
   },
   suggestionBullet: {
     fontSize: 14,
-    color: '#b91c1c',
-    marginRight: 8,
+    marginRight: spacing.sm,
     lineHeight: 20,
   },
   suggestionText: {
     flex: 1,
     fontSize: 14,
-    color: '#b91c1c',
     lineHeight: 20,
   },
   statsContainer: {
     flexDirection: 'row',
     justifyContent: 'space-around',
-    paddingHorizontal: 16,
-    paddingVertical: 20,
-    marginHorizontal: 16,
-    marginTop: 8,
-    backgroundColor: '#f9fafb',
-    borderRadius: 12,
+    paddingHorizontal: spacing.base,
+    paddingVertical: spacing.lg,
+    marginHorizontal: spacing.base,
+    marginTop: spacing.sm,
+    borderRadius: borderRadius.md,
   },
   statItem: {
     alignItems: 'center',
@@ -511,66 +534,51 @@ const styles = StyleSheet.create({
   statValue: {
     fontSize: 28,
     fontWeight: '700',
-    color: '#111827',
-    marginBottom: 4,
-  },
-  statValueWarning: {
-    color: '#d97706',
+    marginBottom: spacing.xs,
   },
   statLabel: {
     fontSize: 12,
-    color: '#6b7280',
     textAlign: 'center',
   },
   duplicateBreakdown: {
-    marginHorizontal: 16,
-    marginTop: 16,
-    padding: 12,
-    backgroundColor: '#fffbeb',
-    borderRadius: 8,
+    marginHorizontal: spacing.base,
+    marginTop: spacing.base,
+    padding: spacing.md,
+    borderRadius: borderRadius.sm,
     borderWidth: 1,
-    borderColor: '#fcd34d',
   },
   breakdownTitle: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#92400e',
-    marginBottom: 8,
+    marginBottom: spacing.sm,
   },
   breakdownItem: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 4,
+    paddingVertical: spacing.xs,
   },
   breakdownLabel: {
     fontSize: 13,
-    color: '#92400e',
   },
   breakdownValue: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#92400e',
   },
   resultsContainer: {
-    marginTop: 20,
-    paddingHorizontal: 16,
+    marginTop: spacing.lg,
+    paddingHorizontal: spacing.base,
   },
   resultsTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#374151',
-    marginBottom: 12,
+    marginBottom: spacing.md,
   },
   fileResultItem: {
-    paddingVertical: 12,
-    paddingHorizontal: 12,
-    backgroundColor: '#f9fafb',
-    borderRadius: 8,
-    marginBottom: 8,
-  },
-  fileResultItemFailed: {
-    backgroundColor: '#fef2f2',
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.md,
+    borderRadius: borderRadius.sm,
+    marginBottom: spacing.sm,
   },
   fileResultContent: {
     flexDirection: 'row',
@@ -578,7 +586,7 @@ const styles = StyleSheet.create({
   },
   fileResultIcon: {
     fontSize: 20,
-    marginRight: 12,
+    marginRight: spacing.md,
   },
   fileResultInfo: {
     flex: 1,
@@ -586,64 +594,43 @@ const styles = StyleSheet.create({
   fileResultName: {
     fontSize: 14,
     fontWeight: '500',
-    color: '#111827',
     marginBottom: 2,
-  },
-  fileResultNameFailed: {
-    color: '#991b1b',
   },
   fileResultStatus: {
     fontSize: 12,
-    color: '#6b7280',
-  },
-  fileResultStatusError: {
-    color: '#dc2626',
   },
   actionContainer: {
-    paddingHorizontal: 16,
-    paddingVertical: 16,
+    paddingHorizontal: spacing.base,
+    paddingVertical: spacing.base,
     borderTopWidth: 1,
-    borderTopColor: '#e5e7eb',
     gap: 10,
   },
   retryButton: {
     paddingVertical: 14,
-    backgroundColor: '#fef3c7',
-    borderRadius: 12,
+    borderRadius: borderRadius.md,
     alignItems: 'center',
   },
   retryButtonText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#92400e',
   },
   reviewButton: {
     paddingVertical: 14,
-    backgroundColor: '#3b82f6',
-    borderRadius: 12,
+    borderRadius: borderRadius.md,
     alignItems: 'center',
   },
   reviewButtonText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#ffffff',
   },
   closeButton: {
     paddingVertical: 14,
-    backgroundColor: '#f3f4f6',
-    borderRadius: 12,
+    borderRadius: borderRadius.md,
     alignItems: 'center',
-  },
-  closeButtonPrimary: {
-    backgroundColor: '#3b82f6',
   },
   closeButtonText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#374151',
-  },
-  closeButtonTextPrimary: {
-    color: '#ffffff',
   },
 });
 

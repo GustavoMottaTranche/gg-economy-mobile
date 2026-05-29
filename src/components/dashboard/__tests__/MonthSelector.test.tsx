@@ -12,13 +12,14 @@ import { MonthSelector } from '../MonthSelector';
 // Mock i18n
 jest.mock('react-i18next', () => ({
   useTranslation: () => ({
-    t: (key: string) => {
+    t: (key: string, options?: { defaultValue?: string }) => {
       const translations: Record<string, string> = {
         'common.previous': 'Previous',
         'common.next': 'Next',
         'transactions.referenceMonth': 'Reference month',
+        'dashboard.futureMonth': 'Futuro',
       };
-      return translations[key] ?? key;
+      return translations[key] ?? options?.defaultValue ?? key;
     },
   }),
 }));
@@ -131,5 +132,41 @@ describe('MonthSelector', () => {
     render(<MonthSelector {...defaultProps} style={customStyle} />);
 
     expect(screen.getByTestId('month-selector')).toBeTruthy();
+  });
+
+  describe('Future month navigation', () => {
+    it('next button is enabled by default when disableNext is not passed', () => {
+      render(<MonthSelector {...defaultProps} />);
+
+      const nextButton = screen.getByTestId('month-selector-next');
+      expect(nextButton.props.accessibilityState?.disabled).not.toBe(true);
+    });
+
+    it('renders future badge with "Futuro" text when isFutureMonth is true', () => {
+      render(<MonthSelector {...defaultProps} isFutureMonth />);
+
+      const futureBadge = screen.getByTestId('month-selector-future-badge');
+      expect(futureBadge).toBeTruthy();
+      expect(screen.getByText('Futuro')).toBeTruthy();
+    });
+
+    it('does not render future badge when isFutureMonth is false (default)', () => {
+      render(<MonthSelector {...defaultProps} />);
+
+      expect(screen.queryByTestId('month-selector-future-badge')).toBeNull();
+    });
+
+    it('displays the correct formatted month label', () => {
+      const { rerender } = render(
+        <MonthSelector {...defaultProps} selectedMonth="2025-03" />
+      );
+
+      const monthText = screen.getByTestId('month-selector-text');
+      expect(monthText).toBeTruthy();
+      expect(screen.getByText('March 2025')).toBeTruthy();
+
+      rerender(<MonthSelector {...defaultProps} selectedMonth="2025-12" />);
+      expect(screen.getByText('December 2025')).toBeTruthy();
+    });
   });
 });

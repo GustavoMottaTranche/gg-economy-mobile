@@ -20,8 +20,8 @@
 import * as DocumentPicker from 'expo-document-picker';
 import * as FileSystem from 'expo-file-system/legacy';
 import * as Linking from 'expo-linking';
-import { CsvParser, csvParser, CsvParseResult } from './CsvParser';
-import { OfxParser, ofxParser, OfxParseResult } from './OfxParser';
+import { CsvParser, csvParser } from './CsvParser';
+import { OfxParser, ofxParser } from './OfxParser';
 import { ExcelParser, excelParser } from './ExcelParser';
 import { DedupeEngine, dedupeEngine, DedupeResult, DuplicateResult } from './DedupeEngine';
 import type { ExcelParseOptions } from './types';
@@ -29,13 +29,7 @@ import type { ITransactionRepository } from '../../repositories/interfaces/ITran
 import type { IImportBatchRepository } from '../../repositories/interfaces/IImportBatchRepository';
 import { transactionRepository } from '../../repositories/TransactionRepository';
 import { importBatchRepository } from '../../repositories/ImportBatchRepository';
-import type {
-  FileType,
-  ImportBatch,
-  CreateTransactionDTO,
-  RawTransaction,
-  Transaction,
-} from '../../types';
+import type { FileType, ImportBatch, CreateTransactionDTO, RawTransaction } from '../../types';
 
 // Import constants from centralized module
 import {
@@ -91,7 +85,11 @@ export interface ImportError {
     | 'UNSUPPORTED_FILE_TYPE'
     | 'EMPTY_FILE'
     | 'NO_TRANSACTIONS'
-    | 'DATABASE_ERROR';
+    | 'DATABASE_ERROR'
+    | 'IMPORT_CANCELLED'
+    | 'IMPORT_ERROR'
+    | 'EXCEL_CORRUPTED'
+    | 'EXCEL_PASSWORD_PROTECTED';
   /** Error message */
   message: string;
   /** Additional context */
@@ -676,6 +674,7 @@ export class ImportService {
 
     // Convert raw transactions to DTOs
     const transactionDTOs: CreateTransactionDTO[] = transactions.map((tx) => ({
+      title: tx.description || '',
       date: tx.date,
       amount: tx.amount,
       description: tx.description,

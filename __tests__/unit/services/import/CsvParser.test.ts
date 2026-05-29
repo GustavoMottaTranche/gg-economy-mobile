@@ -11,11 +11,7 @@
  * @module CsvParser.test
  */
 
-import {
-  CsvParser,
-  CsvDelimiter,
-  CsvParseOptions,
-} from '../../../../src/services/import/CsvParser';
+import { CsvParser } from '../../../../src/services/import/CsvParser';
 import { RawTransaction } from '../../../../src/types/transaction';
 
 describe('CsvParser', () => {
@@ -115,8 +111,8 @@ Test transaction,2024-01-15,100.00`;
 
       const result = parser.parse(csv);
       expect(result.transactions).toHaveLength(2);
-      expect(result.transactions[0].date).toEqual(new Date(2024, 0, 15));
-      expect(result.transactions[0].amount).toBe(100.0);
+      expect(result.transactions[0]!.date).toEqual(new Date(2024, 0, 15));
+      expect(result.transactions[0]!.amount).toBe(100.0);
     });
 
     it('should allow forcing column mapping', () => {
@@ -132,8 +128,8 @@ Test transaction,2024-01-15,100.00`;
       });
 
       expect(result.transactions).toHaveLength(1);
-      expect(result.transactions[0].amount).toBe(100.0);
-      expect(result.transactions[0].description).toBe('Test transaction');
+      expect(result.transactions[0]!.amount).toBe(100.0);
+      expect(result.transactions[0]!.description).toBe('Test transaction');
     });
   });
 
@@ -143,7 +139,7 @@ Test transaction,2024-01-15,100.00`;
 15/01/2024,100.00,Test transaction`;
 
       const result = parser.parse(csv);
-      expect(result.transactions[0].date).toEqual(new Date(2024, 0, 15));
+      expect(result.transactions[0]!.date).toEqual(new Date(2024, 0, 15));
     });
 
     it('should parse MM/DD/YYYY format', () => {
@@ -151,7 +147,7 @@ Test transaction,2024-01-15,100.00`;
 01/15/2024,100.00,Test transaction`;
 
       const result = parser.parse(csv, { dateFormat: 'MM/DD/YYYY' });
-      expect(result.transactions[0].date).toEqual(new Date(2024, 0, 15));
+      expect(result.transactions[0]!.date).toEqual(new Date(2024, 0, 15));
     });
 
     it('should parse YYYY-MM-DD format (ISO)', () => {
@@ -159,7 +155,7 @@ Test transaction,2024-01-15,100.00`;
 2024-01-15,100.00,Test transaction`;
 
       const result = parser.parse(csv);
-      expect(result.transactions[0].date).toEqual(new Date(2024, 0, 15));
+      expect(result.transactions[0]!.date).toEqual(new Date(2024, 0, 15));
     });
 
     it('should auto-detect date format from data', () => {
@@ -168,7 +164,7 @@ Test transaction,2024-01-15,100.00`;
 25/01/2024,100.00,Test transaction`;
 
       const result = parser.parse(csv);
-      expect(result.transactions[0].date).toEqual(new Date(2024, 0, 25));
+      expect(result.transactions[0]!.date).toEqual(new Date(2024, 0, 25));
     });
 
     it('should report error for invalid dates', () => {
@@ -178,7 +174,7 @@ invalid-date,100.00,Test transaction`;
       const result = parser.parse(csv);
       expect(result.transactions).toHaveLength(0);
       expect(result.errors).toHaveLength(1);
-      expect(result.errors[0].message).toContain('Invalid date');
+      expect(result.errors[0]!.message).toContain('Invalid date');
     });
 
     it('should handle dates at month boundaries', () => {
@@ -188,8 +184,8 @@ invalid-date,100.00,Test transaction`;
 
       const result = parser.parse(csv);
       expect(result.transactions).toHaveLength(2);
-      expect(result.transactions[0].date).toEqual(new Date(2024, 0, 31));
-      expect(result.transactions[1].date).toEqual(new Date(2024, 1, 29));
+      expect(result.transactions[0]!.date).toEqual(new Date(2024, 0, 31));
+      expect(result.transactions[1]!.date).toEqual(new Date(2024, 1, 29));
     });
   });
 
@@ -199,7 +195,7 @@ invalid-date,100.00,Test transaction`;
 2024-01-15,1234.56,Test transaction`;
 
       const result = parser.parse(csv);
-      expect(result.transactions[0].amount).toBe(1234.56);
+      expect(result.transactions[0]!.amount).toBe(1234.56);
     });
 
     it('should parse amounts with comma decimal separator (pt-BR)', () => {
@@ -207,7 +203,7 @@ invalid-date,100.00,Test transaction`;
 2024-01-15,"1234,56",Test transaction`;
 
       const result = parser.parse(csv, { locale: 'pt-BR' });
-      expect(result.transactions[0].amount).toBe(1234.56);
+      expect(result.transactions[0]!.amount).toBe(1234.56);
     });
 
     it('should parse amounts with thousand separators (en style: 1,234.56)', () => {
@@ -215,7 +211,7 @@ invalid-date,100.00,Test transaction`;
 2024-01-15,"1,234.56",Test transaction`;
 
       const result = parser.parse(csv, { locale: 'en' });
-      expect(result.transactions[0].amount).toBe(1234.56);
+      expect(result.transactions[0]!.amount).toBe(1234.56);
     });
 
     it('should parse amounts with thousand separators (pt-BR style: 1.234,56)', () => {
@@ -223,7 +219,7 @@ invalid-date,100.00,Test transaction`;
 2024-01-15,"1.234,56",Test transaction`;
 
       const result = parser.parse(csv, { locale: 'pt-BR' });
-      expect(result.transactions[0].amount).toBe(1234.56);
+      expect(result.transactions[0]!.amount).toBe(1234.56);
     });
 
     it('should parse negative amounts with minus sign', () => {
@@ -231,7 +227,7 @@ invalid-date,100.00,Test transaction`;
 2024-01-15,-100.00,Expense`;
 
       const result = parser.parse(csv);
-      expect(result.transactions[0].amount).toBe(-100.0);
+      expect(result.transactions[0]!.amount).toBe(-100.0);
     });
 
     it('should parse negative amounts in parentheses format', () => {
@@ -239,7 +235,7 @@ invalid-date,100.00,Test transaction`;
 2024-01-15,(100.00),Expense`;
 
       const result = parser.parse(csv);
-      expect(result.transactions[0].amount).toBe(-100.0);
+      expect(result.transactions[0]!.amount).toBe(-100.0);
     });
 
     it('should parse amounts with currency symbols', () => {
@@ -248,8 +244,8 @@ invalid-date,100.00,Test transaction`;
 2024-01-16,$200.00,US Dollar`;
 
       const result = parser.parse(csv);
-      expect(result.transactions[0].amount).toBe(100.0);
-      expect(result.transactions[1].amount).toBe(200.0);
+      expect(result.transactions[0]!.amount).toBe(100.0);
+      expect(result.transactions[1]!.amount).toBe(200.0);
     });
 
     it('should report error for invalid amounts', () => {
@@ -259,7 +255,7 @@ invalid-date,100.00,Test transaction`;
       const result = parser.parse(csv);
       expect(result.transactions).toHaveLength(0);
       expect(result.errors).toHaveLength(1);
-      expect(result.errors[0].message).toContain('Invalid amount');
+      expect(result.errors[0]!.message).toContain('Invalid amount');
     });
 
     it('should handle integer amounts', () => {
@@ -267,7 +263,7 @@ invalid-date,100.00,Test transaction`;
 2024-01-15,100,Test transaction`;
 
       const result = parser.parse(csv);
-      expect(result.transactions[0].amount).toBe(100);
+      expect(result.transactions[0]!.amount).toBe(100);
     });
   });
 
@@ -283,11 +279,11 @@ invalid-date,200.00,Invalid date
       expect(result.errors).toHaveLength(2);
 
       // Line numbers are 1-indexed and account for header
-      expect(result.errors[0].lineNumber).toBe(3);
-      expect(result.errors[0].message).toContain('Invalid date');
+      expect(result.errors[0]!.lineNumber).toBe(3);
+      expect(result.errors[0]!.message).toContain('Invalid date');
 
-      expect(result.errors[1].lineNumber).toBe(4);
-      expect(result.errors[1].message).toContain('Invalid amount');
+      expect(result.errors[1]!.lineNumber).toBe(4);
+      expect(result.errors[1]!.message).toContain('Invalid amount');
     });
 
     it('should include original line content in errors', () => {
@@ -296,14 +292,14 @@ invalid-line-content`;
 
       const result = parser.parse(csv);
       expect(result.errors).toHaveLength(1);
-      expect(result.errors[0].lineContent).toBe('invalid-line-content');
+      expect(result.errors[0]!.lineContent).toBe('invalid-line-content');
     });
 
     it('should handle empty CSV file', () => {
       const result = parser.parse('');
       expect(result.transactions).toHaveLength(0);
       expect(result.errors).toHaveLength(1);
-      expect(result.errors[0].message).toContain('Empty CSV file');
+      expect(result.errors[0]!.message).toContain('Empty CSV file');
     });
 
     it('should handle CSV with only whitespace', () => {
@@ -320,7 +316,7 @@ invalid-line-content`;
       const result = parser.parse(csv);
       expect(result.transactions).toHaveLength(1);
       expect(result.errors).toHaveLength(1);
-      expect(result.errors[0].message).toContain('fields');
+      expect(result.errors[0]!.message).toContain('fields');
     });
 
     it('should handle empty description', () => {
@@ -330,7 +326,7 @@ invalid-line-content`;
       const result = parser.parse(csv);
       expect(result.transactions).toHaveLength(0);
       expect(result.errors).toHaveLength(1);
-      expect(result.errors[0].message).toContain('Empty description');
+      expect(result.errors[0]!.message).toContain('Empty description');
     });
 
     it('should skip initial lines when specified', () => {
@@ -341,7 +337,7 @@ date,amount,description
 
       const result = parser.parse(csv, { skipLines: 2 });
       expect(result.transactions).toHaveLength(1);
-      expect(result.transactions[0].amount).toBe(100.0);
+      expect(result.transactions[0]!.amount).toBe(100.0);
     });
   });
 
@@ -351,7 +347,7 @@ date,amount,description
 2024-01-15,100.00,"Transaction, with comma"`;
 
       const result = parser.parse(csv);
-      expect(result.transactions[0].description).toBe('Transaction, with comma');
+      expect(result.transactions[0]!.description).toBe('Transaction, with comma');
     });
 
     it('should handle escaped quotes in fields', () => {
@@ -359,7 +355,7 @@ date,amount,description
 2024-01-15,100.00,"Transaction with ""quotes"""`;
 
       const result = parser.parse(csv);
-      expect(result.transactions[0].description).toBe('Transaction with "quotes"');
+      expect(result.transactions[0]!.description).toBe('Transaction with "quotes"');
     });
 
     it('should handle multiline quoted fields (splits on newline)', () => {
@@ -372,7 +368,7 @@ Line 2"`;
       const result = parser.parse(csv);
       // The parser treats each line separately, so the quoted field is split
       // This is a known limitation - multiline quoted fields are not fully supported
-      expect(result.transactions[0].description).toBe('Line 1');
+      expect(result.transactions[0]!.description).toBe('Line 1');
     });
   });
 
@@ -384,9 +380,9 @@ Line 2"`;
 
       const result = parser.parse(csv);
       expect(result.transactions).toHaveLength(2);
-      expect(result.transactions[0].date).toEqual(new Date(2024, 0, 15));
-      expect(result.transactions[0].amount).toBe(-50.0);
-      expect(result.transactions[0].description).toBe('Uber *UBER *TRIP');
+      expect(result.transactions[0]!.date).toEqual(new Date(2024, 0, 15));
+      expect(result.transactions[0]!.amount).toBe(-50.0);
+      expect(result.transactions[0]!.description).toBe('Uber *UBER *TRIP');
     });
 
     it('should parse Itaú CSV format', () => {
@@ -396,8 +392,8 @@ Line 2"`;
 
       const result = parser.parse(csv, { locale: 'pt-BR' });
       expect(result.transactions).toHaveLength(2);
-      expect(result.transactions[0].amount).toBe(-100.5);
-      expect(result.transactions[1].amount).toBe(500.0);
+      expect(result.transactions[0]!.amount).toBe(-100.5);
+      expect(result.transactions[1]!.amount).toBe(500.0);
     });
 
     it('should parse generic US bank format', () => {
@@ -407,8 +403,8 @@ Line 2"`;
 
       const result = parser.parse(csv, { dateFormat: 'MM/DD/YYYY' });
       expect(result.transactions).toHaveLength(2);
-      expect(result.transactions[0].date).toEqual(new Date(2024, 0, 15));
-      expect(result.transactions[0].amount).toBe(-50.0);
+      expect(result.transactions[0]!.date).toEqual(new Date(2024, 0, 15));
+      expect(result.transactions[0]!.amount).toBe(-50.0);
     });
 
     it('should parse CSV with extra columns', () => {
@@ -418,8 +414,8 @@ Line 2"`;
 
       const result = parser.parse(csv);
       expect(result.transactions).toHaveLength(2);
-      expect(result.transactions[0].amount).toBe(100.0);
-      expect(result.transactions[0].description).toBe('Amazon Purchase');
+      expect(result.transactions[0]!.amount).toBe(100.0);
+      expect(result.transactions[0]!.description).toBe('Amazon Purchase');
     });
   });
 

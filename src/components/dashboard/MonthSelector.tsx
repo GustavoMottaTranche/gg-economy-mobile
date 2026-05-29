@@ -11,6 +11,8 @@ import React, { memo, useMemo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ViewStyle } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { getMonthName, getCurrentLocale } from '../../i18n';
+import { useThemeColors } from '../../hooks/useThemeColors';
+import { spacing, borderRadius } from '../../constants/theme';
 
 /**
  * Props for the MonthSelector component
@@ -26,6 +28,8 @@ export interface MonthSelectorProps {
   disableNext?: boolean;
   /** Whether to disable the previous button */
   disablePrevious?: boolean;
+  /** Whether the currently displayed month is in the future */
+  isFutureMonth?: boolean;
   /** Container style */
   style?: ViewStyle;
   /** Test ID for testing */
@@ -74,10 +78,12 @@ function MonthSelectorComponent({
   onNextMonth,
   disableNext = false,
   disablePrevious = false,
+  isFutureMonth = false,
   style,
   testID,
 }: MonthSelectorProps): React.ReactElement {
   const { t } = useTranslation();
+  const colors = useThemeColors();
   const locale = getCurrentLocale();
 
   const displayText = useMemo(
@@ -87,7 +93,7 @@ function MonthSelectorComponent({
 
   return (
     <View
-      style={[styles.container, style]}
+      style={[styles.container, { backgroundColor: colors.surface.card }, style]}
       testID={testID}
       accessibilityRole="adjustable"
       accessibilityLabel={t('transactions.referenceMonth')}
@@ -103,14 +109,30 @@ function MonthSelectorComponent({
         accessibilityHint={t('common.previous')}
         testID={`${testID}-prev`}
       >
-        <Text style={[styles.buttonText, disablePrevious && styles.buttonTextDisabled]}>‹</Text>
+        <Text style={[styles.buttonText, { color: colors.text.primary }, disablePrevious && { color: colors.text.tertiary }]}>‹</Text>
       </TouchableOpacity>
 
       {/* Month Display */}
       <View style={styles.monthDisplay}>
-        <Text style={styles.monthText} testID={`${testID}-text`}>
+        <Text
+          style={[
+            styles.monthText,
+            { color: isFutureMonth ? colors.semantic.info.base : colors.text.primary },
+          ]}
+          testID={`${testID}-text`}
+        >
           {displayText}
         </Text>
+        {isFutureMonth && (
+          <View
+            style={[styles.futureBadge, { backgroundColor: colors.semantic.info.light }]}
+            testID={`${testID}-future-badge`}
+          >
+            <Text style={[styles.futureBadgeText, { color: colors.semantic.info.base }]}>
+              {t('dashboard.futureMonth', { defaultValue: 'Futuro' })}
+            </Text>
+          </View>
+        )}
       </View>
 
       {/* Next Month Button */}
@@ -123,7 +145,7 @@ function MonthSelectorComponent({
         accessibilityHint={t('common.next')}
         testID={`${testID}-next`}
       >
-        <Text style={[styles.buttonText, disableNext && styles.buttonTextDisabled]}>›</Text>
+        <Text style={[styles.buttonText, { color: colors.text.primary }, disableNext && { color: colors.text.tertiary }]}>›</Text>
       </TouchableOpacity>
     </View>
   );
@@ -134,10 +156,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    paddingVertical: 8,
-    paddingHorizontal: 4,
+    borderRadius: borderRadius.md,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.xs,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
@@ -157,11 +178,7 @@ const styles = StyleSheet.create({
   buttonText: {
     fontSize: 28,
     fontWeight: '300',
-    color: '#374151',
     lineHeight: 32,
-  },
-  buttonTextDisabled: {
-    color: '#9CA3AF',
   },
   monthDisplay: {
     flex: 1,
@@ -171,7 +188,16 @@ const styles = StyleSheet.create({
   monthText: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#1F2937',
+  },
+  futureBadge: {
+    marginTop: spacing.xs,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 2,
+    borderRadius: borderRadius.sm,
+  },
+  futureBadgeText: {
+    fontSize: 11,
+    fontWeight: '500',
   },
 });
 

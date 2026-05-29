@@ -41,7 +41,8 @@ export async function getPreference(key: PreferenceKey): Promise<string | null> 
     .from(userPreferences)
     .where(eq(userPreferences.key, key))
     .limit(1);
-  return results.length > 0 ? results[0].value : null;
+  const firstResult = results[0];
+  return results.length > 0 && firstResult ? firstResult.value : null;
 }
 
 /**
@@ -54,7 +55,8 @@ export async function getPreferenceRecord(key: PreferenceKey) {
     .from(userPreferences)
     .where(eq(userPreferences.key, key))
     .limit(1);
-  return results.length > 0 ? toUserPreference(results[0]) : null;
+  const firstResult = results[0];
+  return results.length > 0 && firstResult ? toUserPreference(firstResult) : null;
 }
 
 /**

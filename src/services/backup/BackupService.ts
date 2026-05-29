@@ -19,12 +19,7 @@ import {
   type DriveFile,
   type UploadProgressCallback,
 } from './GoogleDriveClient';
-import type {
-  BackupMetadata,
-  BackupResult,
-  BackupStatusInfo,
-  UploadResult,
-} from '../../types/backup';
+import type { BackupMetadata, BackupResult, UploadResult } from '../../types/backup';
 
 /**
  * Error types for backup operations
@@ -90,14 +85,17 @@ export function parseBackupTimestamp(fileName: string): Date | null {
     return null;
   }
 
-  const [, year, month, day, hours, minutes, seconds] = match;
+  const [, yearStr, monthStr, dayStr, hoursStr, minutesStr, secondsStr] = match;
+  if (!yearStr || !monthStr || !dayStr || !hoursStr || !minutesStr || !secondsStr) {
+    return null;
+  }
   return new Date(
-    parseInt(year, 10),
-    parseInt(month, 10) - 1,
-    parseInt(day, 10),
-    parseInt(hours, 10),
-    parseInt(minutes, 10),
-    parseInt(seconds, 10)
+    parseInt(yearStr, 10),
+    parseInt(monthStr, 10) - 1,
+    parseInt(dayStr, 10),
+    parseInt(hoursStr, 10),
+    parseInt(minutesStr, 10),
+    parseInt(secondsStr, 10)
   );
 }
 

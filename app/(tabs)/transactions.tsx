@@ -2,26 +2,64 @@
  * Transactions Screen (Tab: transactions)
  *
  * Displays transactions organized by month with:
- * - Monthly summary (income, expenses, balance)
- * - Transaction list sorted by date using FlashList
+ * - Redesigned header with screen title and add-transaction button
+ * - Monthly summary with color-coded values (green income, red expenses)
+ * - FilterPanel for category, value range, and date range filtering
+ * - Unified statement list merging regular transactions and weekly recurring expenses
+ * - Infinite scroll pagination via FlashList (page size 20)
  * - Navigation between months
  * - Transaction deletion with confirmation
- * - Visual distinction for income vs expenses
+ * - Payment status toggle for all transaction types
+ * - Light/dark theme support via useThemeColors
  *
- * **Validates: Requirements 19, 20, 30**
+ * **Validates: Requirements 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 3.1, 3.2, 3.3, 3.4, 3.5, 4.6, 5.6, 6.1, 6.2, 6.3, 6.4, 6.6, 6.7, 6.8, 7.2, 7.4, 8.6, 9.1**
  */
-import React, { useState, useCallback, useMemo } from 'react';
-import { View, Text, StyleSheet, Alert, SafeAreaView, TouchableOpacity } from 'react-native';
+import React, { useState, useCallback, useMemo, useEffect } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  Alert,
+  SafeAreaView,
+  TouchableOpacity,
+  ActivityIndicator,
+  RefreshControl,
+} from 'react-native';
 import { FlashList, ListRenderItemInfo } from '@shopify/flash-list';
 import { router } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 
-import { useTransactions, TransactionWithCategory } from '../../src/hooks/useTransactions';
+import {
+  usePaginatedTransactions,
+  type PaginatedTransactionWithCategory,
+  type FilteredSummary,
+} from '../../src/hooks/usePaginatedTransactions';
+import { useFilterStore } from '../../src/stores/filterStore';
+import { useCategories } from '../../src/hooks/useCategories';
+import { FilterPanel } from '../../src/components/filters/FilterPanel';
 import { MonthSelector } from '../../src/components/dashboard/MonthSelector';
 import { TransactionCard } from '../../src/components/ui/TransactionCard';
 import { LoadingIndicator } from '../../src/components/ui/LoadingIndicator';
 import { EmptyState } from '../../src/components/ui/EmptyState';
 import { formatCurrencyLocale, getCurrentLocale } from '../../src/i18n';
+import {
+  deleteAllInGroup,
+  deleteSingleParcel,
+} from '../../src/services/installment/InstallmentGroupManager';
+import { generateMonthlyTransactions } from '../../src/services/recurring/RecurringTransactionService';
+import { deleteTransaction } from '../../src/db/queries/transactions';
+import { useThemeColors } from '../../src/hooks/useThemeColors';
+import { useThemeStore } from '../../src/stores/themeStore';
+import { typography, spacing, borderRadius, shadows } from '../../src/constants/theme';
+import { useWeeklyRecurringStore, useExpandedGroupIds } from '../../src/stores/weeklyRecurringStore';
+import { useWeeklyOccurrences, useWeeklyGroups, useWeeklyMonthlyTotal } from '../../src/stores/weeklyRecurringStore';
+import { usePaymentStatusStore } from '../../src/stores/paymentStatusStore';
+import { useUnifiedStatementItems } from '../../src/hooks/useUnifiedStatementItems';
+import { WeeklyGroupItem } from '../../src/components/WeeklyGroupItem';
+import { WeeklyParcelRow } from '../../src/components/WeeklyParcelRow';
+import { PaymentStatusToggle } from '../../src/components/PaymentStatusToggle';
+import type { UnifiedStatementItem } from '../../src/types/unifiedStatementItem';
+import type { WeeklyOccurrence } from '../../src/types/weeklyRecurring';
 
 /**
  * Gets the current month in YYYY-MM format
@@ -59,29 +97,105 @@ function getNextMonth(monthStr: string): string {
 
 /**
  * Monthly Summary Header Component
+ *
+ * Displays income (green), expenses (red), and balance using semantic color tokens.
+ * Includes weekly recurring expenses in the totals.
  */
 interface MonthlySummaryProps {
-  totalIncome: number;
-  totalExpenses: number;
-  balance: number;
-  transactionCount: number;
+  summary: FilteredSummary;
+  weeklyTotal: number; // in currency units (same as weekly_occurrences.amount)
 }
 
-function MonthlySummary({
-  totalIncome,
-  totalExpenses,
-  balance,
-  transactionCount,
-}: MonthlySummaryProps): React.ReactElement {
+function MonthlySummary({ summary, weeklyTotal }: MonthlySummaryProps): React.ReactElement {
   const { t } = useTranslation();
   const locale = getCurrentLocale();
+  const colors = useThemeColors();
+  const resolvedScheme = useThemeStore((s) => s.resolvedScheme);
+  const themeShadows = shadows[resolvedScheme];
 
-  // Convert from cents to currency units
-  const formattedIncome = formatCurrencyLocale(totalIncome / 100, locale);
-  const formattedExpenses = formatCurrencyLocale(totalExpenses / 100, locale);
-  const formattedBalance = formatCurrencyLocale(balance / 100, locale);
+  const { totalIncome = 0, totalExpenses = 0, balance = 0, transactionCount = 0 } = summary || {};
 
-  const balanceColor = balance >= 0 ? '#166534' : '#991b1b';
+  // All values are now in cents - divide by 100 for display
+  const incomeDisplay = totalIncome / 100;
+  const expensesDisplay = (Math.abs(totalExpenses) + (weeklyTotal || 0)) / 100;
+  const balanceDisplay = (balance - (weeklyTotal || 0)) / 100;
+
+  const formattedIncome = formatCurrencyLocale(incomeDisplay, locale);
+  const formattedExpenses = formatCurrencyLocale(expensesDisplay, locale);
+  const formattedBalance = formatCurrencyLocale(balanceDisplay, locale);
+
+  const balanceColor = balanceDisplay >= 0 ? colors.semantic.success.dark : colors.semantic.danger.dark;
+
+  const styles = useMemo(
+    () =>
+      StyleSheet.create({
+        summaryContainer: {
+          backgroundColor: colors.surface.card,
+          marginHorizontal: spacing.base,
+          marginVertical: spacing.sm,
+          borderRadius: borderRadius.md,
+          padding: spacing.base,
+          ...themeShadows.sm,
+        },
+        summaryTitle: {
+          fontSize: typography.caption.fontSize,
+          fontWeight: '600',
+          color: colors.text.secondary,
+          marginBottom: spacing.md,
+          textTransform: 'uppercase',
+          letterSpacing: typography.overline.letterSpacing,
+        },
+        summaryRow: {
+          flexDirection: 'row',
+          justifyContent: 'space-between',
+          marginBottom: spacing.base,
+        },
+        summaryItem: {
+          flex: 1,
+        },
+        summaryLabel: {
+          fontSize: typography.overline.fontSize,
+          fontWeight: typography.overline.fontWeight,
+          color: colors.text.tertiary,
+          marginBottom: spacing.xs,
+        },
+        summaryValue: {
+          fontSize: typography.body.fontSize + 2,
+          fontWeight: '600',
+        },
+        incomeValue: {
+          color: colors.semantic.success.dark,
+        },
+        expenseValue: {
+          color: colors.semantic.danger.dark,
+        },
+        balanceContainer: {
+          borderTopWidth: StyleSheet.hairlineWidth,
+          borderTopColor: colors.border.default,
+          paddingTop: spacing.md,
+          flexDirection: 'row',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+        },
+        balanceLabel: {
+          fontSize: typography.caption.fontSize + 1,
+          fontWeight: '500',
+          color: colors.text.primary,
+        },
+        balanceValue: {
+          fontSize: typography.title.fontSize - 2,
+          fontWeight: '700',
+        },
+        transactionCount: {
+          fontSize: typography.overline.fontSize,
+          fontWeight: typography.overline.fontWeight,
+          color: colors.text.tertiary,
+          marginTop: spacing.sm,
+          textAlign: 'center',
+        },
+      }),
+    [colors, themeShadows]
+  );
 
   return (
     <View
@@ -91,86 +205,44 @@ function MonthlySummary({
       accessibilityRole="summary"
       accessibilityLabel={`${t('transactions.monthSummary')}: ${t('dashboard.income')} ${formattedIncome}, ${t('dashboard.expenses')} ${formattedExpenses}, ${t('dashboard.balance')} ${formattedBalance}`}
     >
-      <Text style={styles.summaryTitle}>{t('transactions.monthSummary')}</Text>
+      <Text style={styles.summaryTitle} numberOfLines={1}>
+        {t('transactions.monthSummary')}
+      </Text>
 
       <View style={styles.summaryRow}>
         <View style={styles.summaryItem} accessibilityElementsHidden>
-          <Text style={styles.summaryLabel}>{t('dashboard.income')}</Text>
-          <Text style={[styles.summaryValue, styles.incomeValue]}>+{formattedIncome}</Text>
+          <Text style={styles.summaryLabel} numberOfLines={1}>
+            {t('dashboard.income')}
+          </Text>
+          <Text style={[styles.summaryValue, styles.incomeValue]} numberOfLines={1}>
+            +{formattedIncome}
+          </Text>
         </View>
 
         <View style={styles.summaryItem} accessibilityElementsHidden>
-          <Text style={styles.summaryLabel}>{t('dashboard.expenses')}</Text>
-          <Text style={[styles.summaryValue, styles.expenseValue]}>-{formattedExpenses}</Text>
+          <Text style={styles.summaryLabel} numberOfLines={1}>
+            {t('dashboard.expenses')}
+          </Text>
+          <Text style={[styles.summaryValue, styles.expenseValue]} numberOfLines={1}>
+            -{formattedExpenses}
+          </Text>
         </View>
       </View>
 
       <View style={styles.balanceContainer} accessibilityElementsHidden>
-        <Text style={styles.balanceLabel}>{t('dashboard.balance')}</Text>
-        <Text style={[styles.balanceValue, { color: balanceColor }]}>
-          {balance >= 0 ? '+' : ''}
+        <Text style={styles.balanceLabel} numberOfLines={1}>
+          {t('dashboard.balance')}
+        </Text>
+        <Text style={[styles.balanceValue, { color: balanceColor }]} numberOfLines={1}>
+          {balanceDisplay >= 0 ? '+' : ''}
           {formattedBalance}
         </Text>
       </View>
 
-      <Text style={styles.transactionCount} accessibilityElementsHidden>
+      <Text style={styles.transactionCount} numberOfLines={1} accessibilityElementsHidden>
         {transactionCount} {transactionCount === 1 ? 'transaction' : 'transactions'}
       </Text>
     </View>
-  );
-}
-
-/**
- * Transaction List Component using FlashList
- */
-interface TransactionListProps {
-  transactions: TransactionWithCategory[];
-  onTransactionPress: (transaction: TransactionWithCategory) => void;
-  onTransactionLongPress: (transaction: TransactionWithCategory) => void;
-  ListHeaderComponent?: React.ReactElement;
-  ListEmptyComponent?: React.ReactElement;
-}
-
-function TransactionList({
-  transactions,
-  onTransactionPress,
-  onTransactionLongPress,
-  ListHeaderComponent,
-  ListEmptyComponent,
-}: TransactionListProps): React.ReactElement {
-  const renderItem = useCallback(
-    ({ item }: ListRenderItemInfo<TransactionWithCategory>) => (
-      <TouchableOpacity
-        onLongPress={() => onTransactionLongPress(item)}
-        delayLongPress={500}
-        activeOpacity={1}
-        testID={`transaction-item-${item.id}`}
-      >
-        <TransactionCard
-          transaction={item}
-          category={item.category}
-          onPress={() => onTransactionPress(item)}
-          testID={`transaction-card-${item.id}`}
-        />
-      </TouchableOpacity>
-    ),
-    [onTransactionPress, onTransactionLongPress]
-  );
-
-  const keyExtractor = useCallback((item: TransactionWithCategory) => item.id, []);
-
-  return (
-    <FlashList
-      data={transactions}
-      renderItem={renderItem}
-      keyExtractor={keyExtractor}
-      estimatedItemSize={100}
-      ListHeaderComponent={ListHeaderComponent}
-      ListEmptyComponent={ListEmptyComponent}
-      contentContainerStyle={styles.listContent}
-      showsVerticalScrollIndicator={false}
-      testID="transactions-list"
-    />
   );
 }
 
@@ -181,61 +253,437 @@ export default function TransactionsScreen(): React.ReactElement {
   const { t } = useTranslation();
   const [selectedMonth, setSelectedMonth] = useState(getCurrentMonth);
   const currentMonth = getCurrentMonth();
+  const colors = useThemeColors();
+  const locale = getCurrentLocale();
 
-  // Fetch transactions for the selected month
-  const { transactions, isLoading, error, summary, remove } = useTransactions({
+  // Filter store state and actions
+  const filters = useFilterStore((s) => s.filters);
+  const isExpanded = useFilterStore((s) => s.isExpanded);
+  const setExpanded = useFilterStore((s) => s.setExpanded);
+  const resetFilters = useFilterStore((s) => s.resetFilters);
+  const resetDateRange = useFilterStore((s) => s.resetDateRange);
+
+  // Categories for FilterPanel
+  const { categories } = useCategories();
+
+  // Paginated transactions with filter support (includes pendingOnly)
+  const {
+    transactions,
+    isLoading,
+    isLoadingMore,
+    error,
+    hasMore,
+    summary,
+    loadMore,
+    refresh,
+  } = usePaginatedTransactions({
     referenceMonth: selectedMonth,
+    categoryIds: filters.categoryIds.length > 0 ? filters.categoryIds : undefined,
+    minAmount: filters.minAmount,
+    maxAmount: filters.maxAmount,
+    startDate: filters.startDate,
+    endDate: filters.endDate,
+    pendingOnly: filters.pendingOnly || undefined,
   });
+
+  // Weekly occurrences for the selected month
+  const weeklyOccurrences = useWeeklyOccurrences(selectedMonth);
+  const weeklyGroups = useWeeklyGroups();
+  const expandedGroupIds = useExpandedGroupIds();
+
+  // Weekly expenses total - use the same source as the home (store's monthlyTotal)
+  // This value is in currency units (same as weekly_occurrences.amount)
+  const weeklyMonthlyTotal = useWeeklyMonthlyTotal(selectedMonth);
+
+  // Payment status store for optimistic toggle
+  const togglePaymentStatus = usePaymentStatusStore((s) => s.togglePaymentStatus);
+
+  // Unified statement items merging transactions and weekly occurrences
+  const unifiedItems = useUnifiedStatementItems({
+    transactions,
+    weeklyOccurrences,
+    weeklyGroups,
+    pendingOnly: filters.pendingOnly,
+    expandedGroupIds,
+  });
+
+  // Generate recurring transactions for the selected month (idempotent)
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadData() {
+      try {
+        await generateMonthlyTransactions(selectedMonth);
+      } catch (err) {
+        console.warn('[Transactions] Failed to generate recurring transactions:', err);
+      }
+
+      if (cancelled) return;
+
+      // Load weekly groups (only if not already loaded)
+      const store = useWeeklyRecurringStore.getState();
+      if (store.groups.length === 0) {
+        await store.loadGroups();
+      }
+
+      if (cancelled) return;
+
+      // Load occurrences for this month
+      await store.loadOccurrencesForMonth(selectedMonth);
+    }
+
+    loadData();
+
+    return () => { cancelled = true; };
+  }, [selectedMonth]);
+
+  // Reset filters and pagination when reference month changes
+  const handleMonthChange = useCallback(
+    (newMonth: string) => {
+      setSelectedMonth(newMonth);
+      resetDateRange();
+    },
+    [resetDateRange]
+  );
+
+  // Dynamic styles based on theme
+  const styles = useMemo(
+    () =>
+      StyleSheet.create({
+        container: {
+          flex: 1,
+          backgroundColor: colors.background.secondary,
+        },
+        header: {
+          flexDirection: 'row',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          paddingHorizontal: spacing.base,
+          paddingVertical: spacing.md,
+          backgroundColor: colors.background.primary,
+          borderBottomWidth: StyleSheet.hairlineWidth,
+          borderBottomColor: colors.border.default,
+        },
+        title: {
+          fontSize: typography.heading.fontSize,
+          fontWeight: typography.heading.fontWeight,
+          lineHeight: typography.heading.lineHeight,
+          color: colors.text.primary,
+        },
+        addButton: {
+          width: spacing['2xl'] + spacing.xs,
+          height: spacing['2xl'] + spacing.xs,
+          borderRadius: (spacing['2xl'] + spacing.xs) / 2,
+          backgroundColor: colors.interactive.primary,
+          justifyContent: 'center',
+          alignItems: 'center',
+        },
+        addButtonText: {
+          fontSize: spacing.xl,
+          fontWeight: '400',
+          color: colors.text.inverse,
+          lineHeight: typography.heading.lineHeight,
+        },
+        monthSelectorContainer: {
+          paddingHorizontal: spacing.base,
+          paddingTop: spacing.base,
+          paddingBottom: spacing.sm,
+        },
+        filterPanelContainer: {
+          paddingHorizontal: spacing.base,
+          paddingBottom: spacing.sm,
+        },
+        listContent: {
+          flex: 1,
+        },
+        loadingFooter: {
+          paddingVertical: spacing.base,
+          alignItems: 'center',
+          justifyContent: 'center',
+        },
+      }),
+    [colors]
+  );
 
   // Navigation handlers
   const handlePreviousMonth = useCallback(() => {
-    setSelectedMonth((prev) => getPreviousMonth(prev));
-  }, []);
+    handleMonthChange(getPreviousMonth(selectedMonth));
+  }, [selectedMonth, handleMonthChange]);
 
   const handleNextMonth = useCallback(() => {
-    setSelectedMonth((prev) => getNextMonth(prev));
-  }, []);
+    handleMonthChange(getNextMonth(selectedMonth));
+  }, [selectedMonth, handleMonthChange]);
+
+  // Filter panel handlers
+  const handleFilterToggle = useCallback(() => {
+    setExpanded(!isExpanded);
+  }, [isExpanded, setExpanded]);
+
+  const handleFiltersChange = useCallback(
+    (newFilters: typeof filters) => {
+      const store = useFilterStore.getState();
+      store.setCategoryIds(newFilters.categoryIds);
+      store.setMinAmount(newFilters.minAmount);
+      store.setMaxAmount(newFilters.maxAmount);
+      store.setStartDate(newFilters.startDate);
+      store.setEndDate(newFilters.endDate);
+    },
+    []
+  );
 
   // Transaction handlers
-  const handleTransactionPress = useCallback((transaction: TransactionWithCategory) => {
+  const handleTransactionPress = useCallback((transaction: PaginatedTransactionWithCategory) => {
     router.push(`/transaction/${transaction.id}`);
   }, []);
 
   const handleTransactionLongPress = useCallback(
-    (transaction: TransactionWithCategory) => {
-      Alert.alert(t('transactions.deleteTransaction'), t('transactions.deleteConfirmation'), [
-        {
-          text: t('common.cancel'),
-          style: 'cancel',
-        },
-        {
-          text: t('common.delete'),
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await remove(transaction.id);
-            } catch (err) {
-              Alert.alert(t('common.error'), t('errors.generic'));
-            }
+    (transaction: PaginatedTransactionWithCategory) => {
+      if (transaction.installmentGroupId) {
+        // Group-aware delete dialog for installment parcels
+        Alert.alert(
+          t('transactions.installmentDelete.title'),
+          t('transactions.installmentDelete.message'),
+          [
+            {
+              text: t('common.cancel'),
+              style: 'cancel',
+            },
+            {
+              text: t('transactions.installmentDelete.deleteSingle'),
+              onPress: async () => {
+                try {
+                  await deleteSingleParcel(transaction.id, transaction.installmentGroupId!);
+                } catch (err) {
+                  Alert.alert(
+                    t('transactions.installmentDelete.errorTitle'),
+                    t('transactions.installmentDelete.errorMessage')
+                  );
+                }
+              },
+            },
+            {
+              text: t('transactions.installmentDelete.deleteAll'),
+              style: 'destructive',
+              onPress: async () => {
+                try {
+                  await deleteAllInGroup(transaction.installmentGroupId!);
+                } catch (err) {
+                  Alert.alert(
+                    t('transactions.installmentDelete.errorTitle'),
+                    t('transactions.installmentDelete.errorMessage')
+                  );
+                }
+              },
+            },
+          ]
+        );
+      } else {
+        // Normal single delete confirmation
+        Alert.alert(t('transactions.deleteTransaction'), t('transactions.deleteConfirmation'), [
+          {
+            text: t('common.cancel'),
+            style: 'cancel',
           },
-        },
-      ]);
+          {
+            text: t('common.delete'),
+            style: 'destructive',
+            onPress: async () => {
+              try {
+                await deleteTransaction(transaction.id);
+              } catch (err) {
+                Alert.alert(t('common.error'), t('errors.generic'));
+              }
+            },
+          },
+        ]);
+      }
     },
-    [t, remove]
+    [t]
   );
-
-  const handleImport = useCallback(() => {
-    router.push('/import');
-  }, []);
 
   const handleAddManual = useCallback(() => {
     router.push('/(tabs)/manual');
   }, []);
 
-  // Disable next button if we're at the current month
-  const isNextDisabled = selectedMonth >= currentMonth;
+  const handleImport = useCallback(() => {
+    router.push('/import');
+  }, []);
 
-  // Memoized header component
+  // Pull-to-refresh handler
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const handleRefresh = useCallback(async () => {
+    setIsRefreshing(true);
+    try {
+      const store = useWeeklyRecurringStore.getState();
+      await store.loadGroups();
+      await store.loadOccurrencesForMonth(selectedMonth);
+    } finally {
+      setIsRefreshing(false);
+    }
+  }, [selectedMonth]);
+
+  // Weekly group expand/collapse handler
+  const handleToggleGroupExpansion = useCallback((groupId: string) => {
+    useWeeklyRecurringStore.getState().toggleGroupExpansion(groupId);
+  }, []);
+
+  // Weekly parcel press handler (navigate to parcel detail view)
+  const handleParcelPress = useCallback((occurrence: WeeklyOccurrence) => {
+    router.push({ pathname: '/weekly-recurring/parcel-detail', params: { occurrenceId: occurrence.id } });
+  }, []);
+
+  // Edit group handler (navigate to edit screen)
+  const handleEditGroup = useCallback((groupId: string) => {
+    router.push(`/weekly-recurring/${groupId}?edit=true`);
+  }, []);
+
+  // Delete group handler (confirmation dialog + store action)
+  const handleDeleteGroup = useCallback((groupId: string) => {
+    Alert.alert(
+      'Excluir grupo',
+      'Tem certeza que deseja excluir este grupo? Ocorrências futuras serão removidas. Esta ação é irreversível.',
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Excluir',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await useWeeklyRecurringStore.getState().deleteGroup(groupId);
+              await useWeeklyRecurringStore.getState().loadGroups();
+              await useWeeklyRecurringStore.getState().loadOccurrencesForMonth(selectedMonth);
+            } catch (err) {
+              Alert.alert('Erro', 'Não foi possível excluir o grupo.');
+            }
+          },
+        },
+      ]
+    );
+  }, [selectedMonth]);
+
+  // Payment status toggle for weekly occurrences (optimistic update via paymentStatusStore)
+  const handleToggleWeeklyPaymentStatus = useCallback(
+    (occurrenceId: string) => {
+      togglePaymentStatus(occurrenceId, 'weekly').then(() => {
+        // Refresh weekly occurrences after toggle
+        useWeeklyRecurringStore.getState().loadOccurrencesForMonth(selectedMonth);
+      });
+    },
+    [togglePaymentStatus, selectedMonth]
+  );
+
+  // Payment status toggle for regular transactions (optimistic update via paymentStatusStore)
+  const handleToggleTransactionPaymentStatus = useCallback(
+    (transactionId: string) => {
+      togglePaymentStatus(transactionId, 'monthly');
+    },
+    [togglePaymentStatus]
+  );
+
+  // Allow navigating to future months (for projected recurring expenses)
+  const isNextDisabled = false;
+
+  // Render item for FlashList using type discrimination on UnifiedStatementItem
+  const renderItem = useCallback(
+    ({ item }: ListRenderItemInfo<UnifiedStatementItem>) => {
+      switch (item.type) {
+        case 'weeklyGroupHeader': {
+          const groupOccurrences = weeklyOccurrences.filter(
+            (occ) => occ.weeklyGroupId === item.data.group.id
+          );
+          return (
+            <WeeklyGroupItem
+              group={item.data.group}
+              occurrences={groupOccurrences}
+              isExpanded={item.data.isExpanded}
+              onToggleExpand={handleToggleGroupExpansion}
+              onParcelPress={handleParcelPress}
+              onTogglePaymentStatus={handleToggleWeeklyPaymentStatus}
+              pendingOnly={filters.pendingOnly}
+              onEditGroup={handleEditGroup}
+              onDeleteGroup={handleDeleteGroup}
+              testID={`weekly-group-${item.data.group.id}`}
+            />
+          );
+        }
+        case 'weeklyParcel': {
+          // Parcels are rendered inside WeeklyGroupItem when expanded
+          // This case handles any orphan parcel items in the list (shouldn't normally occur)
+          return null;
+        }
+        case 'transaction': {
+          const transaction = item.data;
+          return (
+            <View style={statementStyles.transactionRow}>
+              <PaymentStatusToggle
+                isPaid={transaction.isPaid ?? false}
+                onToggle={() => handleToggleTransactionPaymentStatus(transaction.id)}
+                size="small"
+                testID={`payment-toggle-${transaction.id}`}
+              />
+              <View style={statementStyles.transactionCardContainer}>
+                <TouchableOpacity
+                  onLongPress={() => handleTransactionLongPress(transaction)}
+                  delayLongPress={500}
+                  activeOpacity={1}
+                  testID={`transaction-item-${transaction.id}`}
+                >
+                  <TransactionCard
+                    transaction={transaction}
+                    category={transaction.category}
+                    onPress={() => handleTransactionPress(transaction)}
+                    testID={`transaction-card-${transaction.id}`}
+                  />
+                </TouchableOpacity>
+              </View>
+            </View>
+          );
+        }
+        default:
+          return null;
+      }
+    },
+    [
+      weeklyOccurrences,
+      filters.pendingOnly,
+      handleToggleGroupExpansion,
+      handleParcelPress,
+      handleToggleWeeklyPaymentStatus,
+      handleToggleTransactionPaymentStatus,
+      handleTransactionPress,
+      handleTransactionLongPress,
+      handleEditGroup,
+      handleDeleteGroup,
+    ]
+  );
+
+  const keyExtractor = useCallback(
+    (item: UnifiedStatementItem) => {
+      switch (item.type) {
+        case 'transaction':
+          return `tx-${item.data.id}`;
+        case 'weeklyGroupHeader':
+          return `wg-${item.data.group.id}`;
+        case 'weeklyParcel':
+          return `wp-${item.data.id}`;
+        default:
+          return String(Math.random());
+      }
+    },
+    []
+  );
+
+  // Loading footer component for infinite scroll
+  const ListFooterComponent = useMemo(() => {
+    if (!isLoadingMore) return null;
+    return (
+      <View style={styles.loadingFooter} testID="loading-more-indicator">
+        <ActivityIndicator size="small" color={colors.interactive.primary} />
+      </View>
+    );
+  }, [isLoadingMore, styles.loadingFooter, colors.interactive.primary]);
+
+  // Memoized header component (MonthSelector + FilterPanel + MonthlySummary)
   const ListHeader = useMemo(
     () => (
       <View>
@@ -248,15 +696,34 @@ export default function TransactionsScreen(): React.ReactElement {
             testID="month-selector"
           />
         </View>
-        <MonthlySummary
-          totalIncome={summary.totalIncome}
-          totalExpenses={summary.totalExpenses}
-          balance={summary.balance}
-          transactionCount={summary.transactionCount}
-        />
+        <View style={styles.filterPanelContainer}>
+          <FilterPanel
+            isExpanded={isExpanded}
+            onToggle={handleFilterToggle}
+            filters={filters}
+            onFiltersChange={handleFiltersChange}
+            categories={categories}
+            locale={locale as 'pt-BR' | 'en'}
+          />
+        </View>
+        <MonthlySummary summary={summary} weeklyTotal={weeklyMonthlyTotal} />
       </View>
     ),
-    [selectedMonth, handlePreviousMonth, handleNextMonth, isNextDisabled, summary]
+    [
+      selectedMonth,
+      handlePreviousMonth,
+      handleNextMonth,
+      isNextDisabled,
+      isExpanded,
+      handleFilterToggle,
+      filters,
+      handleFiltersChange,
+      categories,
+      locale,
+      summary,
+      weeklyMonthlyTotal,
+      styles,
+    ]
   );
 
   // Memoized empty component
@@ -315,123 +782,39 @@ export default function TransactionsScreen(): React.ReactElement {
         </TouchableOpacity>
       </View>
 
-      <TransactionList
-        transactions={transactions}
-        onTransactionPress={handleTransactionPress}
-        onTransactionLongPress={handleTransactionLongPress}
-        ListHeaderComponent={ListHeader}
-        ListEmptyComponent={transactions.length === 0 ? ListEmpty : undefined}
-      />
+      <View style={styles.listContent}>
+        <FlashList
+          data={unifiedItems}
+          renderItem={renderItem}
+          keyExtractor={keyExtractor}
+          estimatedItemSize={100}
+          ListHeaderComponent={ListHeader}
+          ListEmptyComponent={unifiedItems.length === 0 ? ListEmpty : undefined}
+          ListFooterComponent={ListFooterComponent}
+          onEndReached={hasMore ? loadMore : undefined}
+          onEndReachedThreshold={0.5}
+          showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl refreshing={isRefreshing} onRefresh={handleRefresh} />
+          }
+          testID="transactions-list"
+        />
+      </View>
     </SafeAreaView>
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
+/**
+ * Static styles for the unified statement item rendering.
+ * Used by the renderItem function for transaction rows with payment toggle.
+ */
+const statementStyles = StyleSheet.create({
+  transactionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingLeft: spacing.base,
+  },
+  transactionCardContainer: {
     flex: 1,
-    backgroundColor: '#F2F2F7',
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    backgroundColor: '#FFFFFF',
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#E5E5EA',
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: '#000000',
-  },
-  addButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: '#007AFF',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  addButtonText: {
-    fontSize: 24,
-    fontWeight: '400',
-    color: '#FFFFFF',
-    lineHeight: 28,
-  },
-  monthSelectorContainer: {
-    paddingHorizontal: 16,
-    paddingTop: 16,
-    paddingBottom: 8,
-  },
-  summaryContainer: {
-    backgroundColor: '#FFFFFF',
-    marginHorizontal: 16,
-    marginVertical: 8,
-    borderRadius: 12,
-    padding: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 2,
-  },
-  summaryTitle: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#6B7280',
-    marginBottom: 12,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  summaryRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 16,
-  },
-  summaryItem: {
-    flex: 1,
-  },
-  summaryLabel: {
-    fontSize: 12,
-    color: '#6B7280',
-    marginBottom: 4,
-  },
-  summaryValue: {
-    fontSize: 18,
-    fontWeight: '600',
-  },
-  incomeValue: {
-    color: '#166534',
-  },
-  expenseValue: {
-    color: '#991b1b',
-  },
-  balanceContainer: {
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: '#E5E7EB',
-    paddingTop: 12,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  balanceLabel: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#374151',
-  },
-  balanceValue: {
-    fontSize: 20,
-    fontWeight: '700',
-  },
-  transactionCount: {
-    fontSize: 12,
-    color: '#9CA3AF',
-    marginTop: 8,
-    textAlign: 'center',
-  },
-  listContent: {
-    paddingBottom: 24,
   },
 });

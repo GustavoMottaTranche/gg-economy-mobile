@@ -114,6 +114,17 @@ const DESCRIPTION_HEADERS = [
   'transaction description',
   'histórico',
   'historico',
+  'title',
+  'título',
+  'titulo',
+  'lançamento',
+  'lancamento',
+  'merchant',
+  'payee',
+  'compra',
+  'estabelecimento',
+  'loja',
+  'local',
 ];
 
 /**
@@ -203,6 +214,7 @@ export class CsvParser {
     for (let i = dataStartIndex; i < effectiveLines.length; i++) {
       const lineNumber = skipLines + i + 1; // 1-indexed line number in original file
       const line = effectiveLines[i];
+      if (!line) continue;
 
       try {
         const transaction = this.parseLine(
@@ -341,6 +353,16 @@ export class CsvParser {
     }
 
     const firstLine = lines[0];
+    if (!firstLine) {
+      return {
+        hasHeader: false,
+        columnMapping: {
+          dateIndex: forcedMapping?.dateIndex ?? -1,
+          amountIndex: forcedMapping?.amountIndex ?? -1,
+          descriptionIndex: forcedMapping?.descriptionIndex ?? -1,
+        },
+      };
+    }
     const fields = this.splitLine(firstLine, delimiter);
 
     // Check if first line looks like a header (contains known header names)
@@ -351,7 +373,7 @@ export class CsvParser {
 
     // Try to match headers
     for (let i = 0; i < fields.length; i++) {
-      const field = fields[i].toLowerCase().trim();
+      const field = fields[i]?.toLowerCase().trim() ?? '';
 
       if (dateIndex === -1 && DATE_HEADERS.some((h) => field.includes(h))) {
         dateIndex = i;
@@ -370,27 +392,29 @@ export class CsvParser {
     // If no headers detected, try to infer from data patterns
     if (!hasHeader && lines.length > 1) {
       const dataLine = lines[1];
-      const dataFields = this.splitLine(dataLine, delimiter);
+      if (dataLine) {
+        const dataFields = this.splitLine(dataLine, delimiter);
 
-      for (let i = 0; i < dataFields.length; i++) {
-        const field = dataFields[i].trim();
+        for (let i = 0; i < dataFields.length; i++) {
+          const field = dataFields[i]?.trim() ?? '';
 
-        // Check if field looks like a date
-        if (dateIndex === -1 && this.looksLikeDate(field)) {
-          dateIndex = i;
-        }
-        // Check if field looks like an amount
-        else if (amountIndex === -1 && this.looksLikeAmount(field)) {
-          amountIndex = i;
-        }
-        // Assume remaining text field is description
-        else if (
-          descriptionIndex === -1 &&
-          field.length > 0 &&
-          !this.looksLikeDate(field) &&
-          !this.looksLikeAmount(field)
-        ) {
-          descriptionIndex = i;
+          // Check if field looks like a date
+          if (dateIndex === -1 && this.looksLikeDate(field)) {
+            dateIndex = i;
+          }
+          // Check if field looks like an amount
+          else if (amountIndex === -1 && this.looksLikeAmount(field)) {
+            amountIndex = i;
+          }
+          // Assume remaining text field is description
+          else if (
+            descriptionIndex === -1 &&
+            field.length > 0 &&
+            !this.looksLikeDate(field) &&
+            !this.looksLikeAmount(field)
+          ) {
+            descriptionIndex = i;
+          }
         }
       }
     }
@@ -450,10 +474,12 @@ export class CsvParser {
     for (const line of lines) {
       const fields = this.splitLine(line, delimiter);
       if (dateIndex >= 0 && dateIndex < fields.length) {
-        const dateValue = fields[dateIndex].trim();
-        const format = detectDateFormat(dateValue);
-        if (format) {
-          return format;
+        const dateValue = fields[dateIndex]?.trim();
+        if (dateValue) {
+          const format = detectDateFormat(dateValue);
+          if (format) {
+            return format;
+          }
         }
       }
     }
@@ -513,21 +539,27 @@ export class CsvParser {
     }
 
     // Parse date
-    const dateValue = fields[mapping.dateIndex].trim();
+    const dateValue = fields[mapping.dateIndex]?.trim();
+    if (!dateValue) {
+      throw new Error('Missing date value');
+    }
     const date = this.parseTransactionDate(dateValue, dateFormat);
     if (!date) {
       throw new Error(`Invalid date: "${dateValue}"`);
     }
 
     // Parse amount
-    const amountValue = fields[mapping.amountIndex].trim();
+    const amountValue = fields[mapping.amountIndex]?.trim();
+    if (!amountValue) {
+      throw new Error('Missing amount value');
+    }
     const amount = this.parseAmount(amountValue, locale);
     if (isNaN(amount)) {
       throw new Error(`Invalid amount: "${amountValue}"`);
     }
 
     // Parse description
-    const description = fields[mapping.descriptionIndex].trim();
+    const description = fields[mapping.descriptionIndex]?.trim();
     if (!description) {
       throw new Error('Empty description');
     }

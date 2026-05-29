@@ -26,6 +26,13 @@ export {
 // Date selection
 export { DatePicker, type DatePickerProps } from './DatePicker';
 
+// Date + Time selection
+export {
+  DateTimePicker,
+  type DateTimePickerProps,
+  formatDateTimeForLocale,
+} from './DateTimePicker';
+
 // Loading states
 export {
   LoadingIndicator,
@@ -46,3 +53,25 @@ export {
   EmptySearchResults,
   type EmptyStateProps,
 } from './EmptyState';
+
+// Input prompt dialog
+export {
+  InputPromptDialog,
+  type InputPromptDialogProps,
+} from './InputPromptDialog';
+
+// Tab bar icons (SVG)
+export { TabBarIcon, type TabBarIconProps } from './TabBarIcon';
+
+// Pressable card wrapper
+export {
+  PressableCard,
+  type PressableCardProps,
+  type PressableCardVariant,
+} from './PressableCard';
+
+// Occurrence payment status toggle
+export {
+  OccurrenceStatusToggle,
+  type OccurrenceStatusToggleProps,
+} from './OccurrenceStatusToggle';

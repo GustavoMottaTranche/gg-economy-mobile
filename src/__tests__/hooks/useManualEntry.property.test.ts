@@ -70,6 +70,7 @@ async function simulateManualEntryCreation(
 function createMockTransaction(dto: CreateTransactionDTO): Transaction {
   return {
     id: 'test-uuid-' + Math.random().toString(36).substring(7),
+    title: dto.title ?? '',
     date: dto.date,
     amount: dto.amount,
     description: dto.description,
@@ -80,6 +81,8 @@ function createMockTransaction(dto: CreateTransactionDTO): Transaction {
     needsReview: dto.needsReview ?? true,
     isExcludedFromTotals: false,
     duplicateOf: null,
+    installmentGroupId: null,
+    recurringId: null,
     createdAt: new Date(),
     updatedAt: new Date(),
   };
@@ -380,6 +383,7 @@ describe('useManualEntry Property Tests', () => {
               date,
               amount,
               description,
+              title: '',
               referenceMonth: getReferenceMonth(date),
               needsReview: true,
             };
@@ -415,6 +419,7 @@ describe('useManualEntry Property Tests', () => {
               date,
               amount,
               description,
+              title: '',
               referenceMonth: getReferenceMonth(date),
               needsReview: true,
             };
@@ -447,6 +452,7 @@ describe('useManualEntry Property Tests', () => {
               date,
               amount: 0,
               description,
+              title: '',
               referenceMonth: getReferenceMonth(date),
               needsReview: true,
             };
@@ -553,6 +559,7 @@ describe('useManualEntry Property Tests', () => {
               date,
               amount,
               description,
+              title: '',
               referenceMonth: getReferenceMonth(date),
               needsReview: true,
             };
@@ -596,6 +603,7 @@ describe('useManualEntry Property Tests', () => {
               date,
               amount,
               description,
+              title: '',
               referenceMonth: getReferenceMonth(date),
               needsReview: true,
             };

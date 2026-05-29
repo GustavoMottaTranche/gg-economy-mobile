@@ -73,21 +73,8 @@ jest.mock('expo-web-browser', () => ({
   maybeCompleteAuthSession: jest.fn(),
 }));
 
-// Mock expo-file-system for testing
-jest.mock('expo-file-system', () => ({
-  documentDirectory: '/mock/documents/',
-  cacheDirectory: '/mock/cache/',
-  getInfoAsync: jest.fn(() => Promise.resolve({ exists: true, size: 1024 })),
-  copyAsync: jest.fn(() => Promise.resolve()),
-  deleteAsync: jest.fn(() => Promise.resolve()),
-  readAsStringAsync: jest.fn(() => Promise.resolve('mock-file-content')),
-  writeAsStringAsync: jest.fn(() => Promise.resolve()),
-  downloadAsync: jest.fn(() => Promise.resolve({ status: 200, uri: '/mock/download' })),
-  EncodingType: {
-    UTF8: 'utf8',
-    Base64: 'base64',
-  },
-}));
+// Note: expo-file-system mock is handled by moduleNameMapper in jest.config.js
+// (maps both 'expo-file-system' and 'expo-file-system/legacy' to __mocks__/expo-file-system.js)
 
 // Mock expo-linking for testing
 jest.mock('expo-linking', () => ({
@@ -199,3 +186,34 @@ jest.mock('drizzle-orm/expo-sqlite', () => ({
   })),
   useLiveQuery: jest.fn(() => ({ data: [] })),
 }), { virtual: true });
+
+// Mock react-native-gesture-handler for testing
+jest.mock('react-native-gesture-handler', () => {
+  const { View } = require('react-native');
+  const React = require('react');
+
+  const Swipeable = React.forwardRef(({ children, renderRightActions, testID }, ref) => {
+    React.useImperativeHandle(ref, () => ({
+      close: jest.fn(),
+    }));
+
+    const mockAnimatedValue = { interpolate: () => 1 };
+
+    return React.createElement(
+      View,
+      { testID },
+      children,
+      renderRightActions ? renderRightActions(mockAnimatedValue, mockAnimatedValue) : null
+    );
+  });
+  Swipeable.displayName = 'Swipeable';
+
+  return {
+    Swipeable,
+    GestureHandlerRootView: ({ children }) => React.createElement(View, null, children),
+    PanGestureHandler: ({ children }) => React.createElement(View, null, children),
+    TapGestureHandler: ({ children }) => React.createElement(View, null, children),
+    State: {},
+    Directions: {},
+  };
+});

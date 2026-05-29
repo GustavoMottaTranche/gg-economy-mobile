@@ -300,9 +300,9 @@ describe('BackupService', () => {
       const backups = await backupService.listBackups();
 
       expect(backups).toHaveLength(2);
-      expect(backups[0].id).toBe('file-1');
-      expect(backups[0].fileName).toBe('gg-economy-backup-20240115-103045.db');
-      expect(backups[0].sizeBytes).toBe(1024);
+      expect(backups[0]!.id).toBe('file-1');
+      expect(backups[0]!.fileName).toBe('gg-economy-backup-20240115-103045.db');
+      expect(backups[0]!.sizeBytes).toBe(1024);
     });
 
     it('should throw error when not authenticated', async () => {

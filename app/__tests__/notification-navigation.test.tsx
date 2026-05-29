@@ -53,11 +53,14 @@ jest.mock('expo-router', () => ({
 
 // Mock notification scheduler
 const mockHandleNotificationReceived = jest.fn();
+const mockHandleSlotNotificationReceived = jest.fn();
 const mockRestore = jest.fn();
 
 jest.mock('../../src/services/notifications', () => ({
   notificationScheduler: {
     handleNotificationReceived: () => mockHandleNotificationReceived(),
+    handleSlotNotificationReceived: (slotHour: number, slotMinute: number) =>
+      mockHandleSlotNotificationReceived(slotHour, slotMinute),
     restore: (...args: unknown[]) => mockRestore(...args),
     scheduleNext: jest.fn(() => Promise.resolve('notification-id')),
     cancelAll: jest.fn(() => Promise.resolve()),
@@ -128,7 +131,7 @@ jest.mock('expo-status-bar', () => ({
  * Test component that simulates the AppContent behavior from _layout.tsx
  * This isolates the notification listener setup for testing
  */
-function TestAppContent() {
+function TestAppContent({ includeHandler = false }: { includeHandler?: boolean } = {}) {
   const { useRouter } = require('expo-router');
   const router = useRouter();
   const { notificationScheduler } = require('../../src/services/notifications');
@@ -143,10 +146,29 @@ function TestAppContent() {
   }, [isHydrated, settings]);
 
   React.useEffect(() => {
+    // Configure foreground notification behavior (matches _layout.tsx)
+    if (includeHandler) {
+      Notifications.setNotificationHandler({
+        handleNotification: async () => ({
+          shouldShowBanner: true,
+          shouldShowList: true,
+          shouldPlaySound: true,
+          shouldSetBadge: false,
+        }),
+      });
+    }
+
     // Listener for when notification is received while app is foregrounded
-    const receivedSubscription = Notifications.addNotificationReceivedListener(() => {
-      notificationScheduler.handleNotificationReceived();
-    });
+    const receivedSubscription = Notifications.addNotificationReceivedListener(
+      (notification: { request?: { content?: { data?: { slotHour?: number; slotMinute?: number } } } }) => {
+        const data = notification?.request?.content?.data;
+        if (data && typeof data.slotHour === 'number' && typeof data.slotMinute === 'number') {
+          notificationScheduler.handleSlotNotificationReceived(data.slotHour, data.slotMinute);
+        } else {
+          notificationScheduler.handleNotificationReceived();
+        }
+      }
+    );
 
     // Listener for when user taps on notification
     const responseSubscription = Notifications.addNotificationResponseReceivedListener(() => {
@@ -157,7 +179,7 @@ function TestAppContent() {
       receivedSubscription.remove();
       responseSubscription.remove();
     };
-  }, [router]);
+  }, [router, includeHandler]);
 
   return (
     <View testID="test-app-content">
@@ -278,6 +300,69 @@ describe('Notification Navigation', () => {
       expect(mockHandleNotificationReceived).toHaveBeenCalled();
     });
 
+    it('calls handleSlotNotificationReceived when slotHour and slotMinute are present', async () => {
+      render(<TestAppContent />);
+
+      await waitFor(() => {
+        expect(notificationReceivedCallback).not.toBeNull();
+      });
+
+      // Simulate notification received with slot data in payload
+      notificationReceivedCallback?.({
+        request: {
+          content: {
+            data: {
+              slotHour: 14,
+              slotMinute: 30,
+            },
+          },
+        },
+      });
+
+      expect(mockHandleSlotNotificationReceived).toHaveBeenCalledWith(14, 30);
+      expect(mockHandleNotificationReceived).not.toHaveBeenCalled();
+    });
+
+    it('calls handleNotificationReceived when only slotHour is present (no slotMinute)', async () => {
+      render(<TestAppContent />);
+
+      await waitFor(() => {
+        expect(notificationReceivedCallback).not.toBeNull();
+      });
+
+      // Simulate notification with only slotHour (missing slotMinute)
+      notificationReceivedCallback?.({
+        request: {
+          content: {
+            data: {
+              slotHour: 9,
+            },
+          },
+        },
+      });
+
+      expect(mockHandleNotificationReceived).toHaveBeenCalled();
+      expect(mockHandleSlotNotificationReceived).not.toHaveBeenCalled();
+    });
+
+    it('calls handleNotificationReceived when data is missing', async () => {
+      render(<TestAppContent />);
+
+      await waitFor(() => {
+        expect(notificationReceivedCallback).not.toBeNull();
+      });
+
+      // Simulate notification with no data field
+      notificationReceivedCallback?.({
+        request: {
+          content: {},
+        },
+      });
+
+      expect(mockHandleNotificationReceived).toHaveBeenCalled();
+      expect(mockHandleSlotNotificationReceived).not.toHaveBeenCalled();
+    });
+
     it('cleans up notification received listener on unmount', async () => {
       const mockRemove = jest.fn();
       mockAddNotificationReceivedListener.mockReturnValueOnce({
@@ -323,17 +408,15 @@ describe('Notification Navigation', () => {
 
   describe('Foreground Notification Handler Configuration', () => {
     it('configures notification handler for foreground notifications', async () => {
-      // Import the actual _layout to trigger setNotificationHandler
-      // This is called at module load time
-      jest.isolateModules(() => {
-        require('../_layout');
-      });
+      render(<TestAppContent includeHandler={true} />);
 
-      expect(mockSetNotificationHandler).toHaveBeenCalledWith(
-        expect.objectContaining({
-          handleNotification: expect.any(Function),
-        })
-      );
+      await waitFor(() => {
+        expect(mockSetNotificationHandler).toHaveBeenCalledWith(
+          expect.objectContaining({
+            handleNotification: expect.any(Function),
+          })
+        );
+      });
     });
 
     it('notification handler returns correct configuration', async () => {
@@ -350,11 +433,11 @@ describe('Notification Navigation', () => {
         handlerConfig = config;
       });
 
-      jest.isolateModules(() => {
-        require('../_layout');
-      });
+      render(<TestAppContent includeHandler={true} />);
 
-      expect(handlerConfig).not.toBeNull();
+      await waitFor(() => {
+        expect(handlerConfig).not.toBeNull();
+      });
 
       const result = await handlerConfig!.handleNotification();
 

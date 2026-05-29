@@ -10,6 +10,8 @@
 import React, { Component, ErrorInfo, ReactNode } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 import { useTranslation } from 'react-i18next';
+import { useThemeColors } from '../hooks/useThemeColors';
+import { spacing, borderRadius, typography } from '../constants/theme';
 import { AppError, logError } from '../errors';
 
 /**
@@ -152,40 +154,41 @@ function ErrorFallback({
   errorInfo,
   onReset,
   showDetails = false,
-}: ErrorFallbackProps): JSX.Element {
+}: ErrorFallbackProps): React.JSX.Element {
   const { t } = useTranslation();
+  const colors = useThemeColors();
 
   return (
     <View
-      style={styles.container}
+      style={[styles.container, { backgroundColor: colors.background.secondary }]}
       accessibilityRole="alert"
       accessibilityLabel={t('errors.generic')}
     >
       <View style={styles.content}>
         <Text style={styles.icon}>⚠️</Text>
-        <Text style={styles.title}>{t('common.error')}</Text>
-        <Text style={styles.message}>{t('errors.generic')}</Text>
+        <Text style={[styles.title, { color: colors.text.primary }]}>{t('common.error')}</Text>
+        <Text style={[styles.message, { color: colors.text.secondary }]}>{t('errors.generic')}</Text>
 
         {showDetails && (
-          <ScrollView style={styles.detailsContainer}>
-            <Text style={styles.detailsTitle}>Error Details:</Text>
-            <Text style={styles.detailsText}>{error.message}</Text>
+          <ScrollView style={[styles.detailsContainer, { backgroundColor: colors.surface.card, borderColor: colors.border.default }]}>
+            <Text style={[styles.detailsTitle, { color: colors.text.primary }]}>Error Details:</Text>
+            <Text style={[styles.detailsText, { color: colors.text.secondary }]}>{error.message}</Text>
             {errorInfo?.componentStack && (
               <>
-                <Text style={styles.detailsTitle}>Component Stack:</Text>
-                <Text style={styles.detailsText}>{errorInfo.componentStack}</Text>
+                <Text style={[styles.detailsTitle, { color: colors.text.primary }]}>Component Stack:</Text>
+                <Text style={[styles.detailsText, { color: colors.text.secondary }]}>{errorInfo.componentStack}</Text>
               </>
             )}
           </ScrollView>
         )}
 
         <TouchableOpacity
-          style={styles.button}
+          style={[styles.button, { backgroundColor: colors.interactive.primary }]}
           onPress={onReset}
           accessibilityRole="button"
           accessibilityLabel={t('common.retry')}
         >
-          <Text style={styles.buttonText}>{t('common.retry')}</Text>
+          <Text style={[styles.buttonText, { color: colors.text.inverse }]}>{t('common.retry')}</Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -200,8 +203,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#f8f9fa',
-    padding: 20,
+    padding: spacing.lg,
   },
   content: {
     alignItems: 'center',
@@ -210,54 +212,46 @@ const styles = StyleSheet.create({
   },
   icon: {
     fontSize: 48,
-    marginBottom: 16,
+    marginBottom: spacing.base,
   },
   title: {
-    fontSize: 24,
+    fontSize: typography.title.fontSize + 2,
     fontWeight: 'bold',
-    color: '#212529',
-    marginBottom: 8,
+    marginBottom: spacing.sm,
     textAlign: 'center',
   },
   message: {
-    fontSize: 16,
-    color: '#6c757d',
+    fontSize: typography.body.fontSize,
     textAlign: 'center',
-    marginBottom: 24,
+    marginBottom: spacing.xl,
     lineHeight: 24,
   },
   detailsContainer: {
     maxHeight: 200,
     width: '100%',
-    backgroundColor: '#fff',
-    borderRadius: 8,
-    padding: 12,
-    marginBottom: 24,
+    borderRadius: borderRadius.sm,
+    padding: spacing.md,
+    marginBottom: spacing.xl,
     borderWidth: 1,
-    borderColor: '#dee2e6',
   },
   detailsTitle: {
-    fontSize: 12,
+    fontSize: typography.overline.fontSize + 1,
     fontWeight: 'bold',
-    color: '#495057',
-    marginBottom: 4,
-    marginTop: 8,
+    marginBottom: spacing.xs,
+    marginTop: spacing.sm,
   },
   detailsText: {
-    fontSize: 11,
-    color: '#6c757d',
+    fontSize: typography.overline.fontSize,
     fontFamily: 'monospace',
   },
   button: {
-    backgroundColor: '#007bff',
-    paddingHorizontal: 32,
-    paddingVertical: 12,
-    borderRadius: 8,
+    paddingHorizontal: spacing['2xl'],
+    paddingVertical: spacing.md,
+    borderRadius: borderRadius.sm,
     minWidth: 120,
   },
   buttonText: {
-    color: '#fff',
-    fontSize: 16,
+    fontSize: typography.body.fontSize,
     fontWeight: '600',
     textAlign: 'center',
   },

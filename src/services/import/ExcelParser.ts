@@ -75,6 +75,17 @@ const DESCRIPTION_HEADERS = [
   'historico',
   'observação',
   'observacao',
+  'compra',
+  'estabelecimento',
+  'loja',
+  'local',
+  'title',
+  'título',
+  'titulo',
+  'lançamento',
+  'lancamento',
+  'merchant',
+  'payee',
 ];
 
 /**
@@ -112,7 +123,7 @@ export class ExcelParser {
       }
 
       // Get worksheet data as array of arrays
-      const sheetData: unknown[][] = XLSX.utils.sheet_to_json(targetSheet.sheet, {
+      const sheetData: unknown[][] = XLSX.utils.sheet_to_json(targetSheet.sheet!, {
         header: 1,
         defval: '',
         raw: false,
@@ -163,6 +174,7 @@ export class ExcelParser {
       for (let i = dataStartIndex; i < sheetData.length; i++) {
         const rowNumber = i + 1; // 1-indexed for user display
         const row = sheetData[i];
+        if (!row) continue;
 
         // Skip empty rows
         if (this.isEmptyRow(row)) {
@@ -338,7 +350,9 @@ export class ExcelParser {
 
     for (let i = 0; i < workbook.SheetNames.length; i++) {
       const name = workbook.SheetNames[i];
+      if (!name) continue;
       const sheet = workbook.Sheets[name];
+      if (!sheet) continue;
 
       // Get sheet data for row count and preview
       const sheetData: unknown[][] = XLSX.utils.sheet_to_json(sheet, {
@@ -371,10 +385,10 @@ export class ExcelParser {
    */
   private selectSheet(
     workbook: XLSX.WorkBook,
-    sheets: SheetInfo[],
+    _sheets: SheetInfo[],
     options: ExcelParseOptions
   ): { name: string; sheet: XLSX.WorkSheet } | null {
-    let targetSheetName: string;
+    let targetSheetName: string | undefined;
 
     if (options.sheetName) {
       // Use specified sheet name
@@ -391,6 +405,10 @@ export class ExcelParser {
     } else {
       // Default to first sheet
       targetSheetName = workbook.SheetNames[0];
+    }
+
+    if (!targetSheetName) {
+      return null;
     }
 
     const sheet = workbook.Sheets[targetSheetName];
@@ -420,6 +438,17 @@ export class ExcelParser {
     }
 
     const firstRow = data[0];
+    if (!firstRow) {
+      return {
+        hasHeader: false,
+        columnMapping: {
+          dateColumn: forcedMapping?.dateColumn ?? -1,
+          amountColumn: forcedMapping?.amountColumn ?? -1,
+          descriptionColumn: forcedMapping?.descriptionColumn ?? -1,
+        },
+      };
+    }
+
     let dateColumn = forcedMapping?.dateColumn ?? -1;
     let amountColumn = forcedMapping?.amountColumn ?? -1;
     let descriptionColumn = forcedMapping?.descriptionColumn ?? -1;
@@ -445,24 +474,71 @@ export class ExcelParser {
       }
     }
 
-    // If no headers detected, try to infer from data patterns
+    // If no headers detected, try to infer from data patterns by scanning multiple rows
     if (!hasHeader && data.length > 1) {
-      const dataRow = data[1];
+      const maxColCount = Math.max(...data.slice(0, 10).map((r) => (r ? r.length : 0)));
+      const rowsToScan = Math.min(data.length, 10);
 
-      for (let i = 0; i < dataRow.length; i++) {
-        const cellValue = String(dataRow[i] ?? '').trim();
+      // Build confidence scores for each column
+      const dateScores: number[] = new Array(maxColCount).fill(0);
+      const amountScores: number[] = new Array(maxColCount).fill(0);
+      const textScores: number[] = new Array(maxColCount).fill(0);
+      let scannedRows = 0;
 
-        if (dateColumn === -1 && this.looksLikeDate(cellValue)) {
-          dateColumn = i;
-        } else if (amountColumn === -1 && this.looksLikeAmount(cellValue)) {
-          amountColumn = i;
-        } else if (
-          descriptionColumn === -1 &&
-          cellValue.length > 0 &&
-          !this.looksLikeDate(cellValue) &&
-          !this.looksLikeAmount(cellValue)
-        ) {
-          descriptionColumn = i;
+      for (let rowIdx = 0; rowIdx < rowsToScan; rowIdx++) {
+        const dataRow = data[rowIdx];
+        if (!dataRow || this.isEmptyRow(dataRow)) continue;
+        scannedRows++;
+
+        for (let i = 0; i < dataRow.length; i++) {
+          const cellValue = String(dataRow[i] ?? '').trim();
+          if (cellValue.length === 0) continue;
+
+          if (this.looksLikeDate(cellValue)) {
+            dateScores[i] = (dateScores[i] ?? 0) + 1;
+          } else if (this.looksLikeAmount(cellValue)) {
+            amountScores[i] = (amountScores[i] ?? 0) + 1;
+          } else {
+            textScores[i] = (textScores[i] ?? 0) + 1;
+          }
+        }
+      }
+
+      // Assign columns based on highest confidence (require at least 50% of scanned rows to match)
+      const threshold = scannedRows > 1 ? Math.ceil(scannedRows * 0.5) : 1;
+
+      // Find best date column
+      if (dateColumn === -1) {
+        let bestScore = 0;
+        for (let i = 0; i < maxColCount; i++) {
+          if ((dateScores[i] ?? 0) >= threshold && (dateScores[i] ?? 0) > bestScore) {
+            bestScore = dateScores[i] ?? 0;
+            dateColumn = i;
+          }
+        }
+      }
+
+      // Find best amount column (prioritize numeric detection)
+      if (amountColumn === -1) {
+        let bestScore = 0;
+        for (let i = 0; i < maxColCount; i++) {
+          if (i === dateColumn) continue;
+          if ((amountScores[i] ?? 0) >= threshold && (amountScores[i] ?? 0) > bestScore) {
+            bestScore = amountScores[i] ?? 0;
+            amountColumn = i;
+          }
+        }
+      }
+
+      // Find best description column (text that is not date or amount)
+      if (descriptionColumn === -1) {
+        let bestScore = 0;
+        for (let i = 0; i < maxColCount; i++) {
+          if (i === dateColumn || i === amountColumn) continue;
+          if ((textScores[i] ?? 0) >= threshold && (textScores[i] ?? 0) > bestScore) {
+            bestScore = textScores[i] ?? 0;
+            descriptionColumn = i;
+          }
         }
       }
     }

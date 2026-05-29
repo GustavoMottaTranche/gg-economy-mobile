@@ -2,13 +2,15 @@
  * Transaction Detail Screen
  *
  * Modal screen for viewing and editing transaction details:
- * - View all transaction fields
+ * - View all transaction fields with redesigned card layout
  * - Edit transaction (navigate to edit mode)
  * - Delete transaction with confirmation
+ * - Group-aware delete and edit for installment parcels
+ * - Editable category via bottom sheet with CategorySelector
  *
- * **Validates: Requirements 19, 20, 30**
+ * **Validates: Requirements 2.1, 2.2, 2.3, 2.4, 2.5, 3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 9.2**
  */
-import React, { useCallback, useMemo } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -17,19 +19,39 @@ import {
   ScrollView,
   Alert,
   SafeAreaView,
+  Modal,
 } from 'react-native';
 import { useLocalSearchParams, router } from 'expo-router';
 import { useTranslation } from 'react-i18next';
+import { eq } from 'drizzle-orm';
 
 import { useTransactions } from '../../src/hooks/useTransactions';
+import { useThemeColors } from '../../src/hooks/useThemeColors';
+import { useThemeStore } from '../../src/stores/themeStore';
+import { spacing, borderRadius, typography, shadows } from '../../src/constants/theme';
 import { LoadingIndicator } from '../../src/components/ui/LoadingIndicator';
 import { EmptyState } from '../../src/components/ui/EmptyState';
+import { InputPromptDialog } from '../../src/components/ui/InputPromptDialog';
+import { CategorySelector } from '../../src/components/CategorySelector';
+import { PaymentStatusToggle } from '../../src/components/PaymentStatusToggle';
 import {
   formatCurrencyLocale,
   formatDateLocale,
   getCurrentLocale,
   getMonthName,
 } from '../../src/i18n';
+import { setTransactionCategory } from '../../src/db/queries/transactions';
+import {
+  deleteAllInGroup,
+  deleteSingleParcel,
+  recalculateGroup,
+  updateGroupField,
+} from '../../src/services/installment/InstallmentGroupManager';
+import { updateRecurringAmount } from '../../src/services/recurring/RecurringTransactionService';
+import { paymentStatusService } from '../../src/services/payment-status/PaymentStatusService';
+import { getDb } from '../../src/db/client';
+import { transactions as transactionsTable } from '../../src/db/schema';
+import type { Category } from '../../src/types';
 
 /**
  * Parses a YYYY-MM string into a display format
@@ -45,22 +67,65 @@ function formatReferenceMonth(monthStr: string, locale: 'pt-BR' | 'en'): string 
 }
 
 /**
- * Detail Row Component
+ * Types for the input prompt dialog state
+ */
+type PromptMode =
+  | 'amount-single'
+  | 'amount-recalculate'
+  | 'amount-recurring-single'
+  | 'amount-recurring-future'
+  | 'description-single'
+  | 'description-all'
+  | 'amount-standard'
+  | 'description-standard';
+
+/**
+ * Detail Row Component — tappable variant for category editing
  */
 interface DetailRowProps {
   label: string;
   value: string;
   valueColor?: string;
   testID?: string;
+  onPress?: () => void;
 }
 
-function DetailRow({ label, value, valueColor, testID }: DetailRowProps): React.ReactElement {
+function DetailRow({ label, value, valueColor, testID, onPress }: DetailRowProps): React.ReactElement {
+  const colors = useThemeColors();
+
+  const rowContent = (
+    <>
+      <Text style={[styles.detailLabel, { color: colors.text.secondary }]}>{label}</Text>
+      <View style={styles.detailValueContainer}>
+        <Text style={[styles.detailValue, { color: colors.text.primary }, valueColor ? { color: valueColor } : undefined]}>
+          {value}
+        </Text>
+        {onPress && (
+          <Text style={[styles.detailChevron, { color: colors.text.tertiary }]}>›</Text>
+        )}
+      </View>
+    </>
+  );
+
+  if (onPress) {
+    return (
+      <TouchableOpacity
+        style={[styles.detailRow, { borderBottomColor: colors.border.subtle }]}
+        onPress={onPress}
+        activeOpacity={0.6}
+        accessibilityRole="button"
+        accessibilityLabel={`${label}: ${value}`}
+        accessibilityHint="Tap to change"
+        testID={testID ? `${testID}-touchable` : undefined}
+      >
+        {rowContent}
+      </TouchableOpacity>
+    );
+  }
+
   return (
-    <View style={styles.detailRow} testID={testID}>
-      <Text style={styles.detailLabel}>{label}</Text>
-      <Text style={[styles.detailValue, valueColor ? { color: valueColor } : undefined]}>
-        {value}
-      </Text>
+    <View style={[styles.detailRow, { borderBottomColor: colors.border.subtle }]} testID={testID}>
+      {rowContent}
     </View>
   );
 }
@@ -72,49 +137,447 @@ export default function TransactionDetailScreen(): React.ReactElement {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { t } = useTranslation();
   const locale = getCurrentLocale();
+  const colors = useThemeColors();
+  const resolvedScheme = useThemeStore((s) => s.resolvedScheme);
+  const themeShadows = shadows[resolvedScheme];
 
   // Fetch all transactions and find the one we need
-  const { transactions, isLoading, remove } = useTransactions();
+  const { transactions, isLoading, remove, update } = useTransactions();
 
   // Find the transaction by ID
   const transaction = useMemo(() => transactions.find((tx) => tx.id === id), [transactions, id]);
 
-  const handleClose = useCallback(() => {
-    router.back();
-  }, []);
+  // State for the input prompt dialog
+  const [promptVisible, setPromptVisible] = useState(false);
+  const [promptMode, setPromptMode] = useState<PromptMode>('amount-single');
+  const [promptTitle, setPromptTitle] = useState('');
+  const [promptMessage, setPromptMessage] = useState('');
+  const [promptDefaultValue, setPromptDefaultValue] = useState('');
+  const [promptKeyboardType, setPromptKeyboardType] = useState<'default' | 'decimal-pad'>('default');
 
-  const handleEdit = useCallback(() => {
-    // TODO: Implement edit functionality in a future task
-    Alert.alert(t('common.edit'), 'Edit functionality will be implemented in a future update.', [
-      { text: t('common.ok') },
-    ]);
-  }, [t]);
+  // State for category edit bottom sheet
+  const [categorySheetOpen, setCategorySheetOpen] = useState(false);
+  const [isCategoryUpdating, setIsCategoryUpdating] = useState(false);
 
-  const handleDelete = useCallback(() => {
-    if (!transaction) return;
+  // State for payment status (Requirement 5.1, 5.2, 5.3)
+  const [isPaid, setIsPaid] = useState<boolean | null>(null);
+  const [isPaymentToggling, setIsPaymentToggling] = useState(false);
 
-    Alert.alert(t('transactions.deleteTransaction'), t('transactions.deleteConfirmation'), [
-      {
-        text: t('common.cancel'),
-        style: 'cancel',
-      },
-      {
-        text: t('common.delete'),
-        style: 'destructive',
-        onPress: async () => {
+  // Load the isPaid status from the database when the transaction is available
+  useEffect(() => {
+    if (!id) return;
+    let cancelled = false;
+
+    async function loadPaymentStatus() {
+      try {
+        const db = getDb();
+        const results = await db
+          .select({ isPaid: transactionsTable.isPaid })
+          .from(transactionsTable)
+          .where(eq(transactionsTable.id, id))
+          .limit(1);
+
+        if (!cancelled && results[0] != null) {
+          setIsPaid(results[0].isPaid);
+        }
+      } catch {
+        // If we can't load, leave as null (row won't show toggle)
+      }
+    }
+
+    loadPaymentStatus();
+    return () => { cancelled = true; };
+  }, [id]);
+
+  /**
+   * Handles toggling the payment status with optimistic update.
+   * Validates: Requirements 5.2, 5.3
+   */
+  const handleTogglePaymentStatus = useCallback(async () => {
+    if (!transaction || isPaid === null || isPaymentToggling) return;
+
+    // Optimistic update
+    const previousValue = isPaid;
+    setIsPaid(!isPaid);
+    setIsPaymentToggling(true);
+
+    try {
+      await paymentStatusService.toggleMonthlyTransaction(transaction.id);
+    } catch {
+      // Rollback on failure
+      setIsPaid(previousValue);
+      Alert.alert(t('common.error'), t('errors.generic'));
+    } finally {
+      setIsPaymentToggling(false);
+    }
+  }, [transaction, isPaid, isPaymentToggling, t]);
+
+  /**
+   * Opens the input prompt dialog with the specified configuration.
+   */
+  const openPrompt = useCallback(
+    (
+      mode: PromptMode,
+      title: string,
+      message: string,
+      defaultValue: string,
+      keyboardType: 'default' | 'decimal-pad' = 'default'
+    ) => {
+      setPromptMode(mode);
+      setPromptTitle(title);
+      setPromptMessage(message);
+      setPromptDefaultValue(defaultValue);
+      setPromptKeyboardType(keyboardType);
+      setPromptVisible(true);
+    },
+    []
+  );
+
+  /**
+   * Handles the confirm action from the input prompt dialog.
+   */
+  const handlePromptConfirm = useCallback(
+    async (value: string) => {
+      if (!transaction) return;
+      setPromptVisible(false);
+
+      switch (promptMode) {
+        case 'amount-single':
+        case 'amount-standard':
+        case 'amount-recurring-single': {
+          const parsed = parseFloat(value.replace(',', '.'));
+          if (isNaN(parsed) || parsed <= 0) {
+            Alert.alert(t('common.error'), t('manual.installment.invalidAmount'));
+            return;
+          }
+          const amountInCents = Math.round(parsed * 100);
+          const signedAmount = transaction.amount < 0 ? -amountInCents : amountInCents;
           try {
-            await remove(transaction.id);
-            router.back();
+            await update(transaction.id, { amount: signedAmount });
+          } catch (err) {
+            Alert.alert(
+              t('common.error'),
+              promptMode === 'amount-single'
+                ? t('manual.installment.editError')
+                : t('errors.generic')
+            );
+          }
+          break;
+        }
+
+        case 'amount-recurring-future': {
+          const parsed = parseFloat(value.replace(',', '.'));
+          if (isNaN(parsed) || parsed <= 0) {
+            Alert.alert(t('common.error'), t('manual.installment.invalidAmount'));
+            return;
+          }
+          const amountInCents = Math.round(parsed * 100);
+          const signedAmount = transaction.amount < 0 ? -amountInCents : amountInCents;
+          try {
+            await update(transaction.id, { amount: signedAmount });
+            await updateRecurringAmount(transaction.recurringId!, Math.abs(signedAmount));
+            Alert.alert(t('common.success'), t('manual.installment.recurringUpdateSuccess'));
+          } catch (err) {
+            Alert.alert(t('common.error'), t('manual.installment.recurringUpdateError'));
+          }
+          break;
+        }
+
+        case 'amount-recalculate': {
+          const parsed = parseFloat(value.replace(',', '.'));
+          if (isNaN(parsed) || parsed <= 0) {
+            Alert.alert(t('common.error'), t('manual.installment.invalidAmount'));
+            return;
+          }
+          const totalInCents = Math.round(parsed * 100);
+          try {
+            await recalculateGroup(transaction.installmentGroupId!, totalInCents);
+            Alert.alert(t('common.success'), t('manual.installment.recalculateSuccess'));
+          } catch (err) {
+            Alert.alert(t('common.error'), t('manual.installment.editError'));
+          }
+          break;
+        }
+
+        case 'description-single': {
+          if (!value || value.trim().length === 0) return;
+          try {
+            await update(transaction.id, { description: value.trim() });
+          } catch (err) {
+            Alert.alert(t('common.error'), t('manual.installment.editError'));
+          }
+          break;
+        }
+
+        case 'description-all': {
+          if (!value || value.trim().length === 0) return;
+          try {
+            await updateGroupField(
+              transaction.installmentGroupId!,
+              'description',
+              value.trim()
+            );
+            Alert.alert(t('common.success'), t('manual.installment.updateAllSuccess'));
+          } catch (err) {
+            Alert.alert(t('common.error'), t('manual.installment.editError'));
+          }
+          break;
+        }
+
+        case 'description-standard': {
+          if (!value || value.trim().length === 0) return;
+          try {
+            await update(transaction.id, { description: value.trim() });
           } catch (err) {
             Alert.alert(t('common.error'), t('errors.generic'));
           }
-        },
-      },
+          break;
+        }
+      }
+    },
+    [transaction, promptMode, t, update]
+  );
+
+  const handlePromptCancel = useCallback(() => {
+    setPromptVisible(false);
+  }, []);
+
+  /**
+   * Opens the category edit bottom sheet
+   */
+  const handleOpenCategorySheet = useCallback(() => {
+    setCategorySheetOpen(true);
+  }, []);
+
+  /**
+   * Handles category selection from the bottom sheet.
+   * For installment group transactions, prompts for scope (this parcel vs all parcels).
+   */
+  const handleCategorySelect = useCallback(
+    (category: Category) => {
+      if (!transaction) return;
+
+      // If same category, do nothing
+      if (transaction.categoryId === category.id) {
+        setCategorySheetOpen(false);
+        return;
+      }
+
+      if (transaction.installmentGroupId) {
+        // Close sheet first, then show scope alert
+        setCategorySheetOpen(false);
+        Alert.alert(
+          t('categoryEdit.changeCategory'),
+          t('categoryEdit.installmentPrompt'),
+          [
+            {
+              text: t('common.cancel'),
+              style: 'cancel',
+            },
+            {
+              text: t('categoryEdit.applyToThisParcel'),
+              onPress: async () => {
+                setIsCategoryUpdating(true);
+                try {
+                  await setTransactionCategory(transaction.id, category.id);
+                } catch (err) {
+                  Alert.alert(t('common.error'), t('categoryEdit.updateError'));
+                } finally {
+                  setIsCategoryUpdating(false);
+                }
+              },
+            },
+            {
+              text: t('categoryEdit.applyToAllParcels'),
+              onPress: async () => {
+                setIsCategoryUpdating(true);
+                try {
+                  await updateGroupField(
+                    transaction.installmentGroupId!,
+                    'categoryId',
+                    category.id
+                  );
+                } catch (err) {
+                  Alert.alert(t('common.error'), t('categoryEdit.updateError'));
+                } finally {
+                  setIsCategoryUpdating(false);
+                }
+              },
+            },
+          ]
+        );
+      } else {
+        // Non-installment: update directly
+        setCategorySheetOpen(false);
+        setIsCategoryUpdating(true);
+        setTransactionCategory(transaction.id, category.id)
+          .catch(() => {
+            Alert.alert(t('common.error'), t('categoryEdit.updateError'));
+          })
+          .finally(() => {
+            setIsCategoryUpdating(false);
+          });
+      }
+    },
+    [transaction, t]
+  );
+
+  const handleCloseCategorySheet = useCallback(() => {
+    setCategorySheetOpen(false);
+  }, []);
+
+  /**
+   * Handles editing a transaction value with group-aware dialog for installment parcels.
+   */
+  const handleEditValue = useCallback(() => {
+    if (!transaction) return;
+
+    if (transaction.recurringId) {
+      Alert.alert(
+        t('manual.installment.recurringEditTitle'),
+        t('manual.installment.recurringEditMessage'),
+        [
+          { text: t('common.cancel'), style: 'cancel' },
+          {
+            text: t('manual.installment.applyToThisOccurrence'),
+            onPress: () => {
+              openPrompt('amount-recurring-single', t('transactions.amount'), t('manual.enterAmount'), '', 'decimal-pad');
+            },
+          },
+          {
+            text: t('manual.installment.applyToAllFuture'),
+            onPress: () => {
+              openPrompt('amount-recurring-future', t('transactions.amount'), t('manual.enterAmount'), '', 'decimal-pad');
+            },
+          },
+        ]
+      );
+    } else if (transaction.installmentGroupId) {
+      Alert.alert(
+        t('manual.installment.editValueTitle'),
+        t('manual.installment.editValueMessage'),
+        [
+          { text: t('common.cancel'), style: 'cancel' },
+          {
+            text: t('manual.installment.applyToThisOnly'),
+            onPress: () => {
+              openPrompt('amount-single', t('transactions.amount'), t('manual.enterAmount'), '', 'decimal-pad');
+            },
+          },
+          {
+            text: t('manual.installment.recalculateAll'),
+            onPress: () => {
+              openPrompt('amount-recalculate', t('manual.installment.enterNewTotal'), t('manual.installment.enterNewTotalMessage'), '', 'decimal-pad');
+            },
+          },
+        ]
+      );
+    } else {
+      openPrompt('amount-standard', t('transactions.amount'), t('manual.enterAmount'), '', 'decimal-pad');
+    }
+  }, [t, transaction, openPrompt]);
+
+  /**
+   * Handles editing a transaction description with group-aware dialog.
+   */
+  const handleEditDescription = useCallback(() => {
+    if (!transaction) return;
+
+    if (transaction.installmentGroupId) {
+      Alert.alert(
+        t('manual.installment.editFieldTitle'),
+        t('manual.installment.editFieldMessage'),
+        [
+          { text: t('common.cancel'), style: 'cancel' },
+          {
+            text: t('manual.installment.applyToThisOnly'),
+            onPress: () => {
+              openPrompt('description-single', t('transactions.description'), t('manual.enterDescription'), transaction.description);
+            },
+          },
+          {
+            text: t('manual.installment.applyToAll'),
+            onPress: () => {
+              openPrompt('description-all', t('transactions.description'), t('manual.enterDescription'), transaction.description);
+            },
+          },
+        ]
+      );
+    } else {
+      openPrompt('description-standard', t('transactions.description'), t('manual.enterDescription'), transaction.description);
+    }
+  }, [t, transaction, openPrompt]);
+
+  /**
+   * Main edit handler that shows edit options for the transaction.
+   */
+  const handleEdit = useCallback(() => {
+    if (!transaction) return;
+
+    Alert.alert(t('common.edit'), t('transactions.editTransaction'), [
+      { text: t('common.cancel'), style: 'cancel' },
+      { text: t('transactions.amount'), onPress: handleEditValue },
+      { text: t('transactions.description'), onPress: handleEditDescription },
     ]);
+  }, [t, transaction, handleEditValue, handleEditDescription]);
+
+  /**
+   * Handles deleting a transaction with group-aware dialog for installment parcels.
+   */
+  const handleDelete = useCallback(() => {
+    if (!transaction) return;
+
+    if (transaction.installmentGroupId) {
+      Alert.alert(
+        t('manual.installment.deleteTitle'),
+        t('manual.installment.deleteMessage'),
+        [
+          { text: t('common.cancel'), style: 'cancel' },
+          {
+            text: t('manual.installment.deleteThisOnly'),
+            onPress: async () => {
+              try {
+                await deleteSingleParcel(transaction.id, transaction.installmentGroupId!);
+                router.back();
+              } catch (err) {
+                Alert.alert(t('common.error'), t('manual.installment.editError'));
+              }
+            },
+          },
+          {
+            text: t('manual.installment.deleteAll'),
+            style: 'destructive',
+            onPress: async () => {
+              try {
+                await deleteAllInGroup(transaction.installmentGroupId!);
+                router.back();
+              } catch (err) {
+                Alert.alert(t('common.error'), t('manual.installment.editError'));
+              }
+            },
+          },
+        ]
+      );
+    } else {
+      Alert.alert(t('transactions.deleteTransaction'), t('transactions.deleteConfirmation'), [
+        { text: t('common.cancel'), style: 'cancel' },
+        {
+          text: t('common.delete'),
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await remove(transaction.id);
+              router.back();
+            } catch (err) {
+              Alert.alert(t('common.error'), t('errors.generic'));
+            }
+          },
+        },
+      ]);
+    }
   }, [t, transaction, remove]);
 
   const handleToggleExcluded = useCallback(() => {
-    // TODO: Implement toggle excluded functionality
     Alert.alert(
       t('transactions.excludeFromTotals'),
       'Toggle excluded functionality will be implemented in a future update.',
@@ -125,14 +588,7 @@ export default function TransactionDetailScreen(): React.ReactElement {
   // Loading state
   if (isLoading) {
     return (
-      <SafeAreaView style={styles.container}>
-        <View style={styles.headerBar}>
-          <TouchableOpacity onPress={handleClose} style={styles.closeButton}>
-            <Text style={styles.closeButtonText}>{t('common.close')}</Text>
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>{t('transactions.editTransaction')}</Text>
-          <View style={styles.headerSpacer} />
-        </View>
+      <SafeAreaView style={[styles.container, { backgroundColor: colors.background.secondary }]}>
         <LoadingIndicator message={t('common.loading')} testID="loading-indicator" />
       </SafeAreaView>
     );
@@ -141,14 +597,7 @@ export default function TransactionDetailScreen(): React.ReactElement {
   // Transaction not found
   if (!transaction) {
     return (
-      <SafeAreaView style={styles.container}>
-        <View style={styles.headerBar}>
-          <TouchableOpacity onPress={handleClose} style={styles.closeButton}>
-            <Text style={styles.closeButtonText}>{t('common.close')}</Text>
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>{t('transactions.editTransaction')}</Text>
-          <View style={styles.headerSpacer} />
-        </View>
+      <SafeAreaView style={[styles.container, { backgroundColor: colors.background.secondary }]}>
         <EmptyState
           icon="🔍"
           title={t('errors.notFound')}
@@ -162,39 +611,23 @@ export default function TransactionDetailScreen(): React.ReactElement {
   // Format values for display
   const isIncome = transaction.amount > 0;
   const formattedAmount = formatCurrencyLocale(Math.abs(transaction.amount) / 100, locale);
-  const formattedDate = formatDateLocale(transaction.date, locale, {
-    dateStyle: 'long',
-  });
+  const formattedDate = formatDateLocale(transaction.date, locale, { dateStyle: 'long' });
   const formattedReferenceMonth = formatReferenceMonth(transaction.referenceMonth, locale);
 
-  const amountColor = isIncome ? '#166534' : '#991b1b';
+  const amountColor = isIncome ? colors.semantic.success.dark : colors.semantic.danger.dark;
   const amountPrefix = isIncome ? '+' : '-';
 
   return (
-    <SafeAreaView style={styles.container} testID="transaction-detail-screen">
-      {/* Header Bar */}
-      <View style={styles.headerBar}>
-        <TouchableOpacity
-          onPress={handleClose}
-          style={styles.closeButton}
-          accessibilityRole="button"
-          accessibilityLabel={t('common.close')}
-          testID="close-button"
-        >
-          <Text style={styles.closeButtonText}>{t('common.close')}</Text>
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>{t('transactions.editTransaction')}</Text>
-        <View style={styles.headerSpacer} />
-      </View>
-
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background.secondary }]} testID="transaction-detail-screen">
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
       >
-        {/* Amount Display */}
-        <View style={styles.amountContainer}>
-          <Text style={styles.amountLabel}>
+
+        {/* Amount Display — prominent at top with color-coded formatting */}
+        <View style={[styles.amountContainer, { backgroundColor: colors.surface.card }, themeShadows.sm]}>
+          <Text style={[styles.amountLabel, { color: colors.text.secondary }]}>
             {isIncome ? t('dashboard.income') : t('dashboard.expenses')}
           </Text>
           <Text style={[styles.amountValue, { color: amountColor }]} testID="amount-display">
@@ -204,7 +637,7 @@ export default function TransactionDetailScreen(): React.ReactElement {
         </View>
 
         {/* Transaction Details Card */}
-        <View style={styles.detailsCard} testID="details-card">
+        <View style={[styles.detailsCard, { backgroundColor: colors.surface.card }, themeShadows.sm]} testID="details-card">
           <DetailRow label={t('transactions.date')} value={formattedDate} testID="detail-date" />
           <DetailRow
             label={t('transactions.description')}
@@ -213,9 +646,10 @@ export default function TransactionDetailScreen(): React.ReactElement {
           />
           <DetailRow
             label={t('transactions.category')}
-            value={transaction.category?.name ?? '--'}
+            value={isCategoryUpdating ? '...' : (transaction.category?.name ?? '--')}
             valueColor={transaction.category?.color}
             testID="detail-category"
+            onPress={handleOpenCategorySheet}
           />
           <DetailRow
             label={t('transactions.referenceMonth')}
@@ -231,38 +665,83 @@ export default function TransactionDetailScreen(): React.ReactElement {
             }
             testID="detail-excluded"
           />
+          {isPaid !== null && (
+            <TouchableOpacity
+              style={[styles.detailRow, { borderBottomColor: colors.border.subtle }]}
+              onPress={handleTogglePaymentStatus}
+              disabled={isPaymentToggling}
+              activeOpacity={0.6}
+              accessibilityRole="button"
+              accessibilityLabel={isPaid ? 'Marcar como pendente' : 'Marcar como pago'}
+              testID="detail-payment-status-touchable"
+            >
+              <Text style={[styles.detailLabel, { color: colors.text.secondary }]}>
+                Status
+              </Text>
+              <View style={styles.detailValueContainer}>
+                <Text
+                  style={[
+                    styles.detailValue,
+                    { color: isPaid ? colors.semantic.success.dark : colors.semantic.warning.base },
+                  ]}
+                  testID="detail-payment-status-text"
+                >
+                  {isPaid ? 'Pago' : 'Pendente'}
+                </Text>
+                <View style={styles.paymentToggleContainer}>
+                  <PaymentStatusToggle
+                    isPaid={isPaid}
+                    onToggle={handleTogglePaymentStatus}
+                    disabled={isPaymentToggling}
+                    size="small"
+                    testID="detail-payment-status-toggle"
+                  />
+                </View>
+              </View>
+            </TouchableOpacity>
+          )}
           {transaction.duplicateOf && (
             <DetailRow
               label={t('transactions.duplicate')}
               value={t('transactions.duplicateOf')}
-              valueColor="#F59E0B"
+              valueColor={colors.semantic.warning.base}
               testID="detail-duplicate"
             />
           )}
         </View>
 
         {/* Metadata Card */}
-        <View style={styles.metadataCard}>
-          <Text style={styles.metadataTitle}>Metadata</Text>
-          <Text style={styles.metadataText}>ID: {transaction.id}</Text>
-          <Text style={styles.metadataText}>
+        <View style={[styles.metadataCard, { backgroundColor: colors.background.tertiary, borderColor: colors.border.subtle }]}>
+          <Text style={[styles.metadataTitle, { color: colors.text.tertiary }]}>Metadata</Text>
+          <Text style={[styles.metadataText, { color: colors.text.secondary }]}>ID: {transaction.id}</Text>
+          <Text style={[styles.metadataText, { color: colors.text.secondary }]}>
             Created: {formatDateLocale(transaction.createdAt, locale, { includeTime: true })}
           </Text>
-          <Text style={styles.metadataText}>
+          <Text style={[styles.metadataText, { color: colors.text.secondary }]}>
             Updated: {formatDateLocale(transaction.updatedAt, locale, { includeTime: true })}
           </Text>
         </View>
 
-        {/* Action Buttons */}
+        {/* Action Buttons — clear visual hierarchy */}
         <View style={styles.actions}>
           <TouchableOpacity
-            style={styles.toggleButton}
+            style={[styles.primaryButton, { backgroundColor: colors.interactive.primary }]}
+            onPress={handleEdit}
+            accessibilityRole="button"
+            accessibilityLabel={t('common.edit')}
+            testID="edit-button"
+          >
+            <Text style={[styles.primaryButtonText, { color: colors.text.inverse }]}>{t('common.edit')}</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.secondaryButton, { backgroundColor: colors.background.tertiary }]}
             onPress={handleToggleExcluded}
             accessibilityRole="button"
             accessibilityLabel={t('transactions.excludeFromTotals')}
             testID="toggle-excluded-button"
           >
-            <Text style={styles.toggleButtonText}>
+            <Text style={[styles.secondaryButtonText, { color: colors.text.primary }]}>
               {transaction.isExcludedFromTotals
                 ? t('transactions.included')
                 : t('transactions.excluded')}
@@ -270,175 +749,261 @@ export default function TransactionDetailScreen(): React.ReactElement {
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={styles.editButton}
-            onPress={handleEdit}
-            accessibilityRole="button"
-            accessibilityLabel={t('common.edit')}
-            testID="edit-button"
-          >
-            <Text style={styles.editButtonText}>{t('common.edit')}</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.deleteButton}
+            style={[styles.dangerButton, { backgroundColor: colors.surface.card, borderColor: colors.semantic.danger.base }]}
             onPress={handleDelete}
             accessibilityRole="button"
             accessibilityLabel={t('common.delete')}
             testID="delete-button"
           >
-            <Text style={styles.deleteButtonText}>{t('common.delete')}</Text>
+            <Text style={[styles.dangerButtonText, { color: colors.semantic.danger.base }]}>{t('common.delete')}</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
+
+      {/* Category Edit Bottom Sheet */}
+      <Modal
+        visible={categorySheetOpen}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={handleCloseCategorySheet}
+        testID="category-edit-modal"
+      >
+        <View style={styles.overlay}>
+          <View style={[styles.bottomSheet, { backgroundColor: colors.surface.card }]}>
+            <SafeAreaView style={styles.bottomSheetSafeArea}>
+              {/* Handle indicator */}
+              <View style={styles.handleContainer}>
+                <View style={[styles.handle, { backgroundColor: colors.border.strong }]} />
+              </View>
+
+              {/* Header */}
+              <View style={styles.bottomSheetHeader}>
+                <Text style={[styles.bottomSheetTitle, { color: colors.text.primary }]}>
+                  {t('categoryEdit.changeCategory')}
+                </Text>
+                <Text style={[styles.bottomSheetSubtitle, { color: colors.text.secondary }]}>
+                  {t('categoryEdit.selectNewCategory')}
+                </Text>
+              </View>
+
+              {/* Category Selector */}
+              <View style={styles.selectorContainer}>
+                <CategorySelector
+                  selectedCategoryId={transaction.categoryId}
+                  onSelect={handleCategorySelect}
+                  includeIncome={true}
+                  testID="category-edit-selector"
+                />
+              </View>
+
+              {/* Cancel Button */}
+              <View style={[styles.bottomSheetActions, { borderTopColor: colors.border.default }]}>
+                <TouchableOpacity
+                  style={styles.cancelButton}
+                  onPress={handleCloseCategorySheet}
+                  accessibilityRole="button"
+                  accessibilityLabel={t('common.cancel')}
+                  testID="category-edit-cancel"
+                >
+                  <Text style={[styles.cancelButtonText, { color: colors.text.secondary }]}>{t('common.cancel')}</Text>
+                </TouchableOpacity>
+              </View>
+            </SafeAreaView>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Input Prompt Dialog for editing values/descriptions */}
+      <InputPromptDialog
+        visible={promptVisible}
+        title={promptTitle}
+        message={promptMessage}
+        defaultValue={promptDefaultValue}
+        keyboardType={promptKeyboardType}
+        confirmText={t('common.save')}
+        cancelText={t('common.cancel')}
+        onConfirm={handlePromptConfirm}
+        onCancel={handlePromptCancel}
+        testID="edit-prompt-dialog"
+      />
     </SafeAreaView>
   );
 }
 
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F2F2F7',
-  },
-  headerBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    backgroundColor: '#FFFFFF',
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#E5E5EA',
-  },
-  closeButton: {
-    paddingVertical: 4,
-    paddingHorizontal: 8,
-  },
-  closeButtonText: {
-    fontSize: 16,
-    color: '#007AFF',
-  },
-  headerTitle: {
-    fontSize: 17,
-    fontWeight: '600',
-    color: '#000000',
-  },
-  headerSpacer: {
-    width: 60,
   },
   scrollView: {
     flex: 1,
   },
   content: {
-    padding: 16,
-    paddingBottom: 32,
+    padding: spacing.base,
+    paddingBottom: spacing['2xl'],
   },
+  // Amount display — prominent at top
   amountContainer: {
     alignItems: 'center',
-    paddingVertical: 24,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    marginBottom: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 2,
+    paddingVertical: spacing.xl,
+    borderRadius: borderRadius.lg,
+    marginBottom: spacing.base,
   },
   amountLabel: {
-    fontSize: 14,
-    color: '#6B7280',
-    marginBottom: 4,
+    fontSize: typography.caption.fontSize,
+    fontWeight: '500',
+    marginBottom: spacing.xs,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   amountValue: {
-    fontSize: 36,
+    fontSize: 38,
     fontWeight: '700',
   },
+
+  // Details card
   detailsCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 2,
+    borderRadius: borderRadius.lg,
+    padding: spacing.base,
+    marginBottom: spacing.base,
   },
   detailRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 12,
+    paddingVertical: spacing.md,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#E5E5EA',
   },
   detailLabel: {
-    fontSize: 14,
-    color: '#6B7280',
+    fontSize: typography.caption.fontSize,
+    fontWeight: '500',
     flex: 1,
   },
-  detailValue: {
-    fontSize: 14,
-    color: '#000000',
-    fontWeight: '500',
+  detailValueContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
     flex: 2,
+    justifyContent: 'flex-end',
+  },
+  detailValue: {
+    fontSize: typography.caption.fontSize,
+    fontWeight: '500',
     textAlign: 'right',
   },
+  detailChevron: {
+    fontSize: 18,
+    fontWeight: '600',
+    marginLeft: spacing.xs,
+  },
+  paymentToggleContainer: {
+    marginLeft: spacing.sm,
+  },
+  // Metadata card
   metadataCard: {
-    backgroundColor: '#F9FAFB',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 24,
+    borderRadius: borderRadius.md,
+    padding: spacing.base,
+    marginBottom: spacing.xl,
+    borderWidth: StyleSheet.hairlineWidth,
   },
   metadataTitle: {
-    fontSize: 12,
+    fontSize: typography.overline.fontSize,
     fontWeight: '600',
-    color: '#9CA3AF',
-    marginBottom: 8,
+    marginBottom: spacing.sm,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
   metadataText: {
-    fontSize: 12,
-    color: '#6B7280',
-    marginBottom: 4,
+    fontSize: typography.overline.fontSize,
+    marginBottom: spacing.xs,
   },
+
+  // Action buttons — clear visual hierarchy
   actions: {
-    gap: 12,
+    gap: spacing.md,
   },
-  toggleButton: {
-    backgroundColor: '#F3F4F6',
+  primaryButton: {
     paddingVertical: 14,
-    borderRadius: 10,
+    borderRadius: borderRadius.md,
     alignItems: 'center',
   },
-  toggleButtonText: {
-    color: '#374151',
-    fontSize: 16,
+  primaryButtonText: {
+    fontSize: typography.body.fontSize,
     fontWeight: '600',
   },
-  editButton: {
-    backgroundColor: '#007AFF',
+  secondaryButton: {
     paddingVertical: 14,
-    borderRadius: 10,
+    borderRadius: borderRadius.md,
     alignItems: 'center',
   },
-  editButtonText: {
-    color: '#FFFFFF',
-    fontSize: 16,
+  secondaryButtonText: {
+    fontSize: typography.body.fontSize,
     fontWeight: '600',
   },
-  deleteButton: {
-    backgroundColor: '#FFFFFF',
+  dangerButton: {
     paddingVertical: 14,
-    borderRadius: 10,
+    borderRadius: borderRadius.md,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#FF3B30',
   },
-  deleteButtonText: {
-    color: '#FF3B30',
-    fontSize: 16,
+  dangerButtonText: {
+    fontSize: typography.body.fontSize,
     fontWeight: '600',
+  },
+  // Bottom sheet styles
+  overlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  bottomSheet: {
+    borderTopLeftRadius: spacing.lg,
+    borderTopRightRadius: spacing.lg,
+    maxHeight: '80%',
+    minHeight: 400,
+  },
+  bottomSheetSafeArea: {
+  },
+  handleContainer: {
+    alignItems: 'center',
+    paddingTop: spacing.md,
+    paddingBottom: spacing.sm,
+  },
+  handle: {
+    width: 40,
+    height: 4,
+    borderRadius: 2,
+  },
+
+  bottomSheetHeader: {
+    paddingHorizontal: spacing.lg,
+    paddingBottom: spacing.base,
+  },
+  bottomSheetTitle: {
+    fontSize: typography.title.fontSize - 2,
+    fontWeight: '700',
+    marginBottom: spacing.xs,
+  },
+  bottomSheetSubtitle: {
+    fontSize: typography.caption.fontSize + 1,
+    lineHeight: 20,
+  },
+  selectorContainer: {
+    minHeight: 250,
+    paddingHorizontal: spacing.lg,
+    minHeight: 200,
+  },
+  bottomSheetActions: {
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.base,
+    borderTopWidth: 1,
+  },
+  cancelButton: {
+    paddingVertical: 14,
+    borderRadius: borderRadius.md,
+    alignItems: 'center',
+  },
+  cancelButtonText: {
+    fontSize: typography.body.fontSize,
+    fontWeight: '500',
   },
 });

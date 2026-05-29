@@ -10,8 +10,6 @@ import {
   generateMonthRange,
   getLastNMonths,
   validateFinancialInvariant,
-  FinancialTotals,
-  CategoryBreakdownItem,
   FinancialSummary,
 } from '../../../src/utils/calculateTotals';
 import { Transaction, Category } from '../../../src/types';
@@ -20,6 +18,7 @@ import { Transaction, Category } from '../../../src/types';
 function createTransaction(overrides: Partial<Transaction> = {}): Transaction {
   return {
     id: 'test-id',
+    title: '',
     date: new Date(2024, 0, 15),
     amount: 100,
     description: 'Test transaction',
@@ -30,6 +29,8 @@ function createTransaction(overrides: Partial<Transaction> = {}): Transaction {
     needsReview: false,
     isExcludedFromTotals: false,
     duplicateOf: null,
+    installmentGroupId: null,
+    recurringId: null,
     createdAt: new Date(),
     updatedAt: new Date(),
     ...overrides,
@@ -45,6 +46,7 @@ function createCategory(overrides: Partial<Category> = {}): Category {
     icon: 'test-icon',
     color: '#FF0000',
     isActive: true,
+    expenseGroup: null,
     createdAt: new Date(),
     ...overrides,
   };
@@ -153,12 +155,12 @@ describe('calculateCategoryBreakdown', () => {
     expect(result).toHaveLength(2);
 
     const foodCategory = result.find((r) => r.categoryId === 'cat-1');
-    expect(foodCategory?.total).toBe(150);
-    expect(foodCategory?.count).toBe(2);
+    expect(foodCategory!.total).toBe(150);
+    expect(foodCategory!.count).toBe(2);
 
     const transportCategory = result.find((r) => r.categoryId === 'cat-2');
-    expect(transportCategory?.total).toBe(75);
-    expect(transportCategory?.count).toBe(1);
+    expect(transportCategory!.total).toBe(75);
+    expect(transportCategory!.count).toBe(1);
   });
 
   it('groups income by category', () => {
@@ -169,8 +171,8 @@ describe('calculateCategoryBreakdown', () => {
     const result = calculateCategoryBreakdown(transactions, categories, 'income');
 
     expect(result).toHaveLength(2);
-    expect(result[0].total).toBe(1000);
-    expect(result[1].total).toBe(500);
+    expect(result[0]!.total).toBe(1000);
+    expect(result[1]!.total).toBe(500);
   });
 
   it('handles uncategorized transactions', () => {
@@ -178,9 +180,9 @@ describe('calculateCategoryBreakdown', () => {
     const result = calculateCategoryBreakdown(transactions, categories, 'expense');
 
     expect(result).toHaveLength(1);
-    expect(result[0].categoryId).toBeNull();
-    expect(result[0].categoryName).toBe('Uncategorized');
-    expect(result[0].categoryColor).toBe('#808080');
+    expect(result[0]!.categoryId).toBeNull();
+    expect(result[0]!.categoryName).toBe('Uncategorized');
+    expect(result[0]!.categoryColor).toBe('#808080');
   });
 
   it('calculates percentages correctly', () => {
@@ -191,10 +193,10 @@ describe('calculateCategoryBreakdown', () => {
     const result = calculateCategoryBreakdown(transactions, categories, 'expense');
 
     const foodCategory = result.find((r) => r.categoryId === 'cat-1');
-    expect(foodCategory?.percentage).toBe(75);
+    expect(foodCategory!.percentage).toBe(75);
 
     const transportCategory = result.find((r) => r.categoryId === 'cat-2');
-    expect(transportCategory?.percentage).toBe(25);
+    expect(transportCategory!.percentage).toBe(25);
   });
 
   it('sorts by total descending', () => {
@@ -204,8 +206,8 @@ describe('calculateCategoryBreakdown', () => {
     ];
     const result = calculateCategoryBreakdown(transactions, categories, 'expense');
 
-    expect(result[0].categoryId).toBe('cat-2');
-    expect(result[1].categoryId).toBe('cat-1');
+    expect(result[0]!.categoryId).toBe('cat-2');
+    expect(result[1]!.categoryId).toBe('cat-1');
   });
 
   it('excludes transactions marked as excluded', () => {
@@ -215,8 +217,8 @@ describe('calculateCategoryBreakdown', () => {
     ];
     const result = calculateCategoryBreakdown(transactions, categories, 'expense');
 
-    expect(result[0].total).toBe(100);
-    expect(result[0].count).toBe(1);
+    expect(result[0]!.total).toBe(100);
+    expect(result[0]!.count).toBe(1);
   });
 });
 
@@ -263,10 +265,10 @@ describe('calculateMonthlyTotals', () => {
     const months = ['2024-01', '2024-02'];
     const result = calculateMonthlyTotals(transactions, months);
 
-    expect(result.get('2024-01')?.totalIncome).toBe(1000);
-    expect(result.get('2024-01')?.totalExpenses).toBe(500);
-    expect(result.get('2024-02')?.totalIncome).toBe(800);
-    expect(result.get('2024-02')?.totalExpenses).toBe(0);
+    expect(result.get('2024-01')!.totalIncome).toBe(1000);
+    expect(result.get('2024-01')!.totalExpenses).toBe(500);
+    expect(result.get('2024-02')!.totalIncome).toBe(800);
+    expect(result.get('2024-02')!.totalExpenses).toBe(0);
   });
 
   it('returns zero totals for months with no transactions', () => {
@@ -274,8 +276,8 @@ describe('calculateMonthlyTotals', () => {
     const months = ['2024-01'];
     const result = calculateMonthlyTotals(transactions, months);
 
-    expect(result.get('2024-01')?.totalIncome).toBe(0);
-    expect(result.get('2024-01')?.totalExpenses).toBe(0);
+    expect(result.get('2024-01')!.totalIncome).toBe(0);
+    expect(result.get('2024-01')!.totalExpenses).toBe(0);
   });
 });
 

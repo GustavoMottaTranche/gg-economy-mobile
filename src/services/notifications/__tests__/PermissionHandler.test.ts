@@ -8,18 +8,29 @@
  */
 
 import { Linking } from 'react-native';
-import * as Notifications from 'expo-notifications';
 import { PermissionHandler, permissionHandler } from '../PermissionHandler';
+import { __setTestModule } from '../NotificationsModuleLoader';
+import { logger } from '../../logging';
 
-// Mock expo-notifications
-jest.mock('expo-notifications', () => ({
-  PermissionStatus: {
-    GRANTED: 'granted',
-    DENIED: 'denied',
-    UNDETERMINED: 'undetermined',
+// Mock the NotificationsModuleLoader module
+jest.mock('../NotificationsModuleLoader', () => {
+  let _testModule: unknown = null;
+  return {
+    __setTestModule: (mod: unknown) => {
+      _testModule = mod;
+    },
+    getNotifications: jest.fn(async () => _testModule),
+  };
+});
+
+// Mock the logging module
+jest.mock('../../logging', () => ({
+  logger: {
+    debug: jest.fn(),
+    info: jest.fn(),
+    warn: jest.fn(),
+    error: jest.fn(),
   },
-  getPermissionsAsync: jest.fn(),
-  requestPermissionsAsync: jest.fn(),
 }));
 
 // Mock Linking
@@ -29,29 +40,46 @@ jest.mock('react-native', () => ({
   },
 }));
 
+// Create mock notifications module
+const mockNotifications = {
+  PermissionStatus: {
+    GRANTED: 'granted',
+    DENIED: 'denied',
+    UNDETERMINED: 'undetermined',
+  },
+  getPermissionsAsync: jest.fn(),
+  requestPermissionsAsync: jest.fn(),
+};
+
 describe('PermissionHandler', () => {
   let handler: PermissionHandler;
 
   beforeEach(() => {
     handler = new PermissionHandler();
     jest.clearAllMocks();
+    // Provide the mock notifications module via the test hook
+    __setTestModule(mockNotifications as any);
+  });
+
+  afterAll(() => {
+    __setTestModule(null);
   });
 
   describe('checkPermission', () => {
     it('should return "granted" when permission is granted', async () => {
-      (Notifications.getPermissionsAsync as jest.Mock).mockResolvedValue({
-        status: Notifications.PermissionStatus.GRANTED,
+      mockNotifications.getPermissionsAsync.mockResolvedValue({
+        status: mockNotifications.PermissionStatus.GRANTED,
       });
 
       const result = await handler.checkPermission();
 
       expect(result).toBe('granted');
-      expect(Notifications.getPermissionsAsync).toHaveBeenCalledTimes(1);
+      expect(mockNotifications.getPermissionsAsync).toHaveBeenCalledTimes(1);
     });
 
     it('should return "denied" when permission is denied', async () => {
-      (Notifications.getPermissionsAsync as jest.Mock).mockResolvedValue({
-        status: Notifications.PermissionStatus.DENIED,
+      mockNotifications.getPermissionsAsync.mockResolvedValue({
+        status: mockNotifications.PermissionStatus.DENIED,
       });
 
       const result = await handler.checkPermission();
@@ -60,8 +88,8 @@ describe('PermissionHandler', () => {
     });
 
     it('should return "undetermined" when permission is undetermined', async () => {
-      (Notifications.getPermissionsAsync as jest.Mock).mockResolvedValue({
-        status: Notifications.PermissionStatus.UNDETERMINED,
+      mockNotifications.getPermissionsAsync.mockResolvedValue({
+        status: mockNotifications.PermissionStatus.UNDETERMINED,
       });
 
       const result = await handler.checkPermission();
@@ -70,37 +98,36 @@ describe('PermissionHandler', () => {
     });
 
     it('should return "undetermined" when getPermissionsAsync throws an error', async () => {
-      const consoleSpy = jest.spyOn(console, 'warn').mockImplementation();
-      (Notifications.getPermissionsAsync as jest.Mock).mockRejectedValue(
-        new Error('Permission check failed')
-      );
+      mockNotifications.getPermissionsAsync.mockRejectedValue(new Error('Permission check failed'));
 
       const result = await handler.checkPermission();
 
       expect(result).toBe('undetermined');
-      expect(consoleSpy).toHaveBeenCalledWith(
-        'Failed to check notification permissions:',
-        expect.any(Error)
+      expect(logger.warn).toHaveBeenCalledWith(
+        'Failed to check notification permissions',
+        expect.objectContaining({
+          error: expect.any(String),
+          context: 'permissions',
+        })
       );
-      consoleSpy.mockRestore();
     });
   });
 
   describe('requestPermission', () => {
     it('should return "granted" when permission is granted after request', async () => {
-      (Notifications.requestPermissionsAsync as jest.Mock).mockResolvedValue({
-        status: Notifications.PermissionStatus.GRANTED,
+      mockNotifications.requestPermissionsAsync.mockResolvedValue({
+        status: mockNotifications.PermissionStatus.GRANTED,
       });
 
       const result = await handler.requestPermission();
 
       expect(result).toBe('granted');
-      expect(Notifications.requestPermissionsAsync).toHaveBeenCalledTimes(1);
+      expect(mockNotifications.requestPermissionsAsync).toHaveBeenCalledTimes(1);
     });
 
     it('should return "denied" when permission is denied after request', async () => {
-      (Notifications.requestPermissionsAsync as jest.Mock).mockResolvedValue({
-        status: Notifications.PermissionStatus.DENIED,
+      mockNotifications.requestPermissionsAsync.mockResolvedValue({
+        status: mockNotifications.PermissionStatus.DENIED,
       });
 
       const result = await handler.requestPermission();
@@ -109,22 +136,21 @@ describe('PermissionHandler', () => {
     });
 
     it('should fall back to checkPermission when requestPermissionsAsync throws', async () => {
-      const consoleSpy = jest.spyOn(console, 'warn').mockImplementation();
-      (Notifications.requestPermissionsAsync as jest.Mock).mockRejectedValue(
-        new Error('Request failed')
-      );
-      (Notifications.getPermissionsAsync as jest.Mock).mockResolvedValue({
-        status: Notifications.PermissionStatus.DENIED,
+      mockNotifications.requestPermissionsAsync.mockRejectedValue(new Error('Request failed'));
+      mockNotifications.getPermissionsAsync.mockResolvedValue({
+        status: mockNotifications.PermissionStatus.DENIED,
       });
 
       const result = await handler.requestPermission();
 
       expect(result).toBe('denied');
-      expect(consoleSpy).toHaveBeenCalledWith(
-        'Failed to request notification permissions:',
-        expect.any(Error)
+      expect(logger.warn).toHaveBeenCalledWith(
+        'Failed to request notification permissions',
+        expect.objectContaining({
+          error: expect.any(String),
+          context: 'permissions',
+        })
       );
-      consoleSpy.mockRestore();
     });
   });
 
@@ -138,12 +164,16 @@ describe('PermissionHandler', () => {
     });
 
     it('should throw an error when Linking.openSettings fails', async () => {
-      const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
       (Linking.openSettings as jest.Mock).mockRejectedValue(new Error('Cannot open settings'));
 
       await expect(handler.openSettings()).rejects.toThrow('Unable to open system settings');
-      expect(consoleSpy).toHaveBeenCalledWith('Failed to open system settings:', expect.any(Error));
-      consoleSpy.mockRestore();
+      expect(logger.error).toHaveBeenCalledWith(
+        'Failed to open system settings',
+        expect.objectContaining({
+          error: expect.any(String),
+          context: 'permissions',
+        })
+      );
     });
   });
 

@@ -12,7 +12,7 @@
  * Uses SectionList for organizing settings into logical sections.
  * Navigation to sub-settings uses Expo Router Link.
  *
- * **Validates: Requirements 27, 30**
+ * **Validates: Requirements 27, 30, 5.5, 6.1, 10.1, 10.2, 10.3, 10.4**
  */
 import React, { useCallback, useMemo } from 'react';
 import {
@@ -30,6 +30,8 @@ import Constants from 'expo-constants';
 
 import { getCurrentLocale, LOCALE_DISPLAY_NAMES, SupportedLocale } from '../../../src/i18n';
 import { useNotificationSettings } from '../../../src/stores/notificationStore';
+import { useThemeColors } from '../../../src/hooks/useThemeColors';
+import { spacing, typography } from '../../../src/constants/theme';
 
 /**
  * Types for settings items
@@ -99,10 +101,18 @@ function SettingsNavigationItem({
   currentValue,
   testID,
 }: SettingsNavigationItemProps) {
+  const colors = useThemeColors();
+
   return (
     <Link href={href as any} asChild>
       <TouchableOpacity
-        style={styles.settingsItem}
+        style={StyleSheet.flatten([
+          styles.settingsItem,
+          {
+            backgroundColor: colors.surface.card,
+            borderBottomColor: colors.border.subtle,
+          },
+        ])}
         accessibilityRole="button"
         accessibilityLabel={title}
         accessibilityHint={description}
@@ -110,12 +120,20 @@ function SettingsNavigationItem({
       >
         <Text style={styles.settingsIcon}>{icon}</Text>
         <View style={styles.settingsContent}>
-          <Text style={styles.settingsTitle}>{title}</Text>
-          {description && <Text style={styles.settingsDescription}>{description}</Text>}
+          <Text style={[styles.settingsTitle, { color: colors.text.primary }]}>{title}</Text>
+          {description && (
+            <Text style={[styles.settingsDescription, { color: colors.text.tertiary }]}>
+              {description}
+            </Text>
+          )}
         </View>
         <View style={styles.rightContent}>
-          {currentValue && <Text style={styles.currentValue}>{currentValue}</Text>}
-          <Text style={styles.chevron}>›</Text>
+          {currentValue && (
+            <Text style={[styles.currentValue, { color: colors.text.tertiary }]}>
+              {currentValue}
+            </Text>
+          )}
+          <Text style={[styles.chevron, { color: colors.text.tertiary }]}>›</Text>
         </View>
       </TouchableOpacity>
     </Link>
@@ -136,17 +154,23 @@ interface SettingsInfoItemProps {
  * Info item that displays information without navigation
  */
 function SettingsInfoItem({ icon, title, description, testID }: SettingsInfoItemProps) {
+  const colors = useThemeColors();
+
   return (
     <View
-      style={styles.infoItem}
+      style={[styles.infoItem, { backgroundColor: colors.surface.card }]}
       accessibilityRole="text"
       accessibilityLabel={`${title}: ${description}`}
       testID={testID}
     >
       <Text style={styles.settingsIcon}>{icon}</Text>
       <View style={styles.settingsContent}>
-        <Text style={styles.settingsTitle}>{title}</Text>
-        {description && <Text style={styles.settingsDescription}>{description}</Text>}
+        <Text style={[styles.settingsTitle, { color: colors.text.primary }]}>{title}</Text>
+        {description && (
+          <Text style={[styles.settingsDescription, { color: colors.text.tertiary }]}>
+            {description}
+          </Text>
+        )}
       </View>
     </View>
   );
@@ -156,10 +180,12 @@ function SettingsInfoItem({ icon, title, description, testID }: SettingsInfoItem
  * Section header component
  */
 function SectionHeader({ title }: { title?: string }) {
+  const colors = useThemeColors();
+
   if (!title) return null;
   return (
-    <View style={styles.sectionHeader}>
-      <Text style={styles.sectionTitle}>{title}</Text>
+    <View style={[styles.sectionHeader, { backgroundColor: colors.background.secondary }]}>
+      <Text style={[styles.sectionTitle, { color: colors.text.secondary }]}>{title}</Text>
     </View>
   );
 }
@@ -175,10 +201,12 @@ function SectionFooter() {
  * App version footer component
  */
 function VersionFooter({ versionLabel, version }: { versionLabel: string; version: string }) {
+  const colors = useThemeColors();
+
   return (
     <View style={styles.versionContainer} testID="version-container">
-      <Text style={styles.versionLabel}>{versionLabel}</Text>
-      <Text style={styles.versionText} testID="app-version">
+      <Text style={[styles.versionLabel, { color: colors.text.tertiary }]}>{versionLabel}</Text>
+      <Text style={[styles.versionText, { color: colors.text.tertiary }]} testID="app-version">
         {version}
       </Text>
     </View>
@@ -190,6 +218,7 @@ function VersionFooter({ versionLabel, version }: { versionLabel: string; versio
  */
 export default function SettingsScreen() {
   const { t } = useTranslation();
+  const colors = useThemeColors();
   const currentLocale = getCurrentLocale();
   const currentLanguageName =
     LOCALE_DISPLAY_NAMES[currentLocale as SupportedLocale] || currentLocale;
@@ -364,7 +393,10 @@ export default function SettingsScreen() {
   const keyExtractor = useCallback((item: SettingsItem) => item.id, []);
 
   return (
-    <View style={styles.container} testID="settings-screen">
+    <View
+      style={[styles.container, { backgroundColor: colors.background.secondary }]}
+      testID="settings-screen"
+    >
       <SectionList
         sections={sections}
         keyExtractor={keyExtractor}
@@ -384,92 +416,80 @@ export default function SettingsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F2F2F7',
   },
   contentContainer: {
-    paddingTop: 20,
-    paddingBottom: 40,
+    paddingTop: spacing.lg,
+    paddingBottom: spacing['2xl'] + spacing.sm,
   },
   sectionHeader: {
-    paddingHorizontal: 16,
-    paddingBottom: 8,
-    backgroundColor: '#F2F2F7',
+    paddingHorizontal: spacing.base,
+    paddingBottom: spacing.sm,
   },
   sectionTitle: {
-    fontSize: 13,
+    fontSize: typography.caption.fontSize,
     fontWeight: '600',
-    color: '#6D6D72',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
   sectionFooter: {
-    height: 24,
+    height: spacing.xl,
   },
   settingsItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    backgroundColor: '#FFFFFF',
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.base,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#E5E5EA',
   },
   lastItem: {
     borderBottomWidth: 0,
   },
   settingsIcon: {
-    fontSize: 24,
-    marginRight: 12,
-    width: 32,
+    fontSize: spacing.xl,
+    marginRight: spacing.md,
+    width: spacing['2xl'],
     textAlign: 'center',
   },
   settingsContent: {
     flex: 1,
   },
   settingsTitle: {
-    fontSize: 16,
+    fontSize: typography.body.fontSize,
     fontWeight: '500',
-    color: '#000000',
     marginBottom: 2,
   },
   settingsDescription: {
-    fontSize: 13,
-    color: '#8E8E93',
-    lineHeight: 18,
+    fontSize: typography.caption.fontSize,
+    lineHeight: typography.caption.lineHeight,
   },
   rightContent: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   currentValue: {
-    fontSize: 15,
-    color: '#8E8E93',
-    marginRight: 8,
+    fontSize: typography.caption.fontSize + 2,
+    marginRight: spacing.sm,
   },
   chevron: {
-    fontSize: 20,
-    color: '#C7C7CC',
+    fontSize: spacing.lg,
   },
   infoItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    backgroundColor: '#FFFFFF',
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.base,
   },
   versionContainer: {
     alignItems: 'center',
-    paddingVertical: 24,
-    paddingHorizontal: 16,
+    paddingVertical: spacing.xl,
+    paddingHorizontal: spacing.base,
   },
   versionLabel: {
-    fontSize: 13,
-    color: '#8E8E93',
-    marginBottom: 4,
+    fontSize: typography.caption.fontSize,
+    marginBottom: spacing.xs,
   },
   versionText: {
-    fontSize: 13,
-    color: '#8E8E93',
+    fontSize: typography.caption.fontSize,
     fontWeight: '500',
   },
 });

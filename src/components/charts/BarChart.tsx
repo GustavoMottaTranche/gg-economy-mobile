@@ -13,6 +13,8 @@ import { View, Text, StyleSheet, ViewStyle, LayoutChangeEvent } from 'react-nati
 import Svg, { G, Rect, Text as SvgText, Line } from 'react-native-svg';
 import { useTranslation } from 'react-i18next';
 import { getCurrentLocale } from '../../i18n';
+import { useThemeColors } from '../../hooks/useThemeColors';
+import { spacing, borderRadius } from '../../constants/theme';
 
 /**
  * Data point for the bar chart
@@ -38,9 +40,9 @@ export interface BarChartProps {
   showValues?: boolean;
   /** Whether to show grid lines (default: true) */
   showGrid?: boolean;
-  /** Income bar color (default: '#16a34a') */
+  /** Income bar color (overrides theme default) */
   incomeColor?: string;
-  /** Expense bar color (default: '#dc2626') */
+  /** Expense bar color (overrides theme default) */
   expenseColor?: string;
   /** Callback when a bar is pressed */
   onBarPress?: (data: BarChartDataPoint, type: 'income' | 'expense') => void;
@@ -51,12 +53,6 @@ export interface BarChartProps {
   /** Test ID for testing */
   testID?: string;
 }
-
-/**
- * Default colors
- */
-const DEFAULT_INCOME_COLOR = '#16a34a';
-const DEFAULT_EXPENSE_COLOR = '#dc2626';
 
 /**
  * Chart margins
@@ -90,17 +86,22 @@ function BarChartComponent({
   orientation = 'vertical',
   showValues = true,
   showGrid = true,
-  incomeColor = DEFAULT_INCOME_COLOR,
-  expenseColor = DEFAULT_EXPENSE_COLOR,
+  incomeColor,
+  expenseColor,
   onBarPress,
   style,
   height = 250,
   testID,
 }: BarChartProps): React.ReactElement {
   const { t } = useTranslation();
+  const colors = useThemeColors();
   const locale = getCurrentLocale();
   const [containerWidth, setContainerWidth] = useState(300);
   const [selectedBar, setSelectedBar] = useState<string | null>(null);
+
+  // Use theme semantic colors as defaults
+  const resolvedIncomeColor = incomeColor ?? colors.semantic.success.base;
+  const resolvedExpenseColor = expenseColor ?? colors.semantic.danger.base;
 
   // Calculate chart dimensions
   const chartWidth = containerWidth - MARGIN.left - MARGIN.right;
@@ -158,8 +159,8 @@ function BarChartComponent({
         accessibilityRole="none"
         accessibilityLabel={t('charts.noData')}
       >
-        <View style={styles.emptyChart}>
-          <Text style={styles.emptyText}>{t('charts.noData')}</Text>
+        <View style={[styles.emptyChart, { backgroundColor: colors.background.secondary }]}>
+          <Text style={[styles.emptyText, { color: colors.text.tertiary }]}>{t('charts.noData')}</Text>
         </View>
       </View>
     );
@@ -179,7 +180,7 @@ function BarChartComponent({
                 y1={y}
                 x2={MARGIN.left + chartWidth}
                 y2={y}
-                stroke="#e5e7eb"
+                stroke={colors.border.default}
                 strokeWidth={1}
               />
             );
@@ -194,7 +195,7 @@ function BarChartComponent({
               x={MARGIN.left - 8}
               y={y + 4}
               fontSize={10}
-              fill="#6b7280"
+              fill={colors.text.secondary}
               textAnchor="end"
             >
               {formatAxisValue(tick / 100, locale)}
@@ -220,7 +221,7 @@ function BarChartComponent({
                 y={incomeY}
                 width={barWidth}
                 height={incomeHeight}
-                fill={incomeColor}
+                fill={resolvedIncomeColor}
                 opacity={selectedBar && !isIncomeSelected ? 0.5 : 1}
                 rx={4}
                 onPress={() => handleBarPress(item, 'income')}
@@ -231,7 +232,7 @@ function BarChartComponent({
                   x={groupX + barWidth / 2}
                   y={incomeY - 4}
                   fontSize={9}
-                  fill={incomeColor}
+                  fill={resolvedIncomeColor}
                   textAnchor="middle"
                 >
                   {formatAxisValue(item.income / 100, locale)}
@@ -244,7 +245,7 @@ function BarChartComponent({
                 y={expenseY}
                 width={barWidth}
                 height={expenseHeight}
-                fill={expenseColor}
+                fill={resolvedExpenseColor}
                 opacity={selectedBar && !isExpenseSelected ? 0.5 : 1}
                 rx={4}
                 onPress={() => handleBarPress(item, 'expense')}
@@ -255,7 +256,7 @@ function BarChartComponent({
                   x={groupX + barWidth + 4 + barWidth / 2}
                   y={expenseY - 4}
                   fontSize={9}
-                  fill={expenseColor}
+                  fill={resolvedExpenseColor}
                   textAnchor="middle"
                 >
                   {formatAxisValue(item.expense / 100, locale)}
@@ -267,7 +268,7 @@ function BarChartComponent({
                 x={groupX + barWidth + 2}
                 y={MARGIN.top + chartHeight + 16}
                 fontSize={10}
-                fill="#374151"
+                fill={colors.text.primary}
                 textAnchor="middle"
               >
                 {item.label}
@@ -282,7 +283,7 @@ function BarChartComponent({
           y1={MARGIN.top}
           x2={MARGIN.left}
           y2={MARGIN.top + chartHeight}
-          stroke="#9ca3af"
+          stroke={colors.text.tertiary}
           strokeWidth={1}
         />
         <Line
@@ -290,7 +291,7 @@ function BarChartComponent({
           y1={MARGIN.top + chartHeight}
           x2={MARGIN.left + chartWidth}
           y2={MARGIN.top + chartHeight}
-          stroke="#9ca3af"
+          stroke={colors.text.tertiary}
           strokeWidth={1}
         />
       </G>
@@ -315,7 +316,7 @@ function BarChartComponent({
                   y1={MARGIN.top}
                   x2={x}
                   y2={MARGIN.top + chartHeight}
-                  stroke="#e5e7eb"
+                  stroke={colors.border.default}
                   strokeWidth={1}
                 />
               );
@@ -330,7 +331,7 @@ function BarChartComponent({
                 x={x}
                 y={MARGIN.top + chartHeight + 16}
                 fontSize={10}
-                fill="#6b7280"
+                fill={colors.text.secondary}
                 textAnchor="middle"
               >
                 {formatAxisValue(tick / 100, locale)}
@@ -353,7 +354,7 @@ function BarChartComponent({
                   x={MARGIN.left - 8}
                   y={groupY + barGroupHeight / 2}
                   fontSize={10}
-                  fill="#374151"
+                  fill={colors.text.primary}
                   textAnchor="end"
                 >
                   {item.label}
@@ -365,7 +366,7 @@ function BarChartComponent({
                   y={groupY}
                   width={incomeWidth}
                   height={horizontalBarHeight}
-                  fill={incomeColor}
+                  fill={resolvedIncomeColor}
                   opacity={selectedBar && !isIncomeSelected ? 0.5 : 1}
                   rx={4}
                   onPress={() => handleBarPress(item, 'income')}
@@ -376,7 +377,7 @@ function BarChartComponent({
                     x={MARGIN.left + incomeWidth + 4}
                     y={groupY + horizontalBarHeight / 2 + 3}
                     fontSize={9}
-                    fill={incomeColor}
+                    fill={resolvedIncomeColor}
                     textAnchor="start"
                   >
                     {formatAxisValue(item.income / 100, locale)}
@@ -389,7 +390,7 @@ function BarChartComponent({
                   y={groupY + horizontalBarHeight + 4}
                   width={expenseWidth}
                   height={horizontalBarHeight}
-                  fill={expenseColor}
+                  fill={resolvedExpenseColor}
                   opacity={selectedBar && !isExpenseSelected ? 0.5 : 1}
                   rx={4}
                   onPress={() => handleBarPress(item, 'expense')}
@@ -400,7 +401,7 @@ function BarChartComponent({
                     x={MARGIN.left + expenseWidth + 4}
                     y={groupY + horizontalBarHeight + 4 + horizontalBarHeight / 2 + 3}
                     fontSize={9}
-                    fill={expenseColor}
+                    fill={resolvedExpenseColor}
                     textAnchor="start"
                   >
                     {formatAxisValue(item.expense / 100, locale)}
@@ -416,7 +417,7 @@ function BarChartComponent({
             y1={MARGIN.top}
             x2={MARGIN.left}
             y2={MARGIN.top + chartHeight}
-            stroke="#9ca3af"
+            stroke={colors.text.tertiary}
             strokeWidth={1}
           />
           <Line
@@ -424,7 +425,7 @@ function BarChartComponent({
             y1={MARGIN.top + chartHeight}
             x2={MARGIN.left + chartWidth}
             y2={MARGIN.top + chartHeight}
-            stroke="#9ca3af"
+            stroke={colors.text.tertiary}
             strokeWidth={1}
           />
         </G>
@@ -445,12 +446,12 @@ function BarChartComponent({
       {/* Legend */}
       <View style={styles.legend}>
         <View style={styles.legendItem}>
-          <View style={[styles.legendColor, { backgroundColor: incomeColor }]} />
-          <Text style={styles.legendText}>{t('dashboard.income')}</Text>
+          <View style={[styles.legendColor, { backgroundColor: resolvedIncomeColor }]} />
+          <Text style={[styles.legendText, { color: colors.text.primary }]}>{t('dashboard.income')}</Text>
         </View>
         <View style={styles.legendItem}>
-          <View style={[styles.legendColor, { backgroundColor: expenseColor }]} />
-          <Text style={styles.legendText}>{t('dashboard.expenses')}</Text>
+          <View style={[styles.legendColor, { backgroundColor: resolvedExpenseColor }]} />
+          <Text style={[styles.legendText, { color: colors.text.primary }]}>{t('dashboard.expenses')}</Text>
         </View>
       </View>
     </View>
@@ -465,18 +466,16 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#f9fafb',
-    borderRadius: 8,
+    borderRadius: borderRadius.sm,
   },
   emptyText: {
     fontSize: 14,
-    color: '#9ca3af',
   },
   legend: {
     flexDirection: 'row',
     justifyContent: 'center',
-    marginTop: 8,
-    gap: 16,
+    marginTop: spacing.sm,
+    gap: spacing.base,
   },
   legendItem: {
     flexDirection: 'row',
@@ -490,7 +489,6 @@ const styles = StyleSheet.create({
   },
   legendText: {
     fontSize: 12,
-    color: '#374151',
   },
 });
 

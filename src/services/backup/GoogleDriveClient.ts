@@ -113,7 +113,7 @@ export class GoogleDriveClient {
       }
 
       const data = (await response.json()) as DriveFileListResponse;
-      return data.files.length > 0 ? data.files[0] : null;
+      return data.files.length > 0 ? (data.files[0] ?? null) : null;
     } catch (error) {
       if (error instanceof DriveError) {
         throw error;

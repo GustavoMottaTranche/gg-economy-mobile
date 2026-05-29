@@ -10,7 +10,7 @@
  */
 
 import * as fc from 'fast-check';
-import { DedupeEngine, DedupeResult } from '../../../../src/services/import/DedupeEngine';
+import { DedupeEngine } from '../../../../src/services/import/DedupeEngine';
 import { RawTransaction } from '../../../../src/types/transaction';
 
 describe('Property 3: Dedupe Engine Idempotence', () => {
@@ -89,7 +89,7 @@ describe('Property 3: Dedupe Engine Idempotence', () => {
       for (let i = 0; i < duplicateCount && transactions.length > 0; i++) {
         // Pick a random transaction to duplicate
         const sourceIndex = Math.floor(Math.random() * transactions.length);
-        const source = transactions[sourceIndex];
+        const source = transactions[sourceIndex]!;
 
         // Create a duplicate (same date, amount, description)
         result.push({
@@ -101,23 +101,6 @@ describe('Property 3: Dedupe Engine Idempotence', () => {
       }
       return result;
     });
-
-  /**
-   * Helper to compare two DedupeResults for equivalence
-   */
-  function resultsEquivalent(result1: DedupeResult, result2: DedupeResult): boolean {
-    // Same number of unique transactions
-    if (result1.uniqueTransactions.length !== result2.uniqueTransactions.length) {
-      return false;
-    }
-
-    // Same number of duplicates
-    if (result1.duplicates.length !== result2.duplicates.length) {
-      return false;
-    }
-
-    return true;
-  }
 
   /**
    * Helper to compare two transaction arrays for equivalence
@@ -145,8 +128,8 @@ describe('Property 3: Dedupe Engine Idempotence', () => {
     });
 
     for (let i = 0; i < sorted1.length; i++) {
-      const t1 = sorted1[i];
-      const t2 = sorted2[i];
+      const t1 = sorted1[i]!;
+      const t2 = sorted2[i]!;
 
       if (
         t1.date.getTime() !== t2.date.getTime() ||
@@ -229,7 +212,7 @@ describe('Property 3: Dedupe Engine Idempotence', () => {
           const result = [...transactions];
           for (let i = 0; i < duplicateCount && transactions.length > 0; i++) {
             const sourceIndex = Math.floor(Math.random() * transactions.length);
-            const source = transactions[sourceIndex];
+            const source = transactions[sourceIndex]!;
             result.push({
               date: new Date(source.date),
               amount: source.amount,

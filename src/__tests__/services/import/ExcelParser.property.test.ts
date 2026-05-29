@@ -160,8 +160,8 @@ describe('ExcelParser Property Tests', () => {
 
           // Verify each transaction is equivalent
           for (let i = 0; i < rawTransactions.length; i++) {
-            const original = rawTransactions[i];
-            const parsed = parseResult.transactions[i];
+            const original = rawTransactions[i]!;
+            const parsed = parseResult.transactions[i]!;
 
             // Date comparison: same day (ignoring time component)
             expect(parsed.date.toDateString()).toBe(original.date.toDateString());
@@ -233,7 +233,10 @@ describe('ExcelParser Property Tests', () => {
             expect(parseResult.transactions.length).toBe(rawTransactions.length);
 
             for (let i = 0; i < rawTransactions.length; i++) {
-              expect(parseResult.transactions[i].amount).toBeCloseTo(rawTransactions[i].amount, 2);
+              expect(parseResult.transactions[i]!.amount).toBeCloseTo(
+                rawTransactions[i]!.amount,
+                2
+              );
             }
           }
         ),
@@ -280,8 +283,8 @@ describe('ExcelParser Property Tests', () => {
 
             for (let i = 0; i < rawTransactions.length; i++) {
               // Dates should match (same calendar day)
-              expect(parseResult.transactions[i].date.toDateString()).toBe(
-                rawTransactions[i].date.toDateString()
+              expect(parseResult.transactions[i]!.date.toDateString()).toBe(
+                rawTransactions[i]!.date.toDateString()
               );
             }
           }
@@ -430,7 +433,9 @@ describe('ExcelParser Property Tests', () => {
             expect(parseResult.transactions.length).toBe(rawTransactions.length);
 
             for (let i = 0; i < rawTransactions.length; i++) {
-              expect(parseResult.transactions[i].description).toBe(rawTransactions[i].description);
+              expect(parseResult.transactions[i]!.description).toBe(
+                rawTransactions[i]!.description
+              );
             }
           }
         ),
@@ -460,8 +465,8 @@ describe('ExcelParser Property Tests', () => {
           expect(parseResult2.transactions.length).toBe(parseResult1.transactions.length);
 
           for (let i = 0; i < parseResult1.transactions.length; i++) {
-            const tx1 = parseResult1.transactions[i];
-            const tx2 = parseResult2.transactions[i];
+            const tx1 = parseResult1.transactions[i]!;
+            const tx2 = parseResult2.transactions[i]!;
 
             expect(tx2.date.toDateString()).toBe(tx1.date.toDateString());
             expect(tx2.amount).toBeCloseTo(tx1.amount, 2);
@@ -552,7 +557,7 @@ describe('ExcelParser Property Tests', () => {
 
       const decadeDateArbitrary = fc.integer({ min: 0, max: 4 }).chain((decadeIndex) =>
         fc.integer({ min: 0, max: 365 * 9 }).map((daysInDecade) => {
-          const baseDate = new Date(decadeStartDates[decadeIndex]);
+          const baseDate = new Date(decadeStartDates[decadeIndex]!);
           baseDate.setUTCDate(baseDate.getUTCDate() + daysInDecade);
           return baseDate;
         })
@@ -612,7 +617,7 @@ describe('ExcelParser Property Tests', () => {
         .integer({ min: 0, max: leapYears.length - 1 })
         .chain((yearIndex) =>
           fc.integer({ min: 0, max: 365 }).map((dayOfYear) => {
-            const year = leapYears[yearIndex];
+            const year = leapYears[yearIndex]!;
             const date = new Date(Date.UTC(year, 0, 1));
             date.setUTCDate(date.getUTCDate() + dayOfYear);
             return date;
@@ -734,48 +739,6 @@ describe('ExcelParser Property Tests', () => {
    * **Validates: Requirements 2.4**
    */
   describe('Property 4: Amount Parsing', () => {
-    /**
-     * Helper function to format an amount in pt-BR style (comma as decimal separator)
-     * Example: 1234.56 -> "1.234,56"
-     */
-    function formatAmountPtBR(amount: number): string {
-      const absAmount = Math.abs(amount);
-      const [intPart, decPart] = absAmount.toFixed(2).split('.');
-
-      // Add thousand separators (dots in pt-BR)
-      const intWithSeparators = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
-
-      const formatted = `${intWithSeparators},${decPart}`;
-      return amount < 0 ? `-${formatted}` : formatted;
-    }
-
-    /**
-     * Helper function to format an amount in en style (dot as decimal separator)
-     * Example: 1234.56 -> "1,234.56"
-     */
-    function formatAmountEn(amount: number): string {
-      const absAmount = Math.abs(amount);
-      const [intPart, decPart] = absAmount.toFixed(2).split('.');
-
-      // Add thousand separators (commas in en)
-      const intWithSeparators = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-
-      const formatted = `${intWithSeparators}.${decPart}`;
-      return amount < 0 ? `-${formatted}` : formatted;
-    }
-
-    /**
-     * Helper function to format an amount with parentheses for negative
-     * Example: -1234.56 -> "(1,234.56)"
-     */
-    function formatAmountParentheses(amount: number): string {
-      const absAmount = Math.abs(amount);
-      const [intPart, decPart] = absAmount.toFixed(2).split('.');
-      const intWithSeparators = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-      const formatted = `${intWithSeparators}.${decPart}`;
-      return amount < 0 ? `(${formatted})` : formatted;
-    }
-
     // Generate valid amounts within a reasonable range
     const validAmountArbitrary = fc
       .double({
@@ -838,10 +801,6 @@ describe('ExcelParser Property Tests', () => {
           validDateArbitrary,
           validDescriptionArbitrary,
           (amount, date, description) => {
-            // Format amount in en style (dot as decimal)
-            const formattedAmount = formatAmountEn(amount);
-            const dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
-
             // Create a simple Excel-like data structure through formatToExcel
             const rawTransactions = [
               {
@@ -856,7 +815,7 @@ describe('ExcelParser Property Tests', () => {
             const parseResult = parser.parse(excelData);
 
             expect(parseResult.transactions.length).toBe(1);
-            expect(parseResult.transactions[0].amount).toBeCloseTo(amount, 2);
+            expect(parseResult.transactions[0]!.amount).toBeCloseTo(amount, 2);
           }
         ),
         { numRuns: 100 }
@@ -893,8 +852,8 @@ describe('ExcelParser Property Tests', () => {
             const parseResult = parser.parse(excelData);
 
             expect(parseResult.transactions.length).toBe(1);
-            expect(parseResult.transactions[0].amount).toBeCloseTo(amount, 2);
-            expect(parseResult.transactions[0].amount).toBeGreaterThan(0);
+            expect(parseResult.transactions[0]!.amount).toBeCloseTo(amount, 2);
+            expect(parseResult.transactions[0]!.amount).toBeGreaterThan(0);
           }
         ),
         { numRuns: 100 }
@@ -931,8 +890,8 @@ describe('ExcelParser Property Tests', () => {
             const parseResult = parser.parse(excelData);
 
             expect(parseResult.transactions.length).toBe(1);
-            expect(parseResult.transactions[0].amount).toBeCloseTo(amount, 2);
-            expect(parseResult.transactions[0].amount).toBeLessThan(0);
+            expect(parseResult.transactions[0]!.amount).toBeCloseTo(amount, 2);
+            expect(parseResult.transactions[0]!.amount).toBeLessThan(0);
           }
         ),
         { numRuns: 100 }
@@ -955,7 +914,7 @@ describe('ExcelParser Property Tests', () => {
           const parseResult = parser.parse(excelData);
 
           expect(parseResult.transactions.length).toBe(1);
-          expect(parseResult.transactions[0].amount).toBe(0);
+          expect(parseResult.transactions[0]!.amount).toBe(0);
         }),
         { numRuns: 100 }
       );
@@ -987,7 +946,7 @@ describe('ExcelParser Property Tests', () => {
 
             expect(parseResult.transactions.length).toBe(1);
             // For exact 2 decimal place numbers, we expect exact match
-            expect(parseResult.transactions[0].amount).toBeCloseTo(amount, 2);
+            expect(parseResult.transactions[0]!.amount).toBeCloseTo(amount, 2);
           }
         ),
         { numRuns: 100 }
@@ -1031,7 +990,7 @@ describe('ExcelParser Property Tests', () => {
             const parseResult = parser.parse(excelData);
 
             expect(parseResult.transactions.length).toBe(1);
-            expect(parseResult.transactions[0].amount).toBeCloseTo(amount, 2);
+            expect(parseResult.transactions[0]!.amount).toBeCloseTo(amount, 2);
           }
         ),
         { numRuns: 100 }
@@ -1065,7 +1024,7 @@ describe('ExcelParser Property Tests', () => {
           expect(parseResult.transactions.length).toBe(rawTransactions.length);
 
           for (let i = 0; i < rawTransactions.length; i++) {
-            expect(parseResult.transactions[i].amount).toBeCloseTo(rawTransactions[i].amount, 2);
+            expect(parseResult.transactions[i]!.amount).toBeCloseTo(rawTransactions[i]!.amount, 2);
           }
         }),
         { numRuns: 100 }
@@ -1096,8 +1055,8 @@ describe('ExcelParser Property Tests', () => {
             const result3 = parser.parse(excelData);
 
             // All should produce the same amount
-            expect(result1.transactions[0].amount).toBe(result2.transactions[0].amount);
-            expect(result2.transactions[0].amount).toBe(result3.transactions[0].amount);
+            expect(result1.transactions[0]!.amount).toBe(result2.transactions[0]!.amount);
+            expect(result2.transactions[0]!.amount).toBe(result3.transactions[0]!.amount);
           }
         ),
         { numRuns: 100 }
@@ -1135,9 +1094,9 @@ describe('ExcelParser Property Tests', () => {
 
             // Sign should be preserved
             if (amount > 0) {
-              expect(parseResult.transactions[0].amount).toBeGreaterThan(0);
+              expect(parseResult.transactions[0]!.amount).toBeGreaterThan(0);
             } else {
-              expect(parseResult.transactions[0].amount).toBeLessThan(0);
+              expect(parseResult.transactions[0]!.amount).toBeLessThan(0);
             }
           }
         ),
@@ -1217,17 +1176,6 @@ describe('ExcelParser Property Tests', () => {
     const englishAmountHeaders = ['amount', 'Amount', 'AMOUNT', 'value', 'Value'];
     const englishDescriptionHeaders = ['description', 'Description', 'DESCRIPTION', 'memo', 'Memo'];
 
-    // Portuguese header variations
-    const portugueseDateHeaders = ['data', 'Data', 'DATA', 'data transação', 'Data Transação'];
-    const portugueseAmountHeaders = ['valor', 'Valor', 'VALOR', 'quantia', 'Quantia'];
-    const portugueseDescriptionHeaders = [
-      'descrição',
-      'Descrição',
-      'DESCRIÇÃO',
-      'descricao',
-      'Descricao',
-    ];
-
     it('should detect English headers correctly', () => {
       const headerArbitrary = fc.record({
         dateHeader: fc.constantFrom(...englishDateHeaders),
@@ -1241,7 +1189,16 @@ describe('ExcelParser Property Tests', () => {
           validDateArbitrary,
           validAmountArbitrary,
           validDescriptionArbitrary,
-          ({ dateHeader, amountHeader, descriptionHeader }, date, amount, description) => {
+          (
+            {
+              dateHeader: _dateHeader,
+              amountHeader: _amountHeader,
+              descriptionHeader: _descriptionHeader,
+            },
+            date,
+            amount,
+            description
+          ) => {
             const rawTransactions = [
               {
                 date,
@@ -1268,15 +1225,12 @@ describe('ExcelParser Property Tests', () => {
 
     it('should detect columns regardless of column order', () => {
       // Test that columns can be in any order
-      const columnOrderArbitrary = fc.shuffledSubarray([0, 1, 2], { minLength: 3, maxLength: 3 });
-
       fc.assert(
         fc.property(
-          columnOrderArbitrary,
           validDateArbitrary,
           validAmountArbitrary,
           validDescriptionArbitrary,
-          (columnOrder, date, amount, description) => {
+          (date, amount, description) => {
             const rawTransactions = [
               {
                 date,
@@ -1291,9 +1245,9 @@ describe('ExcelParser Property Tests', () => {
 
             // Should successfully parse regardless of internal column order
             expect(parseResult.transactions.length).toBe(1);
-            expect(parseResult.transactions[0].date.toDateString()).toBe(date.toDateString());
-            expect(parseResult.transactions[0].amount).toBeCloseTo(amount, 2);
-            expect(parseResult.transactions[0].description).toBe(description);
+            expect(parseResult.transactions[0]!.date.toDateString()).toBe(date.toDateString());
+            expect(parseResult.transactions[0]!.amount).toBeCloseTo(amount, 2);
+            expect(parseResult.transactions[0]!.description).toBe(description);
           }
         ),
         { numRuns: 100 }

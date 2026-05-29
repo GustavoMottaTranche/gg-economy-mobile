@@ -10,6 +10,14 @@ import { sqliteTable, text, integer, real, index } from 'drizzle-orm/sqlite-core
 import { relations } from 'drizzle-orm';
 
 // ============================================================================
+// Expense Groups Table
+// ============================================================================
+export const expenseGroups = sqliteTable('expense_groups', {
+  id: text('id').primaryKey(),
+  name: text('name').notNull(),
+});
+
+// ============================================================================
 // Categories Table
 // ============================================================================
 export const categories = sqliteTable('categories', {
@@ -19,6 +27,7 @@ export const categories = sqliteTable('categories', {
   icon: text('icon').notNull(),
   color: text('color').notNull(),
   isActive: integer('is_active', { mode: 'boolean' }).notNull().default(true),
+  expenseGroup: text('expense_group').references(() => expenseGroups.id),
   createdAt: text('created_at')
     .notNull()
     .default(sql`(datetime('now'))`),
@@ -74,6 +83,7 @@ export const transactions = sqliteTable(
   'transactions',
   {
     id: text('id').primaryKey(),
+    title: text('title').notNull(),
     date: text('date').notNull(),
     amount: real('amount').notNull(),
     description: text('description').notNull(),
@@ -85,6 +95,7 @@ export const transactions = sqliteTable(
     isExcludedFromTotals: integer('is_excluded_from_totals', { mode: 'boolean' })
       .notNull()
       .default(false),
+    isPaid: integer('is_paid', { mode: 'boolean' }).notNull().default(false),
     duplicateOf: text('duplicate_of'),
     createdAt: text('created_at')
       .notNull()
@@ -92,6 +103,11 @@ export const transactions = sqliteTable(
     updatedAt: text('updated_at')
       .notNull()
       .default(sql`(datetime('now'))`),
+    /** UUID linking parcels of the same installment group; null for non-installment transactions */
+    installmentGroupId: text('installment_group_id'),
+    recurringId: text('recurring_id').references(() => recurringTransactions.id, {
+      onDelete: 'set null',
+    }),
   },
   (table) => [
     index('idx_transactions_reference_month').on(table.referenceMonth),
@@ -103,6 +119,8 @@ export const transactions = sqliteTable(
     index('idx_transactions_date_id').on(table.date, table.id),
     // Composite index for month + date queries
     index('idx_transactions_month_date').on(table.referenceMonth, table.date),
+    // Index for efficient installment group queries
+    index('idx_transactions_installment_group').on(table.installmentGroupId),
   ]
 );
 
@@ -170,6 +188,130 @@ export const categorizationRulesRelations = relations(categorizationRules, ({ on
 }));
 
 // ============================================================================
+// Recurring Transactions Table
+// ============================================================================
+export const recurringTransactions = sqliteTable(
+  'recurring_transactions',
+  {
+    id: text('id').primaryKey(),
+    title: text('title').notNull(),
+    amount: real('amount').notNull(),
+    categoryId: text('category_id')
+      .notNull()
+      .references(() => categories.id, { onDelete: 'cascade' }),
+    categoryType: text('category_type', { enum: ['income', 'expense'] }).notNull(),
+    startMonth: text('start_month').notNull(),
+    description: text('description').notNull().default(''),
+    originId: text('origin_id').references(() => origins.id, { onDelete: 'set null' }),
+    isActive: integer('is_active', { mode: 'boolean' }).notNull().default(true),
+    createdAt: text('created_at')
+      .notNull()
+      .default(sql`(datetime('now'))`),
+    updatedAt: text('updated_at')
+      .notNull()
+      .default(sql`(datetime('now'))`),
+  },
+  (table) => [
+    index('idx_recurring_active').on(table.isActive),
+    index('idx_recurring_start_month').on(table.startMonth),
+  ]
+);
+
+export const recurringTransactionsRelations = relations(recurringTransactions, ({ one, many }) => ({
+  category: one(categories, {
+    fields: [recurringTransactions.categoryId],
+    references: [categories.id],
+  }),
+  origin: one(origins, {
+    fields: [recurringTransactions.originId],
+    references: [origins.id],
+  }),
+  transactions: many(transactions),
+}));
+
+// ============================================================================
+// Weekly Recurring Groups Table
+// ============================================================================
+export const weeklyRecurringGroups = sqliteTable(
+  'weekly_recurring_groups',
+  {
+    id: text('id').primaryKey(),
+    title: text('title').notNull(),
+    amount: real('amount').notNull(),
+    dayOfWeek: integer('day_of_week').notNull(), // 0=Sunday, 6=Saturday
+    categoryId: text('category_id')
+      .notNull()
+      .references(() => categories.id, { onDelete: 'cascade' }),
+    categoryType: text('category_type', { enum: ['income', 'expense'] })
+      .notNull()
+      .default('expense'),
+    description: text('description').notNull().default(''),
+    originId: text('origin_id').references(() => origins.id, { onDelete: 'set null' }),
+    startDate: text('start_date').notNull(), // YYYY-MM-DD
+    isActive: integer('is_active', { mode: 'boolean' }).notNull().default(true),
+    createdAt: text('created_at')
+      .notNull()
+      .default(sql`(datetime('now'))`),
+    updatedAt: text('updated_at')
+      .notNull()
+      .default(sql`(datetime('now'))`),
+  },
+  (table) => [
+    index('idx_weekly_groups_active').on(table.isActive),
+    index('idx_weekly_groups_day').on(table.dayOfWeek),
+  ]
+);
+
+export const weeklyRecurringGroupsRelations = relations(weeklyRecurringGroups, ({ one, many }) => ({
+  category: one(categories, {
+    fields: [weeklyRecurringGroups.categoryId],
+    references: [categories.id],
+  }),
+  origin: one(origins, {
+    fields: [weeklyRecurringGroups.originId],
+    references: [origins.id],
+  }),
+  occurrences: many(weeklyOccurrences),
+}));
+
+// ============================================================================
+// Weekly Occurrences Table
+// ============================================================================
+export const weeklyOccurrences = sqliteTable(
+  'weekly_occurrences',
+  {
+    id: text('id').primaryKey(),
+    weeklyGroupId: text('weekly_group_id')
+      .notNull()
+      .references(() => weeklyRecurringGroups.id, { onDelete: 'cascade' }),
+    date: text('date').notNull(), // YYYY-MM-DD
+    referenceMonth: text('reference_month').notNull(), // YYYY-MM
+    amount: real('amount').notNull(),
+    description: text('description').notNull().default(''),
+    isValueEdited: integer('is_value_edited', { mode: 'boolean' }).notNull().default(false),
+    isPaid: integer('is_paid', { mode: 'boolean' }).notNull().default(false),
+    createdAt: text('created_at')
+      .notNull()
+      .default(sql`(datetime('now'))`),
+    updatedAt: text('updated_at')
+      .notNull()
+      .default(sql`(datetime('now'))`),
+  },
+  (table) => [
+    index('idx_weekly_occurrences_group').on(table.weeklyGroupId),
+    index('idx_weekly_occurrences_month').on(table.referenceMonth),
+    index('idx_weekly_occurrences_date').on(table.date),
+  ]
+);
+
+export const weeklyOccurrencesRelations = relations(weeklyOccurrences, ({ one }) => ({
+  weeklyGroup: one(weeklyRecurringGroups, {
+    fields: [weeklyOccurrences.weeklyGroupId],
+    references: [weeklyRecurringGroups.id],
+  }),
+}));
+
+// ============================================================================
 // Schema Version Table (for migration tracking)
 // ============================================================================
 export const schemaVersion = sqliteTable('schema_version', {
@@ -182,6 +324,9 @@ export const schemaVersion = sqliteTable('schema_version', {
 // ============================================================================
 // Type Exports for Drizzle
 // ============================================================================
+export type ExpenseGroupRecord = typeof expenseGroups.$inferSelect;
+export type NewExpenseGroupRecord = typeof expenseGroups.$inferInsert;
+
 export type CategoryRecord = typeof categories.$inferSelect;
 export type NewCategoryRecord = typeof categories.$inferInsert;
 
@@ -200,5 +345,14 @@ export type NewUserPreferenceRecord = typeof userPreferences.$inferInsert;
 export type CategorizationRuleRecord = typeof categorizationRules.$inferSelect;
 export type NewCategorizationRuleRecord = typeof categorizationRules.$inferInsert;
 
+export type RecurringTransactionRecord = typeof recurringTransactions.$inferSelect;
+export type NewRecurringTransactionRecord = typeof recurringTransactions.$inferInsert;
+
 export type SchemaVersionRecord = typeof schemaVersion.$inferSelect;
 export type NewSchemaVersionRecord = typeof schemaVersion.$inferInsert;
+
+export type WeeklyRecurringGroupRecord = typeof weeklyRecurringGroups.$inferSelect;
+export type NewWeeklyRecurringGroupRecord = typeof weeklyRecurringGroups.$inferInsert;
+
+export type WeeklyOccurrenceRecord = typeof weeklyOccurrences.$inferSelect;
+export type NewWeeklyOccurrenceRecord = typeof weeklyOccurrences.$inferInsert;

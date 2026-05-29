@@ -1,15 +1,20 @@
 /**
  * usePaginatedTransactions Hook
  *
- * Custom hook for paginated transaction loading.
+ * Custom hook for paginated transaction loading with filter support.
  * Optimized for large lists (100+ items) with infinite scroll support.
+ * Integrates buildFilterConditions for SQL-level filtering.
  *
- * **Validates: Requirements 19, 36**
+ * **Validates: Requirements 6.1, 6.2, 6.4, 6.5, 6.6, 6.7, 6.8, 7.1, 7.2, 7.3**
  */
-import { useState, useCallback, useMemo, useEffect } from 'react';
-import { eq, and, desc, sql, lt } from 'drizzle-orm';
+import { useState, useCallback, useEffect, useRef } from 'react';
+import { eq, desc, sql } from 'drizzle-orm';
 import { useLiveQuery, getDb } from '../db/client';
 import { transactions, categories } from '../db/schema';
+import {
+  buildFilterConditions,
+  type PaginationFilters,
+} from '../db/buildFilterConditions';
 import type { Transaction, Category } from '../types';
 
 /**
@@ -20,13 +25,13 @@ export interface PaginatedTransactionWithCategory extends Transaction {
 }
 
 /**
- * Pagination options
+ * Filtered summary aggregate data
  */
-export interface PaginationOptions {
-  /** Number of items per page (default 50) */
-  pageSize?: number;
-  /** Reference month filter (YYYY-MM format) */
-  referenceMonth?: string;
+export interface FilteredSummary {
+  totalIncome: number;
+  totalExpenses: number;
+  balance: number;
+  transactionCount: number;
 }
 
 /**
@@ -43,8 +48,10 @@ export interface UsePaginatedTransactionsReturn {
   error: string | null;
   /** Whether there are more items to load */
   hasMore: boolean;
-  /** Total count of transactions */
+  /** Total count of transactions matching filters */
   totalCount: number;
+  /** Aggregate summary of filtered transactions */
+  summary: FilteredSummary;
   /** Load more transactions */
   loadMore: () => void;
   /** Refresh the data */
@@ -52,9 +59,19 @@ export interface UsePaginatedTransactionsReturn {
 }
 
 /**
- * Default page size
+ * Default page size (reduced from 50 to 20 per design spec)
  */
-const DEFAULT_PAGE_SIZE = 50;
+const DEFAULT_PAGE_SIZE = 20;
+
+/**
+ * Default empty summary
+ */
+const EMPTY_SUMMARY: FilteredSummary = {
+  totalIncome: 0,
+  totalExpenses: 0,
+  balance: 0,
+  transactionCount: 0,
+};
 
 /**
  * Convert database record to Transaction
@@ -62,6 +79,7 @@ const DEFAULT_PAGE_SIZE = 50;
 function toTransaction(record: typeof transactions.$inferSelect): Transaction {
   return {
     id: record.id,
+    title: record.title ?? '',
     date: new Date(record.date),
     amount: record.amount,
     description: record.description,
@@ -72,7 +90,9 @@ function toTransaction(record: typeof transactions.$inferSelect): Transaction {
     needsReview: record.needsReview,
     isExcludedFromTotals: record.isExcludedFromTotals,
     duplicateOf: record.duplicateOf,
-    fitid: record.fitid,
+    installmentGroupId: record.installmentGroupId ?? null,
+    recurringId: record.recurringId ?? null,
+    isPaid: record.isPaid ?? false,
     createdAt: new Date(record.createdAt),
     updatedAt: new Date(record.updatedAt),
   };
@@ -90,24 +110,34 @@ function toCategory(record: typeof categories.$inferSelect | null): Category | n
     icon: record.icon,
     color: record.color,
     isActive: record.isActive,
+    expenseGroup: (record.expenseGroup as Category['expenseGroup']) ?? null,
     createdAt: new Date(record.createdAt),
   };
 }
 
 /**
- * Hook for paginated transaction loading
+ * Hook for paginated transaction loading with filter support
  *
- * @param options - Pagination options
- * @returns Paginated transactions interface
+ * @param filters - Pagination filters including referenceMonth, categoryIds, value range, date range
+ * @returns Paginated transactions interface with summary
  *
  * @example
  * ```tsx
  * const {
  *   transactions,
  *   isLoading,
+ *   isLoadingMore,
  *   hasMore,
+ *   totalCount,
+ *   summary,
  *   loadMore,
- * } = usePaginatedTransactions({ referenceMonth: '2024-06', pageSize: 50 });
+ *   refresh,
+ * } = usePaginatedTransactions({
+ *   referenceMonth: '2024-06',
+ *   categoryIds: ['cat-1', 'cat-2'],
+ *   minAmount: 1000,
+ *   maxAmount: 50000,
+ * });
  *
  * // In FlashList
  * <FlashList
@@ -118,10 +148,10 @@ function toCategory(record: typeof categories.$inferSelect | null): Category | n
  * ```
  */
 export function usePaginatedTransactions(
-  options: PaginationOptions = {}
+  filters: PaginationFilters
 ): UsePaginatedTransactionsReturn {
   const db = getDb();
-  const { pageSize = DEFAULT_PAGE_SIZE, referenceMonth } = options;
+  const pageSize = DEFAULT_PAGE_SIZE;
 
   const [loadedTransactions, setLoadedTransactions] = useState<PaginatedTransactionWithCategory[]>(
     []
@@ -131,53 +161,84 @@ export function usePaginatedTransactions(
   const [lastDate, setLastDate] = useState<string | null>(null);
   const [lastId, setLastId] = useState<string | null>(null);
 
-  // Build where conditions
-  const whereConditions = useMemo(() => {
-    const conditions = [];
+  // Use ref to prevent duplicate batch requests
+  const isLoadingMoreRef = useRef(false);
 
-    if (referenceMonth) {
-      conditions.push(eq(transactions.referenceMonth, referenceMonth));
-    }
+  // Build WHERE conditions from all active filters using buildFilterConditions
+  const whereConditions = buildFilterConditions(filters);
 
-    return conditions.length > 0 ? and(...conditions) : undefined;
-  }, [referenceMonth]);
-
-  // Live query for total count
+  // Live query for total count (with same filters, no cursor)
   const { data: countData } = useLiveQuery(
-    whereConditions
-      ? db
-          .select({ count: sql<number>`count(*)` })
-          .from(transactions)
-          .where(whereConditions)
-      : db.select({ count: sql<number>`count(*)` }).from(transactions),
-    [whereConditions]
+    db
+      .select({ count: sql<number>`count(*)` })
+      .from(transactions)
+      .where(whereConditions),
+    [
+      filters.referenceMonth,
+      filters.categoryIds,
+      filters.minAmount,
+      filters.maxAmount,
+      filters.startDate,
+      filters.endDate,
+      filters.pendingOnly,
+    ]
   );
 
   const totalCount = countData?.[0]?.count ?? 0;
 
-  // Initial data load
+  // Live aggregate query for FilteredSummary (same filters, no cursor)
+  const { data: summaryData } = useLiveQuery(
+    db
+      .select({
+        totalIncome: sql<number>`COALESCE(SUM(CASE WHEN ${transactions.amount} > 0 THEN ${transactions.amount} ELSE 0 END), 0)`,
+        totalExpenses: sql<number>`COALESCE(SUM(CASE WHEN ${transactions.amount} < 0 THEN ${transactions.amount} ELSE 0 END), 0)`,
+        balance: sql<number>`COALESCE(SUM(${transactions.amount}), 0)`,
+        transactionCount: sql<number>`count(*)`,
+      })
+      .from(transactions)
+      .where(whereConditions),
+    [
+      filters.referenceMonth,
+      filters.categoryIds,
+      filters.minAmount,
+      filters.maxAmount,
+      filters.startDate,
+      filters.endDate,
+      filters.pendingOnly,
+    ]
+  );
+
+  const summary: FilteredSummary = summaryData?.[0]
+    ? {
+        totalIncome: summaryData[0].totalIncome,
+        totalExpenses: summaryData[0].totalExpenses,
+        balance: summaryData[0].balance,
+        transactionCount: summaryData[0].transactionCount,
+      }
+    : EMPTY_SUMMARY;
+
+  // Initial data load (first page with filters, no cursor)
   const { data: initialData, error: queryError } = useLiveQuery(
-    whereConditions
-      ? db
-          .select({
-            transaction: transactions,
-            category: categories,
-          })
-          .from(transactions)
-          .leftJoin(categories, eq(transactions.categoryId, categories.id))
-          .where(whereConditions)
-          .orderBy(desc(transactions.date), desc(transactions.id))
-          .limit(pageSize)
-      : db
-          .select({
-            transaction: transactions,
-            category: categories,
-          })
-          .from(transactions)
-          .leftJoin(categories, eq(transactions.categoryId, categories.id))
-          .orderBy(desc(transactions.date), desc(transactions.id))
-          .limit(pageSize),
-    [whereConditions, pageSize]
+    db
+      .select({
+        transaction: transactions,
+        category: categories,
+      })
+      .from(transactions)
+      .leftJoin(categories, eq(transactions.categoryId, categories.id))
+      .where(whereConditions)
+      .orderBy(desc(transactions.date), desc(transactions.id))
+      .limit(pageSize),
+    [
+      filters.referenceMonth,
+      filters.categoryIds,
+      filters.minAmount,
+      filters.maxAmount,
+      filters.startDate,
+      filters.endDate,
+      filters.pendingOnly,
+      pageSize,
+    ]
   );
 
   // Transform initial data
@@ -193,8 +254,10 @@ export function usePaginatedTransactions(
 
       if (transformed.length > 0) {
         const lastItem = transformed[transformed.length - 1];
-        setLastDate(lastItem.date.toISOString());
-        setLastId(lastItem.id);
+        if (lastItem) {
+          setLastDate(lastItem.date.toISOString());
+          setLastId(lastItem.id);
+        }
       } else {
         setLastDate(null);
         setLastId(null);
@@ -202,20 +265,24 @@ export function usePaginatedTransactions(
     }
   }, [initialData, pageSize]);
 
-  // Load more function
+  // Load more function with duplicate request prevention
   const loadMore = useCallback(async () => {
-    if (isLoadingMore || !hasMore || !lastDate || !lastId) {
+    // Prevent duplicate batch requests using both state and ref
+    if (isLoadingMoreRef.current || !hasMore || !lastDate || !lastId) {
       return;
     }
 
+    isLoadingMoreRef.current = true;
     setIsLoadingMore(true);
 
     try {
-      // Build cursor-based pagination query
-      const cursorConditions = and(
-        whereConditions,
-        sql`(${transactions.date} < ${lastDate} OR (${transactions.date} = ${lastDate} AND ${transactions.id} < ${lastId}))`
-      );
+      // Build cursor condition combined with filter conditions
+      const cursorCondition = sql`(${transactions.date} < ${lastDate} OR (${transactions.date} = ${lastDate} AND ${transactions.id} < ${lastId}))`;
+
+      // Combine filter conditions with cursor
+      const combinedConditions = whereConditions
+        ? sql`${whereConditions} AND ${cursorCondition}`
+        : cursorCondition;
 
       const moreData = await db
         .select({
@@ -224,7 +291,7 @@ export function usePaginatedTransactions(
         })
         .from(transactions)
         .leftJoin(categories, eq(transactions.categoryId, categories.id))
-        .where(cursorConditions)
+        .where(combinedConditions)
         .orderBy(desc(transactions.date), desc(transactions.id))
         .limit(pageSize);
 
@@ -236,8 +303,10 @@ export function usePaginatedTransactions(
       if (transformed.length > 0) {
         setLoadedTransactions((prev) => [...prev, ...transformed]);
         const lastItem = transformed[transformed.length - 1];
-        setLastDate(lastItem.date.toISOString());
-        setLastId(lastItem.id);
+        if (lastItem) {
+          setLastDate(lastItem.date.toISOString());
+          setLastId(lastItem.id);
+        }
       }
 
       setHasMore(transformed.length >= pageSize);
@@ -245,21 +314,33 @@ export function usePaginatedTransactions(
       console.error('[usePaginatedTransactions] Error loading more:', error);
     } finally {
       setIsLoadingMore(false);
+      isLoadingMoreRef.current = false;
     }
-  }, [db, whereConditions, pageSize, isLoadingMore, hasMore, lastDate, lastId]);
+  }, [db, whereConditions, pageSize, hasMore, lastDate, lastId]);
 
-  // Refresh function
+  // Refresh function - resets cursor state
   const refresh = useCallback(() => {
     setLoadedTransactions([]);
     setLastDate(null);
     setLastId(null);
     setHasMore(true);
+    setIsLoadingMore(false);
+    isLoadingMoreRef.current = false;
   }, []);
 
-  // Reset when filters change
+  // Reset cursor when any filter parameter changes
   useEffect(() => {
     refresh();
-  }, [referenceMonth, refresh]);
+  }, [
+    filters.referenceMonth,
+    filters.categoryIds,
+    filters.minAmount,
+    filters.maxAmount,
+    filters.startDate,
+    filters.endDate,
+    filters.pendingOnly,
+    refresh,
+  ]);
 
   return {
     transactions: loadedTransactions,
@@ -268,6 +349,7 @@ export function usePaginatedTransactions(
     error: queryError ? String(queryError) : null,
     hasMore,
     totalCount,
+    summary,
     loadMore,
     refresh,
   };

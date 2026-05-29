@@ -162,7 +162,7 @@ describe('Property 14: Locale-Aware Formatting Consistency', () => {
           // Should not use period for decimal (but may use for grouping)
           const parts = formatted.split(',');
           expect(parts.length).toBe(2);
-          expect(parts[1]).toMatch(/^\d{2}$/); // Two decimal digits after comma
+          expect(parts[1]!).toMatch(/^\d{2}$/); // Two decimal digits after comma
         }),
         { numRuns: 100 }
       );
@@ -217,8 +217,8 @@ describe('Property 14: Locale-Aware Formatting Consistency', () => {
             // Large amounts should have grouping separators (periods)
             // The format should be like "1.234.567,89"
             const parts = formatted.split(',');
-            if (parts[0].length > 3) {
-              expect(parts[0]).toContain('.');
+            if (parts[0]!.length > 3) {
+              expect(parts[0]!).toContain('.');
             }
           }
         ),
@@ -243,8 +243,8 @@ describe('Property 14: Locale-Aware Formatting Consistency', () => {
             // Large amounts should have grouping separators (commas)
             // The format should be like "1,234,567.89"
             const parts = formatted.split('.');
-            if (parts[0].length > 3) {
-              expect(parts[0]).toContain(',');
+            if (parts[0]!.length > 3) {
+              expect(parts[0]!).toContain(',');
             }
           }
         ),

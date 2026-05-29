@@ -2,9 +2,11 @@
 # This test verifies the app launches correctly and basic navigation works
 #
 # Tags: smoke
-# Validates: Requirement 33 - E2E Tests
+# Validates: Requirement 2 - Smoke Test Flow
 
 appId: com.ggeconomy.mobile
+tags:
+  - smoke
 
 ---
 
@@ -13,11 +15,13 @@ appId: com.ggeconomy.mobile
 
 - launchApp:
     clearState: true
+    label: "Launch app with cleared state"
 
-# Wait for app to fully load
+# Wait for app to fully load (15-second timeout for cold start with DB initialization)
 - extendedWaitUntil:
     visible: "Dashboard"
     timeout: 15000
+    label: "App launch: Dashboard should be visible within 15 seconds (cold start with DB initialization)"
 
 # Verify Dashboard tab is visible and active (default screen)
 - assertVisible: "Dashboard"
@@ -25,51 +29,44 @@ appId: com.ggeconomy.mobile
 # Take screenshot of initial state
 - takeScreenshot: "01_dashboard_initial"
 
-# Navigate to Transactions tab
+# Navigate to Transactions tab (5-second timeout for tab navigation)
 - tapOn: "Transactions"
 - extendedWaitUntil:
     visible: "Transactions"
     timeout: 5000
+    label: "Tab navigation: Transactions tab should load within 5 seconds"
 - assertVisible: "Transactions"
 - takeScreenshot: "02_transactions_screen"
 
-# Navigate to Review tab
-- tapOn: "Review"
-- extendedWaitUntil:
-    visible: "Review"
-    timeout: 5000
-- assertVisible: "Review"
-- takeScreenshot: "03_review_screen"
-
-# Navigate to Manual Entry tab
+# Navigate to Manual Entry tab (5-second timeout for tab navigation)
 - tapOn: "Manual"
 - extendedWaitUntil:
     visible: "Manual"
     timeout: 5000
-# Verify form elements are present
-- assertVisible:
-    text: "Amount"
-    optional: true
-- takeScreenshot: "04_manual_entry_screen"
+    label: "Tab navigation: Manual tab should load within 5 seconds"
+- assertVisible: "Manual"
+- takeScreenshot: "03_manual_entry_screen"
 
-# Navigate to Settings tab
+# Navigate to Settings tab (5-second timeout for tab navigation)
 - tapOn: "Settings"
 - extendedWaitUntil:
     visible: "Settings"
     timeout: 5000
+    label: "Tab navigation: Settings tab should load within 5 seconds"
 - assertVisible: "Settings"
-- takeScreenshot: "05_settings_screen"
+- takeScreenshot: "04_settings_screen"
 
-# Navigate back to Dashboard to complete the cycle
+# Navigate back to Dashboard to complete the cycle (5-second timeout for tab navigation)
 - tapOn: "Dashboard"
 - extendedWaitUntil:
     visible: "Dashboard"
     timeout: 5000
+    label: "Tab navigation: Dashboard tab should load within 5 seconds (return navigation)"
 - assertVisible: "Dashboard"
-- takeScreenshot: "06_dashboard_final"
+- takeScreenshot: "05_dashboard_final"
 
 # Test completed successfully
 - runScript:
     script: |
       console.log('Smoke test completed successfully!');
-      console.log('All main navigation tabs are accessible.');
+      console.log('All 4 main navigation tabs are accessible: Dashboard, Transactions, Manual, Settings');

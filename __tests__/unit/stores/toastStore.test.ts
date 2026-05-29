@@ -30,9 +30,9 @@ describe('toastStore', () => {
       });
 
       expect(result.current.toasts).toHaveLength(1);
-      expect(result.current.toasts[0].message).toBe('Test message');
-      expect(result.current.toasts[0].severity).toBe('info');
-      expect(result.current.toasts[0].dismissible).toBe(true);
+      expect(result.current.toasts[0]!.message).toBe('Test message');
+      expect(result.current.toasts[0]!.severity).toBe('info');
+      expect(result.current.toasts[0]!.dismissible).toBe(true);
     });
 
     it('should add a toast with custom values', () => {
@@ -48,10 +48,10 @@ describe('toastStore', () => {
         });
       });
 
-      expect(result.current.toasts[0].severity).toBe('error');
-      expect(result.current.toasts[0].title).toBe('Error Title');
-      expect(result.current.toasts[0].duration).toBe(10000);
-      expect(result.current.toasts[0].dismissible).toBe(false);
+      expect(result.current.toasts[0]!.severity).toBe('error');
+      expect(result.current.toasts[0]!.title).toBe('Error Title');
+      expect(result.current.toasts[0]!.duration).toBe(10000);
+      expect(result.current.toasts[0]!.dismissible).toBe(false);
     });
 
     it('should return a unique toast ID', () => {
@@ -109,8 +109,8 @@ describe('toastStore', () => {
       });
 
       expect(result.current.toasts).toHaveLength(2);
-      expect(result.current.toasts[0].message).toBe('Toast 2');
-      expect(result.current.toasts[1].message).toBe('Toast 3');
+      expect(result.current.toasts[0]!.message).toBe('Toast 2');
+      expect(result.current.toasts[1]!.message).toBe('Toast 3');
     });
 
     it('should include action in toast', () => {
@@ -124,8 +124,8 @@ describe('toastStore', () => {
         });
       });
 
-      expect(result.current.toasts[0].action).toBeDefined();
-      expect(result.current.toasts[0].action?.label).toBe('Retry');
+      expect(result.current.toasts[0]!.action).toBeDefined();
+      expect(result.current.toasts[0]!.action?.label).toBe('Retry');
     });
 
     it('should include params for i18n interpolation', () => {
@@ -138,7 +138,7 @@ describe('toastStore', () => {
         });
       });
 
-      expect(result.current.toasts[0].params).toEqual({
+      expect(result.current.toasts[0]!.params).toEqual({
         line: 42,
         message: 'Invalid date',
       });
@@ -153,8 +153,8 @@ describe('toastStore', () => {
         result.current.showError('Error message');
       });
 
-      expect(result.current.toasts[0].severity).toBe('error');
-      expect(result.current.toasts[0].message).toBe('Error message');
+      expect(result.current.toasts[0]!.severity).toBe('error');
+      expect(result.current.toasts[0]!.message).toBe('Error message');
     });
 
     it('should use longer duration for errors', () => {
@@ -164,7 +164,7 @@ describe('toastStore', () => {
         result.current.showError('Error');
       });
 
-      expect(result.current.toasts[0].duration).toBe(6000);
+      expect(result.current.toasts[0]!.duration).toBe(6000);
     });
   });
 
@@ -176,7 +176,7 @@ describe('toastStore', () => {
         result.current.showWarning('Warning message');
       });
 
-      expect(result.current.toasts[0].severity).toBe('warning');
+      expect(result.current.toasts[0]!.severity).toBe('warning');
     });
   });
 
@@ -188,7 +188,7 @@ describe('toastStore', () => {
         result.current.showInfo('Info message');
       });
 
-      expect(result.current.toasts[0].severity).toBe('info');
+      expect(result.current.toasts[0]!.severity).toBe('info');
     });
   });
 
@@ -200,7 +200,7 @@ describe('toastStore', () => {
         result.current.showSuccess('Success message');
       });
 
-      expect(result.current.toasts[0].severity).toBe('success');
+      expect(result.current.toasts[0]!.severity).toBe('success');
     });
 
     it('should use shorter duration for success', () => {
@@ -210,7 +210,7 @@ describe('toastStore', () => {
         result.current.showSuccess('Success');
       });
 
-      expect(result.current.toasts[0].duration).toBe(3000);
+      expect(result.current.toasts[0]!.duration).toBe(3000);
     });
   });
 
@@ -229,7 +229,7 @@ describe('toastStore', () => {
       });
 
       expect(result.current.toasts).toHaveLength(1);
-      expect(result.current.toasts[0].message).toBe('Toast 2');
+      expect(result.current.toasts[0]!.message).toBe('Toast 2');
     });
 
     it('should do nothing if ID does not exist', () => {
@@ -326,7 +326,7 @@ describe('toastStore', () => {
       });
 
       expect(toastsResult.current).toHaveLength(1);
-      expect(toastsResult.current[0].message).toBe('Test');
+      expect(toastsResult.current[0]!.message).toBe('Test');
     });
   });
 });

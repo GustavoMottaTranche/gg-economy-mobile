@@ -8,12 +8,7 @@
  * a date equivalent to the original.
  */
 import * as fc from 'fast-check';
-import {
-  formatDate,
-  parseDate,
-  DateFormat,
-  FormatDateOptions,
-} from '../../../src/utils/formatDate';
+import { formatDate, parseDate, DateFormat } from '../../../src/utils/formatDate';
 import { SupportedLocale } from '../../../src/utils/formatCurrency';
 
 describe('Property 6: Date Formatting Round-Trip', () => {

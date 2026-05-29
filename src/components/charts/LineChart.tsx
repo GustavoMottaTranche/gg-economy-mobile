@@ -13,6 +13,8 @@ import { View, Text, StyleSheet, ViewStyle, LayoutChangeEvent } from 'react-nati
 import Svg, { G, Path, Circle, Line, Text as SvgText, Rect } from 'react-native-svg';
 import { useTranslation } from 'react-i18next';
 import { formatCurrencyLocale, getCurrentLocale } from '../../i18n';
+import { useThemeColors } from '../../hooks/useThemeColors';
+import { spacing, borderRadius } from '../../constants/theme';
 
 /**
  * Data point for a single point on the line
@@ -168,6 +170,7 @@ function LineChartComponent({
   testID,
 }: LineChartProps): React.ReactElement {
   const { t } = useTranslation();
+  const colors = useThemeColors();
   const locale = getCurrentLocale();
   const [containerWidth, setContainerWidth] = useState(300);
   const [selectedPoint, setSelectedPoint] = useState<SelectedPointInfo | null>(null);
@@ -268,8 +271,8 @@ function LineChartComponent({
         accessibilityRole="none"
         accessibilityLabel={t('charts.noData')}
       >
-        <View style={styles.emptyChart}>
-          <Text style={styles.emptyText}>{t('charts.noData')}</Text>
+        <View style={[styles.emptyChart, { backgroundColor: colors.background.secondary }]}>
+          <Text style={[styles.emptyText, { color: colors.text.tertiary }]}>{t('charts.noData')}</Text>
         </View>
       </View>
     );
@@ -299,7 +302,7 @@ function LineChartComponent({
                   y1={y}
                   x2={MARGIN.left + chartWidth}
                   y2={y}
-                  stroke="#e5e7eb"
+                  stroke={colors.border.default}
                   strokeWidth={1}
                 />
               );
@@ -315,7 +318,7 @@ function LineChartComponent({
                 x={MARGIN.left - 8}
                 y={y + 4}
                 fontSize={10}
-                fill="#6b7280"
+                fill={colors.text.secondary}
                 textAnchor="end"
               >
                 {formatAxisValue(tick / 100, locale)}
@@ -330,7 +333,7 @@ function LineChartComponent({
               x={item.x}
               y={MARGIN.top + chartHeight + 16}
               fontSize={10}
-              fill="#374151"
+              fill={colors.text.primary}
               textAnchor="middle"
             >
               {item.label}
@@ -370,7 +373,7 @@ function LineChartComponent({
                     cx={p.x}
                     cy={p.y}
                     r={isSelected ? POINT_RADIUS_SELECTED : POINT_RADIUS}
-                    fill="white"
+                    fill={colors.surface.card}
                     stroke={s.color}
                     strokeWidth={2}
                     onPress={() => handlePointPress(s, p.data, i, p.x, p.y)}
@@ -398,8 +401,8 @@ function LineChartComponent({
                 y={Math.max(selectedPoint.y - 45, MARGIN.top)}
                 width={100}
                 height={36}
-                fill="white"
-                stroke="#e5e7eb"
+                fill={colors.surface.card}
+                stroke={colors.border.default}
                 strokeWidth={1}
                 rx={4}
               />
@@ -408,7 +411,7 @@ function LineChartComponent({
                 x={Math.min(selectedPoint.x, containerWidth - MARGIN.right - 50)}
                 y={Math.max(selectedPoint.y - 28, MARGIN.top + 17)}
                 fontSize={11}
-                fill="#374151"
+                fill={colors.text.primary}
                 textAnchor="middle"
                 fontWeight="600"
               >
@@ -432,7 +435,7 @@ function LineChartComponent({
             y1={MARGIN.top}
             x2={MARGIN.left}
             y2={MARGIN.top + chartHeight}
-            stroke="#9ca3af"
+            stroke={colors.text.tertiary}
             strokeWidth={1}
           />
           <Line
@@ -440,7 +443,7 @@ function LineChartComponent({
             y1={MARGIN.top + chartHeight}
             x2={MARGIN.left + chartWidth}
             y2={MARGIN.top + chartHeight}
-            stroke="#9ca3af"
+            stroke={colors.text.tertiary}
             strokeWidth={1}
           />
         </G>
@@ -452,7 +455,7 @@ function LineChartComponent({
           {series.map((s) => (
             <View key={s.id} style={styles.legendItem}>
               <View style={[styles.legendLine, { backgroundColor: s.color }]} />
-              <Text style={styles.legendText}>{s.name}</Text>
+              <Text style={[styles.legendText, { color: colors.text.primary }]}>{s.name}</Text>
             </View>
           ))}
         </View>
@@ -469,19 +472,17 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#f9fafb',
-    borderRadius: 8,
+    borderRadius: borderRadius.sm,
   },
   emptyText: {
     fontSize: 14,
-    color: '#9ca3af',
   },
   legend: {
     flexDirection: 'row',
     justifyContent: 'center',
     flexWrap: 'wrap',
-    marginTop: 8,
-    gap: 16,
+    marginTop: spacing.sm,
+    gap: spacing.base,
   },
   legendItem: {
     flexDirection: 'row',
@@ -495,7 +496,6 @@ const styles = StyleSheet.create({
   },
   legendText: {
     fontSize: 12,
-    color: '#374151',
   },
 });
 

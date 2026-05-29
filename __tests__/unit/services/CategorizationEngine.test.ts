@@ -11,9 +11,6 @@
 
 import {
   CategorizationEngine,
-  CategorizationResult,
-  BatchCategorizationResult,
-  LearnedPattern,
   UserCategorization,
 } from '../../../src/services/CategorizationEngine';
 import type { CategorizationRule, MatchType } from '../../../src/types/categorizationRule';
@@ -344,7 +341,7 @@ describe('CategorizationEngine', () => {
       const matches = engine.findAllMatchingRules('UBER TRIP', rules);
 
       expect(matches).toHaveLength(1);
-      expect(matches[0].id).toBe('rule-1');
+      expect(matches[0]!.id).toBe('rule-1');
     });
 
     it('should return empty array when no rules match', () => {
@@ -483,7 +480,7 @@ describe('CategorizationEngine', () => {
       const patterns = engine.learnPatterns(categorizations);
 
       for (let i = 1; i < patterns.length; i++) {
-        expect(patterns[i - 1].confidence).toBeGreaterThanOrEqual(patterns[i].confidence);
+        expect(patterns[i - 1]!.confidence).toBeGreaterThanOrEqual(patterns[i]!.confidence);
       }
     });
 

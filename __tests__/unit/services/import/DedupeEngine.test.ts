@@ -9,11 +9,7 @@
  * @module DedupeEngine.test
  */
 
-import {
-  DedupeEngine,
-  DuplicateResult,
-  DedupeResult,
-} from '../../../../src/services/import/DedupeEngine';
+import { DedupeEngine } from '../../../../src/services/import/DedupeEngine';
 import { RawTransaction, Transaction } from '../../../../src/types/transaction';
 
 describe('DedupeEngine', () => {
@@ -41,6 +37,7 @@ describe('DedupeEngine', () => {
   function createTransaction(overrides: Partial<Transaction> = {}): Transaction {
     return {
       id: 'tx-001',
+      title: '',
       date: new Date('2024-01-15'),
       amount: -100.0,
       description: 'Test Transaction',
@@ -51,6 +48,8 @@ describe('DedupeEngine', () => {
       needsReview: true,
       isExcludedFromTotals: false,
       duplicateOf: null,
+      installmentGroupId: null,
+      recurringId: null,
       createdAt: new Date(),
       updatedAt: new Date(),
       ...overrides,
@@ -92,8 +91,8 @@ describe('DedupeEngine', () => {
       const result = engine.findDuplicates(newTransactions, existingWithFitId as any);
 
       expect(result.duplicates).toHaveLength(1);
-      expect(result.duplicates[0].confidence).toBe(1.0);
-      expect(result.duplicates[0].matchReason).toBe('fitid');
+      expect(result.duplicates[0]!.confidence).toBe(1.0);
+      expect(result.duplicates[0]!.matchReason).toBe('fitid');
       expect(result.uniqueTransactions).toHaveLength(0);
     });
 
@@ -117,8 +116,8 @@ describe('DedupeEngine', () => {
       const result = engine.findDuplicates(newTransactions, existingTransactions);
 
       expect(result.duplicates).toHaveLength(1);
-      expect(result.duplicates[0].confidence).toBeGreaterThanOrEqual(0.9);
-      expect(result.duplicates[0].matchReason).toBe('date_amount_description');
+      expect(result.duplicates[0]!.confidence).toBeGreaterThanOrEqual(0.9);
+      expect(result.duplicates[0]!.matchReason).toBe('date_amount_description');
     });
 
     it('should detect duplicate by date and amount with lower confidence', () => {
@@ -141,8 +140,8 @@ describe('DedupeEngine', () => {
       const result = engine.findDuplicates(newTransactions, existingTransactions);
 
       expect(result.duplicates).toHaveLength(1);
-      expect(result.duplicates[0].confidence).toBeGreaterThanOrEqual(0.5);
-      expect(result.duplicates[0].confidence).toBeLessThan(0.9);
+      expect(result.duplicates[0]!.confidence).toBeGreaterThanOrEqual(0.5);
+      expect(result.duplicates[0]!.confidence).toBeLessThan(0.9);
     });
 
     it('should not detect duplicate when dates differ', () => {
@@ -280,8 +279,8 @@ describe('DedupeEngine', () => {
       const result = engine.findDuplicatesWithinSet(transactions);
 
       expect(result.duplicates).toHaveLength(1);
-      expect(result.duplicates[0].confidence).toBe(1.0);
-      expect(result.duplicates[0].matchReason).toBe('fitid');
+      expect(result.duplicates[0]!.confidence).toBe(1.0);
+      expect(result.duplicates[0]!.matchReason).toBe('fitid');
       expect(result.uniqueTransactions).toHaveLength(2);
     });
   });

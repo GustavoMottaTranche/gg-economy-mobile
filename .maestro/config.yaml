@@ -22,11 +22,14 @@ env:
 # Tags for organizing tests
 tags:
   smoke: "Quick validation tests"
+  dashboard: "Dashboard screen tests"
+  transactions: "Transaction operations tests"
   import: "Import flow tests"
   manual: "Manual entry tests"
   backup: "Backup and restore tests"
   navigation: "Navigation tests"
   i18n: "Internationalization tests"
+  categories: "Category management tests"
 
 # Execution settings
 executionOrder:

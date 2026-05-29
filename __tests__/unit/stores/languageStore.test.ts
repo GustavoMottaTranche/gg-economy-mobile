@@ -6,11 +6,7 @@
  * **Validates: Requirements 25, 26, 29**
  */
 import { act } from '@testing-library/react-native';
-import {
-  useLanguageStore,
-  useLocale,
-  useLanguageSettings,
-} from '../../../src/stores/languageStore';
+import { useLanguageStore } from '../../../src/stores/languageStore';
 import type { SupportedLocale } from '../../../src/i18n';
 
 // Mock i18next changeLanguage

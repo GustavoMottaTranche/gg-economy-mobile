@@ -1,47 +1,16 @@
 /**
- * Import Layout
+ * Import Layout Redirect
  *
- * Stack navigation for the import flow modal:
- * - index: File selection screen
- * - progress: Import progress screen
+ * The import flow has been removed as part of the manual entry refactoring.
+ * This layout redirects any navigation to /import/* routes to the Manual Entry tab.
  *
- * **Validates: Requirements 11, 12, 30**
+ * Previously imported data is preserved in the database — only the
+ * navigation routes are removed.
+ *
+ * **Validates: Requirements 1.3, 1.4**
  */
-import { Stack } from 'expo-router';
-import { useTranslation } from 'react-i18next';
+import { Redirect } from 'expo-router';
 
-export default function ImportLayout() {
-  const { t } = useTranslation();
-
-  return (
-    <Stack
-      screenOptions={{
-        headerStyle: {
-          backgroundColor: '#FFFFFF',
-        },
-        headerTitleStyle: {
-          fontSize: 17,
-          fontWeight: '600',
-          color: '#000000',
-        },
-        headerShadowVisible: false,
-        presentation: 'modal',
-      }}
-    >
-      <Stack.Screen
-        name="index"
-        options={{
-          title: t('fileImport.title'),
-          headerLeft: () => null, // Modal has close button on right
-        }}
-      />
-      <Stack.Screen
-        name="progress"
-        options={{
-          title: t('fileImport.importing'),
-          headerBackTitle: t('common.back'),
-        }}
-      />
-    </Stack>
-  );
+export default function ImportLayoutRedirect() {
+  return <Redirect href="/(tabs)/manual" />;
 }

@@ -13,11 +13,9 @@
  */
 
 import { randomUUID } from 'expo-crypto';
-import { ImportService, importService, ImportError, ImportOptions } from './ImportService';
+import { ImportService, importService, ImportError } from './ImportService';
 import { DedupeEngine, dedupeEngine } from './DedupeEngine';
 import { createImportBatch } from '../../db/queries/importBatches';
-import { RawTransaction } from '../../types/transaction';
-import { ImportBatch, FileType } from '../../types/importBatch';
 import {
   MultiFileImportOptions,
   ImportProgress,
@@ -56,22 +54,26 @@ export class MultiFileImporter {
     this.cancelled = false;
     const batchGroupId = randomUUID();
     const fileResults: FileImportResult[] = [];
-    const allTransactions: Map<string, RawTransaction[]> = new Map();
 
     let totalTransactionsImported = 0;
     let totalDuplicatesInFile = 0;
-    let totalCrossFileDuplicates = 0;
-    let totalDatabaseDuplicates = 0;
+    const totalCrossFileDuplicates = 0;
+    const totalDatabaseDuplicates = 0;
     const failedFiles: string[] = [];
 
     // Process each file sequentially
     for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      if (!file) continue;
+
       // Check for cancellation
       if (this.cancelled || options.abortSignal?.aborted) {
         // Mark remaining files as failed due to cancellation
         for (let j = i; j < files.length; j++) {
+          const remainingFile = files[j];
+          if (!remainingFile) continue;
           fileResults.push({
-            fileName: files[j].fileName,
+            fileName: remainingFile.fileName,
             success: false,
             transactionsImported: 0,
             duplicatesFound: 0,
@@ -80,12 +82,10 @@ export class MultiFileImporter {
               message: 'Import was cancelled',
             },
           });
-          failedFiles.push(files[j].fileName);
+          failedFiles.push(remainingFile.fileName);
         }
         break;
       }
-
-      const file = files[i];
 
       // Update progress
       this.updateProgress(options.onProgress, {
@@ -200,37 +200,41 @@ export class MultiFileImporter {
   private async importSingleFile(
     file: SelectedFile,
     batchGroupId: string,
-    options: MultiFileImportOptions
+    _options: MultiFileImportOptions
   ): Promise<FileImportResult> {
     try {
       // Read file content
       const content = await this.readFileContent(file.uri);
 
       // Parse the file based on type
-      const parseResult = await this.importService.parseFile(content, file.fileName, file.fileType);
+      const parseResult = this.importService.parseContent(content, file.fileType);
 
-      if (!parseResult.success || parseResult.transactions.length === 0) {
+      if (parseResult.transactions.length === 0) {
         return {
           fileName: file.fileName,
           success: false,
           transactionsImported: 0,
           duplicatesFound: 0,
-          error: parseResult.error || {
-            code: 'PARSE_ERROR',
-            message: 'No transactions found in file',
-          },
+          error:
+            parseResult.errors.length > 0
+              ? {
+                  code: 'PARSE_ERROR',
+                  message: parseResult.errors[0]?.message ?? 'Parse error',
+                }
+              : {
+                  code: 'PARSE_ERROR',
+                  message: 'No transactions found in file',
+                },
         };
       }
 
       // Run deduplication against database
-      const dedupeResult = await this.dedupeEngine.findDuplicates(parseResult.transactions, {
-        checkDatabase: true,
+      const dedupeResult = this.dedupeEngine.findDuplicatesWithinSet(parseResult.transactions, {
+        confidenceThreshold: 0.5,
       });
 
       // Filter out duplicates
-      const uniqueTransactions = parseResult.transactions.filter(
-        (_, index) => !dedupeResult.duplicateIndices.includes(index)
-      );
+      const uniqueTransactions = dedupeResult.uniqueTransactions;
 
       // Create import batch
       const batch = await createImportBatch({
@@ -248,7 +252,7 @@ export class MultiFileImporter {
         success: true,
         batch,
         transactionsImported: uniqueTransactions.length,
-        duplicatesFound: dedupeResult.duplicateIndices.length,
+        duplicatesFound: dedupeResult.duplicates.length,
       };
     } catch (error) {
       return {
@@ -267,7 +271,7 @@ export class MultiFileImporter {
   /**
    * Reads file content from URI
    */
-  private async readFileContent(uri: string): Promise<string> {
+  private async readFileContent(_uri: string): Promise<string> {
     // In React Native, we'd use expo-file-system
     // For now, this is a placeholder that would be implemented with:
     // import * as FileSystem from 'expo-file-system';

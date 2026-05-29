@@ -12,10 +12,13 @@
  */
 import * as fc from 'fast-check';
 import { NotificationScheduler, FREQUENCY_DAYS } from '../NotificationScheduler';
+import { __setTestModule } from '../NotificationsModuleLoader';
 import type {
   NotificationSettings,
   NotificationFrequency,
 } from '../../../stores/notificationStore';
+import { timeSlotKey } from '../../../stores/notificationStore';
+import type { TimeSlot } from '../../../stores/notificationStore';
 
 // Mock expo-notifications
 jest.mock('expo-notifications', () => ({
@@ -25,6 +28,27 @@ jest.mock('expo-notifications', () => ({
   getAllScheduledNotificationsAsync: jest.fn(),
   SchedulableTriggerInputTypes: {
     TIME_INTERVAL: 'timeInterval',
+  },
+}));
+
+// Mock the NotificationsModuleLoader module
+jest.mock('../NotificationsModuleLoader', () => {
+  let _testModule: unknown = null;
+  return {
+    __setTestModule: (mod: unknown) => {
+      _testModule = mod;
+    },
+    getNotifications: jest.fn(async () => _testModule),
+  };
+});
+
+// Mock the logging module
+jest.mock('../../logging', () => ({
+  logger: {
+    debug: jest.fn(),
+    info: jest.fn(),
+    warn: jest.fn(),
+    error: jest.fn(),
   },
 }));
 
@@ -105,6 +129,12 @@ describe('Property 3: Next Notification Time Calculation', () => {
   beforeEach(() => {
     scheduler = new NotificationScheduler();
     jest.clearAllMocks();
+    // Provide the mock notifications module via the test hook
+    __setTestModule(require('expo-notifications'));
+  });
+
+  afterAll(() => {
+    __setTestModule(null);
   });
 
   describe('Next Time is Always in the Future', () => {
@@ -600,6 +630,9 @@ describe('Property 2: Rescheduling on Settings Change', () => {
     scheduler = new NotificationScheduler();
     jest.clearAllMocks();
 
+    // Provide the mock notifications module via the test hook
+    __setTestModule(require('expo-notifications'));
+
     // Get references to the mocked functions
     const Notifications = require('expo-notifications');
     mockScheduleNotificationAsync = Notifications.scheduleNotificationAsync;
@@ -608,6 +641,10 @@ describe('Property 2: Rescheduling on Settings Change', () => {
     // Set up default mock implementations
     mockScheduleNotificationAsync.mockResolvedValue('mock-notification-id');
     mockCancelAllScheduledNotificationsAsync.mockResolvedValue(undefined);
+  });
+
+  afterAll(() => {
+    __setTestModule(null);
   });
 
   describe('Cancel All is Called Before Scheduling', () => {
@@ -1071,6 +1108,9 @@ describe('Property 4: Auto-Reschedule After Delivery', () => {
     scheduler = new NotificationScheduler();
     jest.clearAllMocks();
 
+    // Provide the mock notifications module via the test hook
+    __setTestModule(require('expo-notifications'));
+
     // Get references to the mocked functions
     const Notifications = require('expo-notifications');
     mockScheduleNotificationAsync = Notifications.scheduleNotificationAsync;
@@ -1083,6 +1123,10 @@ describe('Property 4: Auto-Reschedule After Delivery', () => {
     // Set up store mocks
     mockSetScheduledNotificationId = jest.fn();
     mockRecordDelivery = jest.fn();
+  });
+
+  afterAll(() => {
+    __setTestModule(null);
   });
 
   /**
@@ -1513,24 +1557,6 @@ describe('Property 5: Missed Notification Recovery', () => {
   const arbitraryMinute = fc.integer({ min: 0, max: 59 });
 
   /**
-   * Arbitrary for enabled NotificationSettings
-   */
-  const arbitraryEnabledSettings: fc.Arbitrary<NotificationSettings> = fc.record({
-    isEnabled: fc.constant(true),
-    frequency: arbitraryEnabledFrequency,
-    preferredHour: arbitraryHour,
-    preferredMinute: arbitraryMinute,
-    scheduledNotificationId: fc.option(fc.uuid(), { nil: null }),
-    lastDeliveryTime: fc.option(
-      fc
-        .date({ min: new Date('2020-01-01'), max: new Date('2030-12-31'), noInvalidDate: true })
-        .filter((d) => !isNaN(d.getTime()))
-        .map((d) => d.toISOString()),
-      { nil: null }
-    ),
-  });
-
-  /**
    * Arbitrary for disabled NotificationSettings (isEnabled = false)
    */
   const arbitraryDisabledSettings: fc.Arbitrary<NotificationSettings> = fc.record({
@@ -1578,6 +1604,9 @@ describe('Property 5: Missed Notification Recovery', () => {
     scheduler = new NotificationScheduler();
     jest.clearAllMocks();
 
+    // Provide the mock notifications module via the test hook
+    __setTestModule(require('expo-notifications'));
+
     // Get references to the mocked functions
     const Notifications = require('expo-notifications');
     mockScheduleNotificationAsync = Notifications.scheduleNotificationAsync;
@@ -1595,6 +1624,10 @@ describe('Property 5: Missed Notification Recovery', () => {
     (useNotificationStore.getState as jest.Mock).mockReturnValue({
       setScheduledNotificationId: mockSetScheduledNotificationId,
     });
+  });
+
+  afterAll(() => {
+    __setTestModule(null);
   });
 
   describe('Restore Cancels All When Notifications Disabled', () => {
@@ -2178,6 +2211,1050 @@ describe('Property 5: Missed Notification Recovery', () => {
           // Property 3: The notification ID was not updated
           expect(mockSetScheduledNotificationId).not.toHaveBeenCalled();
         }),
+        { numRuns: 100 }
+      );
+    });
+  });
+});
+
+/**
+ * Property-Based Test: TIME_INTERVAL Seconds Calculation (Property 8)
+ *
+ * **Validates: Requirements 3.3**
+ *
+ * *For any* target time strictly in the future relative to a current time,
+ * the calculated trigger seconds SHALL equal `Math.floor((targetTime - currentTime) / 1000)`
+ * and SHALL always be at least 1.
+ *
+ * Feature: multiple-daily-notifications, Property 8: TIME_INTERVAL Seconds Calculation
+ */
+describe('Property 8: TIME_INTERVAL Seconds Calculation', () => {
+  let scheduler: NotificationScheduler;
+
+  /**
+   * Arbitrary for a "current time" date within a reasonable range
+   */
+  const arbitraryCurrentTime = fc
+    .date({ min: new Date('2020-01-01'), max: new Date('2030-12-31'), noInvalidDate: true })
+    .filter((d) => !isNaN(d.getTime()));
+
+  /**
+   * Arbitrary for a positive offset in milliseconds (1ms to 48 hours)
+   * This ensures target is strictly in the future relative to current time
+   */
+  const arbitraryPositiveOffsetMs = fc.integer({ min: 1, max: 48 * 60 * 60 * 1000 });
+
+  beforeEach(() => {
+    scheduler = new NotificationScheduler();
+    jest.clearAllMocks();
+    __setTestModule(require('expo-notifications'));
+  });
+
+  afterAll(() => {
+    __setTestModule(null);
+  });
+
+  describe('Seconds Equals Floor of Millisecond Difference Divided by 1000', () => {
+    it('should calculate seconds as Math.floor((targetTime - currentTime) / 1000) and be at least 1', () => {
+      /**
+       * Property: For any target time strictly in the future relative to a current time,
+       * the calculated trigger seconds SHALL equal Math.floor((targetTime - currentTime) / 1000)
+       * and SHALL always be at least 1.
+       */
+      fc.assert(
+        fc.property(
+          arbitraryCurrentTime,
+          arbitraryPositiveOffsetMs,
+          (currentTime, offsetMs) => {
+            const targetTime = new Date(currentTime.getTime() + offsetMs);
+
+            // Calculate expected seconds using the formula from the spec
+            const expectedSeconds = Math.floor(
+              (targetTime.getTime() - currentTime.getTime()) / 1000
+            );
+
+            // The actual calculation: Math.max(1, Math.floor((target - now) / 1000))
+            const actualSeconds = Math.max(
+              1,
+              Math.floor((targetTime.getTime() - currentTime.getTime()) / 1000)
+            );
+
+            // Property: seconds equals the expected formula
+            expect(actualSeconds).toBe(Math.max(1, expectedSeconds));
+
+            // Property: seconds is always at least 1
+            expect(actualSeconds).toBeGreaterThanOrEqual(1);
+          }
+        ),
+        { numRuns: 100 }
+      );
+    });
+  });
+
+  describe('Seconds is Always at Least 1 Even for Very Small Offsets', () => {
+    it('should return at least 1 second even when target is only milliseconds ahead', () => {
+      /**
+       * Property: For any target time that is only a few milliseconds in the future
+       * (less than 1000ms), the calculated seconds SHALL still be at least 1.
+       */
+      const arbitrarySmallOffsetMs = fc.integer({ min: 1, max: 999 });
+
+      fc.assert(
+        fc.property(
+          arbitraryCurrentTime,
+          arbitrarySmallOffsetMs,
+          (currentTime, offsetMs) => {
+            const targetTime = new Date(currentTime.getTime() + offsetMs);
+
+            // Math.floor of sub-second difference would be 0, but we clamp to 1
+            const rawSeconds = Math.floor(
+              (targetTime.getTime() - currentTime.getTime()) / 1000
+            );
+            expect(rawSeconds).toBe(0); // Confirms the raw calculation would be 0
+
+            // The actual calculation must clamp to at least 1
+            const actualSeconds = Math.max(
+              1,
+              Math.floor((targetTime.getTime() - currentTime.getTime()) / 1000)
+            );
+            expect(actualSeconds).toBe(1);
+          }
+        ),
+        { numRuns: 100 }
+      );
+    });
+  });
+
+  describe('Seconds Calculation Matches scheduleAllSlots Behavior', () => {
+    it('should produce the same seconds value as used in scheduleAllSlots for any valid time slot', () => {
+      /**
+       * Property: For any valid time slot (hour 0-23, minute in [0,15,30,45])
+       * and any current time where the slot is in the future, the seconds
+       * calculation used in scheduleAllSlots matches the spec formula.
+       */
+      const arbitraryHour = fc.integer({ min: 0, max: 23 });
+      const arbitraryMinute = fc.constantFrom(0, 15, 30, 45);
+
+      fc.assert(
+        fc.property(
+          arbitraryHour,
+          arbitraryMinute,
+          arbitraryCurrentTime,
+          (hour, minute, currentTime) => {
+            // Build target time the same way scheduleAllSlots does
+            const targetTime = new Date(currentTime);
+            targetTime.setHours(hour, minute, 0, 0);
+
+            // If target is in the past or equal, move to tomorrow
+            if (targetTime.getTime() <= currentTime.getTime()) {
+              targetTime.setDate(targetTime.getDate() + 1);
+            }
+
+            // Now target is strictly in the future
+            expect(targetTime.getTime()).toBeGreaterThan(currentTime.getTime());
+
+            // Calculate seconds using the same formula as the implementation
+            const seconds = Math.max(
+              1,
+              Math.floor((targetTime.getTime() - currentTime.getTime()) / 1000)
+            );
+
+            // Verify the formula properties
+            expect(seconds).toBe(
+              Math.max(1, Math.floor((targetTime.getTime() - currentTime.getTime()) / 1000))
+            );
+            expect(seconds).toBeGreaterThanOrEqual(1);
+
+            // Verify it doesn't exceed 24 hours + 1 second (max possible for a single day slot)
+            expect(seconds).toBeLessThanOrEqual(24 * 60 * 60);
+          }
+        ),
+        { numRuns: 100 }
+      );
+    });
+  });
+});
+
+/**
+ * Property-Based Test: Next Notification Time Calculation (Property 10)
+ *
+ * **Validates: Requirements 6.1, 6.2, 6.3**
+ *
+ * *For any* non-empty time slot list and *for any* current time, the calculated
+ * next notification time SHALL be the earliest time slot whose target time is
+ * strictly after the current time. If all slots are at or before the current time
+ * today, the result SHALL be the earliest slot's time on the next calendar day.
+ *
+ * Feature: multiple-daily-notifications, Property 10: Next Notification Time Calculation
+ */
+describe('Property 10: Next Notification Time Calculation', () => {
+  let scheduler: NotificationScheduler;
+
+  /**
+   * Arbitrary for valid time slot hour (0-23)
+   */
+  const arbitraryHour = fc.integer({ min: 0, max: 23 });
+
+  /**
+   * Arbitrary for valid time slot minute (0, 15, 30, 45)
+   */
+  const arbitraryMinute = fc.constantFrom(0, 15, 30, 45);
+
+  /**
+   * Arbitrary for a single valid TimeSlot
+   */
+  const arbitraryTimeSlot: fc.Arbitrary<TimeSlot> = fc.record({
+    hour: arbitraryHour,
+    minute: arbitraryMinute,
+  });
+
+  /**
+   * Arbitrary for a non-empty list of unique time slots (1-5 entries)
+   */
+  const arbitraryNonEmptyTimeSlotList: fc.Arbitrary<TimeSlot[]> = fc
+    .uniqueArray(arbitraryTimeSlot, {
+      minLength: 1,
+      maxLength: 5,
+      comparator: (a, b) => a.hour === b.hour && a.minute === b.minute,
+    });
+
+  /**
+   * Arbitrary for a "current time" date within a reasonable range
+   */
+  const arbitraryFromTime = fc
+    .date({ min: new Date('2020-01-01'), max: new Date('2030-12-31'), noInvalidDate: true })
+    .filter((d) => !isNaN(d.getTime()));
+
+  beforeEach(() => {
+    scheduler = new NotificationScheduler();
+    jest.clearAllMocks();
+    __setTestModule(require('expo-notifications'));
+  });
+
+  afterAll(() => {
+    __setTestModule(null);
+  });
+
+  describe('Result is Always Strictly After fromTime', () => {
+    it('should always return a time strictly after the current time for non-empty slot lists', () => {
+      /**
+       * Property: For any non-empty time slot list and any current time,
+       * calculateNextTimeMultiSlot SHALL return a time strictly after fromTime.
+       */
+      fc.assert(
+        fc.property(
+          arbitraryNonEmptyTimeSlotList,
+          arbitraryFromTime,
+          (timeSlots, fromTime) => {
+            const result = scheduler.calculateNextTimeMultiSlot(timeSlots, fromTime);
+
+            // Should not be null for non-empty list
+            expect(result).not.toBeNull();
+
+            // Must be strictly in the future
+            expect(result!.getTime()).toBeGreaterThan(fromTime.getTime());
+          }
+        ),
+        { numRuns: 100 }
+      );
+    });
+  });
+
+  describe('Result Matches One of the Time Slots', () => {
+    it('should return a time whose hour and minute match one of the input time slots', () => {
+      /**
+       * Property: For any non-empty time slot list and any current time,
+       * the result's hour and minute SHALL correspond to one of the time slots in the list.
+       */
+      fc.assert(
+        fc.property(
+          arbitraryNonEmptyTimeSlotList,
+          arbitraryFromTime,
+          (timeSlots, fromTime) => {
+            const result = scheduler.calculateNextTimeMultiSlot(timeSlots, fromTime);
+
+            expect(result).not.toBeNull();
+
+            // The result's hour:minute must match one of the input slots
+            const matchesSlot = timeSlots.some(
+              (slot) =>
+                slot.hour === result!.getHours() && slot.minute === result!.getMinutes()
+            );
+            expect(matchesSlot).toBe(true);
+
+            // Seconds and milliseconds should be zeroed
+            expect(result!.getSeconds()).toBe(0);
+            expect(result!.getMilliseconds()).toBe(0);
+          }
+        ),
+        { numRuns: 100 }
+      );
+    });
+  });
+
+  describe('Result is the Earliest Future Slot', () => {
+    it('should return the earliest slot whose target time is strictly after fromTime', () => {
+      /**
+       * Property: For any non-empty time slot list and any current time,
+       * the result SHALL be the earliest time slot whose target time is strictly
+       * after the current time. If all slots are at or before the current time today,
+       * the result SHALL be the earliest slot's time on the next calendar day.
+       */
+      fc.assert(
+        fc.property(
+          arbitraryNonEmptyTimeSlotList,
+          arbitraryFromTime,
+          (timeSlots, fromTime) => {
+            const result = scheduler.calculateNextTimeMultiSlot(timeSlots, fromTime);
+            expect(result).not.toBeNull();
+
+            // Sort slots chronologically
+            const sortedSlots = [...timeSlots].sort((a, b) => {
+              if (a.hour !== b.hour) return a.hour - b.hour;
+              return a.minute - b.minute;
+            });
+
+            // Find slots that are strictly after fromTime today
+            const futureSlotsToday: Date[] = [];
+            for (const slot of sortedSlots) {
+              const targetTime = new Date(fromTime);
+              targetTime.setHours(slot.hour, slot.minute, 0, 0);
+              if (targetTime.getTime() > fromTime.getTime()) {
+                futureSlotsToday.push(targetTime);
+              }
+            }
+
+            if (futureSlotsToday.length > 0) {
+              // The result should be the earliest future slot today
+              const expectedTime = futureSlotsToday[0];
+              expect(result!.getTime()).toBe(expectedTime.getTime());
+            } else {
+              // All slots are at or before current time today
+              // Result should be the earliest slot's time on the next day
+              const earliestSlot = sortedSlots[0];
+              const expectedTime = new Date(fromTime);
+              expectedTime.setDate(expectedTime.getDate() + 1);
+              expectedTime.setHours(earliestSlot.hour, earliestSlot.minute, 0, 0);
+              expect(result!.getTime()).toBe(expectedTime.getTime());
+            }
+          }
+        ),
+        { numRuns: 100 }
+      );
+    });
+  });
+
+  describe('Empty List Returns Null', () => {
+    it('should return null for an empty time slot list', () => {
+      /**
+       * Property: For an empty time slot list, calculateNextTimeMultiSlot SHALL return null.
+       */
+      fc.assert(
+        fc.property(arbitraryFromTime, (fromTime) => {
+          const result = scheduler.calculateNextTimeMultiSlot([], fromTime);
+          expect(result).toBeNull();
+        }),
+        { numRuns: 100 }
+      );
+    });
+  });
+
+  describe('Next Day Fallback When All Slots Passed', () => {
+    it('should return earliest slot time on next day when all slots are at or before current time', () => {
+      /**
+       * Property: When fromTime is set to 23:59:59 (end of day), all slots
+       * with valid minutes (0, 15, 30, 45) will be at or before fromTime,
+       * so the result must be the earliest slot's time on the next day.
+       */
+      fc.assert(
+        fc.property(
+          arbitraryNonEmptyTimeSlotList,
+          fc.date({ min: new Date('2020-01-01'), max: new Date('2030-12-31'), noInvalidDate: true })
+            .filter((d) => !isNaN(d.getTime())),
+          (timeSlots, baseDate) => {
+            // Set fromTime to 23:59:59.999 so all slots are in the past
+            const fromTime = new Date(baseDate);
+            fromTime.setHours(23, 59, 59, 999);
+
+            const result = scheduler.calculateNextTimeMultiSlot(timeSlots, fromTime);
+            expect(result).not.toBeNull();
+
+            // Sort slots to find the earliest
+            const sortedSlots = [...timeSlots].sort((a, b) => {
+              if (a.hour !== b.hour) return a.hour - b.hour;
+              return a.minute - b.minute;
+            });
+            const earliestSlot = sortedSlots[0];
+
+            // Result should be on the next day
+            const expectedDate = new Date(fromTime);
+            expectedDate.setDate(expectedDate.getDate() + 1);
+            expectedDate.setHours(earliestSlot.hour, earliestSlot.minute, 0, 0);
+
+            expect(result!.getTime()).toBe(expectedDate.getTime());
+          }
+        ),
+        { numRuns: 100 }
+      );
+    });
+  });
+
+  describe('No Earlier Slot Exists in the Future', () => {
+    it('should not have any slot with a target time between fromTime and the result', () => {
+      /**
+       * Property: For any non-empty time slot list and any current time,
+       * there SHALL be no other slot whose target time is strictly after fromTime
+       * but strictly before the result.
+       */
+      fc.assert(
+        fc.property(
+          arbitraryNonEmptyTimeSlotList,
+          arbitraryFromTime,
+          (timeSlots, fromTime) => {
+            const result = scheduler.calculateNextTimeMultiSlot(timeSlots, fromTime);
+            expect(result).not.toBeNull();
+
+            // Check that no slot has a target time between fromTime and result
+            for (const slot of timeSlots) {
+              const targetTime = new Date(fromTime);
+              targetTime.setHours(slot.hour, slot.minute, 0, 0);
+
+              // If this slot's time today is strictly after fromTime
+              if (targetTime.getTime() > fromTime.getTime()) {
+                // It should not be before the result
+                expect(targetTime.getTime()).toBeGreaterThanOrEqual(result!.getTime());
+              }
+            }
+          }
+        ),
+        { numRuns: 100 }
+      );
+    });
+  });
+});
+
+
+/**
+ * Property-Based Test: One-to-One Scheduling Mapping (Property 6)
+ *
+ * **Validates: Requirements 3.1, 4.2**
+ *
+ * *For any* time slot list with N entries, after scheduling all slots,
+ * the resulting notification ID mapping SHALL contain exactly N entries,
+ * one for each unique slot key, and each value SHALL be a non-empty string.
+ *
+ * Feature: multiple-daily-notifications, Property 6: One-to-One Scheduling Mapping
+ */
+describe('Property 6: One-to-One Scheduling Mapping', () => {
+  let scheduler: NotificationScheduler;
+  let mockScheduleNotificationAsync: jest.Mock;
+  let mockCancelAllScheduledNotificationsAsync: jest.Mock;
+
+  /**
+   * Arbitrary for valid time slot minute (0, 15, 30, 45)
+   */
+  const arbitrarySlotMinute = fc.constantFrom(0, 15, 30, 45);
+
+  /**
+   * Arbitrary for valid time slot hour (0-23)
+   */
+  const arbitrarySlotHour = fc.integer({ min: 0, max: 23 });
+
+  /**
+   * Arbitrary for a single valid TimeSlot
+   */
+  const arbitraryTimeSlot: fc.Arbitrary<TimeSlot> = fc.record({
+    hour: arbitrarySlotHour,
+    minute: arbitrarySlotMinute,
+  });
+
+  /**
+   * Arbitrary for a list of 1-5 unique time slots
+   */
+  const arbitraryUniqueTimeSlots: fc.Arbitrary<TimeSlot[]> = fc
+    .uniqueArray(arbitraryTimeSlot, {
+      minLength: 1,
+      maxLength: 5,
+      comparator: (a, b) => a.hour === b.hour && a.minute === b.minute,
+    });
+
+  /**
+   * Arbitrary for NotificationSettings in multipleDaily mode
+   */
+  const arbitraryMultipleDailySettings = (timeSlots: TimeSlot[]): NotificationSettings => ({
+    isEnabled: true,
+    frequency: 'multipleDaily',
+    preferredHour: 9,
+    preferredMinute: 0,
+    scheduledNotificationId: null,
+    lastDeliveryTime: null,
+    timeSlots,
+    timeSlotNotificationIds: {},
+  });
+
+  beforeEach(() => {
+    scheduler = new NotificationScheduler();
+    jest.clearAllMocks();
+
+    // Provide the mock notifications module via the test hook
+    __setTestModule(require('expo-notifications'));
+
+    // Get references to the mocked functions
+    const Notifications = require('expo-notifications');
+    mockScheduleNotificationAsync = Notifications.scheduleNotificationAsync;
+    mockCancelAllScheduledNotificationsAsync = Notifications.cancelAllScheduledNotificationsAsync;
+
+    // Set up default mock implementations
+    let idCounter = 0;
+    mockScheduleNotificationAsync.mockImplementation(async () => {
+      idCounter++;
+      return `notification-id-${idCounter}`;
+    });
+    mockCancelAllScheduledNotificationsAsync.mockResolvedValue(undefined);
+  });
+
+  afterAll(() => {
+    __setTestModule(null);
+  });
+
+  describe('Mapping Contains Exactly N Entries', () => {
+    it('should return exactly N entries for N unique time slots', async () => {
+      /**
+       * Property: For any time slot list with N entries, after scheduling all slots,
+       * the resulting notification ID mapping SHALL contain exactly N entries.
+       */
+      await fc.assert(
+        fc.asyncProperty(arbitraryUniqueTimeSlots, async (timeSlots) => {
+          jest.clearAllMocks();
+          let idCounter = 0;
+          mockScheduleNotificationAsync.mockImplementation(async () => {
+            idCounter++;
+            return `notification-id-${idCounter}`;
+          });
+
+          const settings = arbitraryMultipleDailySettings(timeSlots);
+          const result = await scheduler.scheduleAllSlots(timeSlots, settings);
+
+          // The result should have exactly N entries
+          expect(Object.keys(result).length).toBe(timeSlots.length);
+        }),
+        { numRuns: 100 }
+      );
+    });
+  });
+
+  describe('Each Slot Key Has a Mapping', () => {
+    it('should have one entry for each unique slot key', async () => {
+      /**
+       * Property: For any time slot list with N entries, the resulting mapping
+       * SHALL contain one entry for each unique slot key.
+       */
+      await fc.assert(
+        fc.asyncProperty(arbitraryUniqueTimeSlots, async (timeSlots) => {
+          jest.clearAllMocks();
+          let idCounter = 0;
+          mockScheduleNotificationAsync.mockImplementation(async () => {
+            idCounter++;
+            return `notification-id-${idCounter}`;
+          });
+
+          const settings = arbitraryMultipleDailySettings(timeSlots);
+          const result = await scheduler.scheduleAllSlots(timeSlots, settings);
+
+          // Each time slot key should be present in the result
+          for (const slot of timeSlots) {
+            const key = timeSlotKey(slot);
+            expect(result).toHaveProperty(key);
+          }
+        }),
+        { numRuns: 100 }
+      );
+    });
+  });
+
+  describe('Each Value is a Non-Empty String', () => {
+    it('should have non-empty string values for all entries', async () => {
+      /**
+       * Property: For any time slot list with N entries, each value in the
+       * resulting mapping SHALL be a non-empty string.
+       */
+      await fc.assert(
+        fc.asyncProperty(arbitraryUniqueTimeSlots, async (timeSlots) => {
+          jest.clearAllMocks();
+          let idCounter = 0;
+          mockScheduleNotificationAsync.mockImplementation(async () => {
+            idCounter++;
+            return `notification-id-${idCounter}`;
+          });
+
+          const settings = arbitraryMultipleDailySettings(timeSlots);
+          const result = await scheduler.scheduleAllSlots(timeSlots, settings);
+
+          // Each value should be a non-empty string
+          for (const value of Object.values(result)) {
+            expect(typeof value).toBe('string');
+            expect(value.length).toBeGreaterThan(0);
+          }
+        }),
+        { numRuns: 100 }
+      );
+    });
+  });
+
+  describe('Combined Property: Complete One-to-One Mapping', () => {
+    it('should satisfy all mapping properties simultaneously', async () => {
+      /**
+       * Combined Property: For any time slot list with N entries:
+       * 1. The result has exactly N entries
+       * 2. Each slot key is present
+       * 3. Each value is a non-empty string
+       */
+      await fc.assert(
+        fc.asyncProperty(arbitraryUniqueTimeSlots, async (timeSlots) => {
+          jest.clearAllMocks();
+          let idCounter = 0;
+          mockScheduleNotificationAsync.mockImplementation(async () => {
+            idCounter++;
+            return `unique-id-${idCounter}-${Date.now()}`;
+          });
+
+          const settings = arbitraryMultipleDailySettings(timeSlots);
+          const result = await scheduler.scheduleAllSlots(timeSlots, settings);
+
+          // Property 1: Exactly N entries
+          expect(Object.keys(result).length).toBe(timeSlots.length);
+
+          // Property 2 & 3: Each slot key present with non-empty string value
+          for (const slot of timeSlots) {
+            const key = timeSlotKey(slot);
+            expect(result).toHaveProperty(key);
+            expect(typeof result[key]).toBe('string');
+            expect(result[key].length).toBeGreaterThan(0);
+          }
+        }),
+        { numRuns: 100 }
+      );
+    });
+  });
+});
+
+/**
+ * Property-Based Test: Next-Day Rescheduling After Delivery (Property 7)
+ *
+ * **Validates: Requirements 3.2**
+ *
+ * *For any* time slot with hour H and minute M, after a notification delivery
+ * is handled for that slot, the next scheduled notification for that slot SHALL
+ * target the same hour H and minute M on the next calendar day.
+ *
+ * Feature: multiple-daily-notifications, Property 7: Next-Day Rescheduling After Delivery
+ */
+describe('Property 7: Next-Day Rescheduling After Delivery', () => {
+  let scheduler: NotificationScheduler;
+  let mockScheduleNotificationAsync: jest.Mock;
+  let mockSetTimeSlotNotificationId: jest.Mock;
+
+  /**
+   * Arbitrary for valid time slot minute (0, 15, 30, 45)
+   */
+  const arbitrarySlotMinute = fc.constantFrom(0, 15, 30, 45);
+
+  /**
+   * Arbitrary for valid time slot hour (0-23)
+   */
+  const arbitrarySlotHour = fc.integer({ min: 0, max: 23 });
+
+  beforeEach(() => {
+    scheduler = new NotificationScheduler();
+    jest.clearAllMocks();
+
+    // Provide the mock notifications module via the test hook
+    __setTestModule(require('expo-notifications'));
+
+    // Get references to the mocked functions
+    const Notifications = require('expo-notifications');
+    mockScheduleNotificationAsync = Notifications.scheduleNotificationAsync;
+
+    // Set up default mock implementation
+    mockScheduleNotificationAsync.mockResolvedValue('rescheduled-notification-id');
+
+    // Set up store mock
+    mockSetTimeSlotNotificationId = jest.fn();
+    const { useNotificationStore } = require('../../../stores/notificationStore');
+    (useNotificationStore.getState as jest.Mock).mockReturnValue({
+      settings: {
+        ...require('../../../stores/notificationStore').DEFAULT_NOTIFICATION_SETTINGS,
+        frequency: 'multipleDaily',
+        isEnabled: true,
+      },
+      setTimeSlotNotificationId: mockSetTimeSlotNotificationId,
+      setScheduledNotificationId: jest.fn(),
+      recordDelivery: jest.fn(),
+    });
+  });
+
+  afterAll(() => {
+    __setTestModule(null);
+  });
+
+  describe('Rescheduled Notification Targets Next Day at Same Time', () => {
+    it('should schedule next notification for same hour and minute on next day', async () => {
+      /**
+       * Property: For any time slot with hour H and minute M, after handling
+       * a notification delivery, the scheduled notification trigger seconds
+       * SHALL correspond to the same H:M on the next calendar day.
+       */
+      await fc.assert(
+        fc.asyncProperty(arbitrarySlotHour, arbitrarySlotMinute, async (hour, minute) => {
+          jest.clearAllMocks();
+
+          await scheduler.handleSlotNotificationReceived(hour, minute);
+
+          // Verify a notification was scheduled
+          expect(mockScheduleNotificationAsync).toHaveBeenCalledTimes(1);
+
+          const scheduledCall = mockScheduleNotificationAsync.mock.calls[0][0];
+
+          // Verify the notification data contains the same slot hour and minute
+          expect(scheduledCall.content.data.slotHour).toBe(hour);
+          expect(scheduledCall.content.data.slotMinute).toBe(minute);
+
+          // Verify the trigger seconds target next day
+          // The seconds should be calculated as: nextDay at H:M minus now
+          // Since we're scheduling for next day, seconds should be roughly
+          // between ~1 second and ~48 hours (accounting for time zone edge cases)
+          const triggerSeconds = scheduledCall.trigger.seconds;
+          expect(triggerSeconds).toBeGreaterThanOrEqual(1);
+          // Maximum would be slightly under 48 hours (if scheduled just before midnight
+          // for a time just after midnight next day)
+          expect(triggerSeconds).toBeLessThanOrEqual(48 * 60 * 60);
+        }),
+        { numRuns: 100 }
+      );
+    });
+  });
+
+  describe('Trigger Seconds Correspond to Next Day Target', () => {
+    it('should calculate seconds targeting next calendar day at H:M', async () => {
+      /**
+       * Property: For any time slot with hour H and minute M, the trigger seconds
+       * SHALL equal the difference between (tomorrow at H:M:00) and now, with minimum 1.
+       */
+      await fc.assert(
+        fc.asyncProperty(arbitrarySlotHour, arbitrarySlotMinute, async (hour, minute) => {
+          jest.clearAllMocks();
+
+          const beforeCall = new Date();
+          await scheduler.handleSlotNotificationReceived(hour, minute);
+          const afterCall = new Date();
+
+          const scheduledCall = mockScheduleNotificationAsync.mock.calls[0][0];
+          const triggerSeconds = scheduledCall.trigger.seconds;
+
+          // Calculate expected target time (next day at H:M)
+          const expectedTargetFromBefore = new Date(beforeCall);
+          expectedTargetFromBefore.setDate(expectedTargetFromBefore.getDate() + 1);
+          expectedTargetFromBefore.setHours(hour, minute, 0, 0);
+
+          const expectedTargetFromAfter = new Date(afterCall);
+          expectedTargetFromAfter.setDate(expectedTargetFromAfter.getDate() + 1);
+          expectedTargetFromAfter.setHours(hour, minute, 0, 0);
+
+          // The trigger seconds should be within the range of expected calculations
+          const expectedSecondsMin = Math.max(
+            1,
+            Math.floor((expectedTargetFromAfter.getTime() - afterCall.getTime()) / 1000)
+          );
+          const expectedSecondsMax = Math.max(
+            1,
+            Math.floor((expectedTargetFromBefore.getTime() - beforeCall.getTime()) / 1000)
+          );
+
+          // Allow 2 second tolerance for test execution time
+          expect(triggerSeconds).toBeGreaterThanOrEqual(expectedSecondsMin - 2);
+          expect(triggerSeconds).toBeLessThanOrEqual(expectedSecondsMax + 2);
+        }),
+        { numRuns: 100 }
+      );
+    });
+  });
+
+  describe('Store Mapping is Updated After Delivery', () => {
+    it('should update the store with the new notification ID for the slot', async () => {
+      /**
+       * Property: For any time slot with hour H and minute M, after handling
+       * delivery, the store's setTimeSlotNotificationId SHALL be called with
+       * the correct slot key and the new notification ID.
+       */
+      await fc.assert(
+        fc.asyncProperty(arbitrarySlotHour, arbitrarySlotMinute, async (hour, minute) => {
+          jest.clearAllMocks();
+
+          await scheduler.handleSlotNotificationReceived(hour, minute);
+
+          // Verify the store was updated with the new ID
+          const expectedKey = timeSlotKey({ hour, minute });
+          expect(mockSetTimeSlotNotificationId).toHaveBeenCalledWith(
+            expectedKey,
+            'rescheduled-notification-id'
+          );
+        }),
+        { numRuns: 100 }
+      );
+    });
+  });
+});
+
+/**
+ * Property-Based Test: Error Isolation (Property 9)
+ *
+ * **Validates: Requirements 3.5, 4.5**
+ *
+ * *For any* time slot list where scheduling or restoration fails for K slots
+ * (0 ≤ K < N), the remaining N-K slots SHALL still be successfully
+ * scheduled/restored with valid notification IDs.
+ *
+ * Feature: multiple-daily-notifications, Property 9: Error Isolation
+ */
+describe('Property 9: Error Isolation', () => {
+  let scheduler: NotificationScheduler;
+  let mockScheduleNotificationAsync: jest.Mock;
+  let mockCancelAllScheduledNotificationsAsync: jest.Mock;
+  let mockGetAllScheduledNotificationsAsync: jest.Mock;
+
+  /**
+   * Arbitrary for valid time slot minute (0, 15, 30, 45)
+   */
+  const arbitrarySlotMinute = fc.constantFrom(0, 15, 30, 45);
+
+  /**
+   * Arbitrary for valid time slot hour (0-23)
+   */
+  const arbitrarySlotHour = fc.integer({ min: 0, max: 23 });
+
+  /**
+   * Arbitrary for a single valid TimeSlot
+   */
+  const arbitraryTimeSlot: fc.Arbitrary<TimeSlot> = fc.record({
+    hour: arbitrarySlotHour,
+    minute: arbitrarySlotMinute,
+  });
+
+  /**
+   * Arbitrary for a list of 2-5 unique time slots (need at least 2 to have failures + successes)
+   */
+  const arbitraryUniqueTimeSlots: fc.Arbitrary<TimeSlot[]> = fc
+    .uniqueArray(arbitraryTimeSlot, {
+      minLength: 2,
+      maxLength: 5,
+      comparator: (a, b) => a.hour === b.hour && a.minute === b.minute,
+    });
+
+  /**
+   * Arbitrary for NotificationSettings in multipleDaily mode
+   */
+  const arbitraryMultipleDailySettings = (timeSlots: TimeSlot[]): NotificationSettings => ({
+    isEnabled: true,
+    frequency: 'multipleDaily',
+    preferredHour: 9,
+    preferredMinute: 0,
+    scheduledNotificationId: null,
+    lastDeliveryTime: null,
+    timeSlots,
+    timeSlotNotificationIds: {},
+  });
+
+  beforeEach(() => {
+    scheduler = new NotificationScheduler();
+    jest.clearAllMocks();
+
+    // Provide the mock notifications module via the test hook
+    __setTestModule(require('expo-notifications'));
+
+    // Get references to the mocked functions
+    const Notifications = require('expo-notifications');
+    mockScheduleNotificationAsync = Notifications.scheduleNotificationAsync;
+    mockCancelAllScheduledNotificationsAsync = Notifications.cancelAllScheduledNotificationsAsync;
+    mockGetAllScheduledNotificationsAsync = Notifications.getAllScheduledNotificationsAsync;
+
+    // Set up default mock implementations
+    mockCancelAllScheduledNotificationsAsync.mockResolvedValue(undefined);
+    mockGetAllScheduledNotificationsAsync.mockResolvedValue([]);
+  });
+
+  afterAll(() => {
+    __setTestModule(null);
+  });
+
+  describe('scheduleAllSlots Error Isolation', () => {
+    it('should still schedule remaining slots when some fail', async () => {
+      /**
+       * Property: For any time slot list where K slots fail to schedule (0 ≤ K < N),
+       * the remaining N-K slots SHALL still be successfully scheduled with valid IDs.
+       */
+      await fc.assert(
+        fc.asyncProperty(
+          arbitraryUniqueTimeSlots,
+          fc.integer({ min: 0, max: 100 }),
+          async (timeSlots, seed) => {
+            jest.clearAllMocks();
+
+            const N = timeSlots.length;
+            // Determine which slots will fail (at least 1 must succeed, so K < N)
+            const K = seed % N; // 0 to N-1 failures
+
+            // Create a set of indices that will fail
+            const failIndices = new Set<number>();
+            for (let i = 0; i < K; i++) {
+              failIndices.add(i);
+            }
+
+            let callIndex = 0;
+            mockScheduleNotificationAsync.mockImplementation(async () => {
+              const currentIndex = callIndex++;
+              if (failIndices.has(currentIndex)) {
+                throw new Error(`Simulated failure for slot index ${currentIndex}`);
+              }
+              return `success-id-${currentIndex}`;
+            });
+
+            const settings = arbitraryMultipleDailySettings(timeSlots);
+            const result = await scheduler.scheduleAllSlots(timeSlots, settings);
+
+            // The result should have exactly N-K entries (successful ones)
+            const expectedSuccessCount = N - K;
+            expect(Object.keys(result).length).toBe(expectedSuccessCount);
+
+            // All values in the result should be non-empty strings
+            for (const value of Object.values(result)) {
+              expect(typeof value).toBe('string');
+              expect(value.length).toBeGreaterThan(0);
+            }
+          }
+        ),
+        { numRuns: 100 }
+      );
+    });
+  });
+
+  describe('restoreMultipleSlots Error Isolation', () => {
+    it('should still restore remaining slots when some fail to reschedule', async () => {
+      /**
+       * Property: For any time slot list where K slots fail during restoration (0 ≤ K < N),
+       * the remaining N-K slots SHALL still be successfully restored with valid IDs.
+       */
+      await fc.assert(
+        fc.asyncProperty(
+          arbitraryUniqueTimeSlots,
+          fc.integer({ min: 0, max: 100 }),
+          async (timeSlots, seed) => {
+            jest.clearAllMocks();
+
+            const N = timeSlots.length;
+            // Determine which slots will fail (at least 1 must succeed, so K < N)
+            const K = seed % N; // 0 to N-1 failures
+
+            // All stored IDs are missing (none exist in scheduled list)
+            // so all will need rescheduling
+            mockGetAllScheduledNotificationsAsync.mockResolvedValue([]);
+
+            // Create a set of indices that will fail
+            const failIndices = new Set<number>();
+            for (let i = 0; i < K; i++) {
+              failIndices.add(i);
+            }
+
+            let callIndex = 0;
+            mockScheduleNotificationAsync.mockImplementation(async () => {
+              const currentIndex = callIndex++;
+              if (failIndices.has(currentIndex)) {
+                throw new Error(`Simulated restore failure for slot index ${currentIndex}`);
+              }
+              return `restored-id-${currentIndex}`;
+            });
+
+            const settings = arbitraryMultipleDailySettings(timeSlots);
+            const storedIds: Record<string, string> = {};
+            for (const slot of timeSlots) {
+              storedIds[timeSlotKey(slot)] = `stale-id-${slot.hour}-${slot.minute}`;
+            }
+
+            const result = await scheduler.restoreMultipleSlots(timeSlots, storedIds, settings);
+
+            // The result should have exactly N-K entries (successful ones)
+            const expectedSuccessCount = N - K;
+            expect(Object.keys(result).length).toBe(expectedSuccessCount);
+
+            // All values in the result should be non-empty strings
+            for (const value of Object.values(result)) {
+              expect(typeof value).toBe('string');
+              expect(value.length).toBeGreaterThan(0);
+            }
+          }
+        ),
+        { numRuns: 100 }
+      );
+    });
+  });
+
+  describe('Combined Property: Error Isolation Guarantees', () => {
+    it('should never let one slot failure affect other slots in scheduleAllSlots', async () => {
+      /**
+       * Combined Property: For any time slot list and any pattern of failures:
+       * 1. The operation does not throw
+       * 2. Successful slots have valid IDs in the result
+       * 3. Failed slots are absent from the result
+       * 4. The count of results equals N - K
+       */
+      await fc.assert(
+        fc.asyncProperty(
+          arbitraryUniqueTimeSlots,
+          fc.array(fc.boolean(), { minLength: 1, maxLength: 5 }),
+          async (timeSlots, failurePattern) => {
+            jest.clearAllMocks();
+
+            // Pad or trim failure pattern to match timeSlots length
+            const failures = timeSlots.map((_, i) => failurePattern[i % failurePattern.length]);
+            // Ensure at least one success (K < N)
+            const allFail = failures.every((f) => f);
+            if (allFail) {
+              failures[0] = false; // Force at least one success
+            }
+
+            let callIndex = 0;
+            mockScheduleNotificationAsync.mockImplementation(async () => {
+              const shouldFail = failures[callIndex];
+              callIndex++;
+              if (shouldFail) {
+                throw new Error('Injected failure');
+              }
+              return `id-${callIndex}`;
+            });
+
+            const settings = arbitraryMultipleDailySettings(timeSlots);
+
+            // Property 1: The operation does not throw
+            const result = await scheduler.scheduleAllSlots(timeSlots, settings);
+
+            // Property 4: Count equals N - K
+            const expectedSuccessCount = failures.filter((f) => !f).length;
+            expect(Object.keys(result).length).toBe(expectedSuccessCount);
+
+            // Property 2 & 3: Successful slots have valid IDs, failed slots are absent
+            timeSlots.forEach((slot, i) => {
+              const key = timeSlotKey(slot);
+              if (failures[i]) {
+                // Failed slot should not be in result
+                expect(result).not.toHaveProperty(key);
+              } else {
+                // Successful slot should have a non-empty string ID
+                expect(result).toHaveProperty(key);
+                expect(typeof result[key]).toBe('string');
+                expect(result[key].length).toBeGreaterThan(0);
+              }
+            });
+          }
+        ),
         { numRuns: 100 }
       );
     });

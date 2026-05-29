@@ -5,7 +5,7 @@
  *
  * **Validates: Requirements 8, 9, 10, 26, 29**
  */
-import { renderHook, act, waitFor } from '@testing-library/react-native';
+import { renderHook, act } from '@testing-library/react-native';
 
 // Mock backup service
 const mockCreateBackup = jest.fn();

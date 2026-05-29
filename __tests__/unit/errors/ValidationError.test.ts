@@ -226,8 +226,8 @@ describe('MultiValidationError', () => {
       const error = MultiValidationError.fromValidationErrors(validationErrors);
 
       expect(error.fieldErrors).toHaveLength(2);
-      expect(error.fieldErrors[0].field).toBe('amount');
-      expect(error.fieldErrors[1].field).toBe('date');
+      expect(error.fieldErrors[0]!.field).toBe('amount');
+      expect(error.fieldErrors[1]!.field).toBe('date');
     });
   });
 });

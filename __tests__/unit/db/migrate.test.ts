@@ -36,6 +36,11 @@ jest.mock('drizzle-orm/expo-sqlite', () => ({
   useLiveQuery: jest.fn(),
 }));
 
+// Mock categories queries (static import in initializeDatabase)
+jest.mock('../../../src/db/queries/categories', () => ({
+  seedDefaultCategories: jest.fn().mockResolvedValue(false),
+}));
+
 // Mock migrations
 jest.mock('../../../src/db/migrations/migrations', () => ({
   journal: { entries: [{ idx: 0, when: 1234567890, tag: '0000_initial' }] },
@@ -210,6 +215,39 @@ describe('Database Migration', () => {
       await initializeDatabase();
 
       expect(migrate).not.toHaveBeenCalled();
+    });
+
+    it('should show Alert and throw MigrationError when migration fails', async () => {
+      const { Alert } = require('react-native');
+      jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+      mockSqliteDb.getFirstSync.mockReturnValue(null); // No migrations table → pending
+      const migrationError = new Error('SQLite constraint failed');
+      (migrate as jest.Mock).mockRejectedValue(migrationError);
+
+      await expect(initializeDatabase()).rejects.toThrow(MigrationError);
+
+      expect(Alert.alert).toHaveBeenCalledWith(
+        'Database Update Failed',
+        expect.stringContaining('migration failed'),
+        expect.arrayContaining([expect.objectContaining({ text: 'OK' })])
+      );
+    });
+
+    it('should sync schema_version after successful migration', async () => {
+      mockSqliteDb.getFirstSync
+        .mockReturnValueOnce(null) // hasPendingMigrations: no __drizzle_migrations table
+        .mockReturnValueOnce({ name: 'schema_version' }) // syncSchemaVersion: table exists
+        .mockReturnValueOnce({ version: 4 }) // syncSchemaVersion: current version
+        .mockReturnValueOnce({ name: 'title' }) // syncSchemaVersion: title column exists
+        .mockReturnValueOnce({ name: '__drizzle_migrations' }) // getCurrentSchemaVersion
+        .mockReturnValueOnce({ count: 5 }); // getCurrentSchemaVersion count
+      (migrate as jest.Mock).mockResolvedValue(undefined);
+
+      await initializeDatabase();
+
+      expect(mockSqliteDb.runSync).toHaveBeenCalledWith(
+        expect.stringContaining('schema_version')
+      );
     });
   });
 

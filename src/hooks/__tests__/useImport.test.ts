@@ -7,7 +7,7 @@
  *
  * **Validates: Requirements 6, 11, 12, 29**
  */
-import { renderHook, act, waitFor } from '@testing-library/react-native';
+import { renderHook, act } from '@testing-library/react-native';
 
 // Mock import service (for file selection)
 const mockSelectFile = jest.fn();

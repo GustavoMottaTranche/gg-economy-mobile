@@ -23,14 +23,7 @@ import { ExcelParser } from '../../../../src/services/import/ExcelParser';
 import { DedupeEngine } from '../../../../src/services/import/DedupeEngine';
 import type { ITransactionRepository } from '../../../../src/repositories/interfaces/ITransactionRepository';
 import type { IImportBatchRepository } from '../../../../src/repositories/interfaces/IImportBatchRepository';
-import type {
-  RawTransaction,
-  Transaction,
-  ImportBatch,
-  CreateTransactionDTO,
-  CreateImportBatchDTO,
-  UpdateTransactionDTO,
-} from '../../../../src/types';
+import type { RawTransaction, Transaction, ImportBatch } from '../../../../src/types';
 
 // Mock expo modules
 jest.mock('expo-document-picker', () => ({
@@ -327,7 +320,7 @@ describe('ImportService', () => {
 
       expect(result.transactions).toHaveLength(0);
       expect(result.errors).toHaveLength(1);
-      expect(result.errors[0].message).toContain('QIF');
+      expect(result.errors[0]!.message).toContain('QIF');
     });
 
     it('should use ExcelParser for XLSX files', () => {
@@ -588,6 +581,7 @@ describe('ImportService', () => {
         date: new Date(2024, 0, 15),
         amount: 100,
         description: 'Income',
+        title: '',
         categoryId: null,
         originId: null,
         batchId: 'old-batch',
@@ -595,6 +589,8 @@ describe('ImportService', () => {
         needsReview: false,
         isExcludedFromTotals: false,
         duplicateOf: null,
+        installmentGroupId: null,
+        recurringId: null,
         createdAt: new Date(),
         updatedAt: new Date(),
       };
@@ -602,10 +598,10 @@ describe('ImportService', () => {
       mockTransactionRepo.getAll.mockResolvedValue([existingTransaction]);
 
       mockDedupeEngine.findDuplicates.mockReturnValue({
-        uniqueTransactions: [mockTransactions[1]], // Only the expense is unique
+        uniqueTransactions: mockTransactions[1] ? [mockTransactions[1]] : [], // Only the expense is unique
         duplicates: [
           {
-            newTransaction: mockTransactions[0],
+            newTransaction: mockTransactions[0]!,
             existingTransaction,
             confidence: 1.0,
             matchReason: 'date_amount_description',
@@ -631,13 +627,13 @@ describe('ImportService', () => {
         uniqueTransactions: [],
         duplicates: [
           {
-            newTransaction: mockTransactions[0],
+            newTransaction: mockTransactions[0]!,
             existingTransaction: mockTransactions[0] as unknown as Transaction,
             confidence: 1.0,
             matchReason: 'date_amount_description',
           },
           {
-            newTransaction: mockTransactions[1],
+            newTransaction: mockTransactions[1]!,
             existingTransaction: mockTransactions[1] as unknown as Transaction,
             confidence: 1.0,
             matchReason: 'date_amount_description',

@@ -219,7 +219,7 @@ export function useDraftStorage<T extends DraftData>(
 
   // Memoized save now function
   const saveNow = useCallback(async () => {
-    await saveDraftNowAction<T>(formType, formId);
+    await saveDraftNowAction(formType, formId);
   }, [saveDraftNowAction, formType, formId]);
 
   // Memoized restore function

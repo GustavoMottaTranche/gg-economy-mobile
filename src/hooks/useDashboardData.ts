@@ -4,16 +4,19 @@
  * Custom hook for dashboard data with calculations including income, expenses,
  * balance, category breakdown, and trend data.
  *
- * **Validates: Requirements 21, 22, 29**
+ * **Validates: Requirements 21, 22, 29, 1.1, 1.7, 1.8, 4.6**
  */
-import { useMemo, useCallback, useState } from 'react';
+import { useMemo, useCallback, useState, useEffect } from 'react';
 import { useLiveQuery } from '../db/client';
 import {
   getMonthlySummaryQuery,
   getCategoryBreakdownQuery,
+  getWeeklyOccurrenceBreakdownQuery,
   getTrendDataQuery,
   getAvailableMonthsQuery,
 } from '../db/queries/dashboard';
+import { roundPercentages } from '../utils/roundPercentages';
+import { useWeeklyRecurringStore, useWeeklyMonthlyTotal } from '../stores/weeklyRecurringStore';
 import type { CategoryType } from '../types';
 
 /**
@@ -33,6 +36,11 @@ export interface MonthlySummary {
 }
 
 /**
+ * Chart filter option type
+ */
+export type ChartFilterOption = 'all' | 'fixed' | 'variable';
+
+/**
  * Category breakdown item
  */
 export interface CategoryBreakdownItem {
@@ -46,6 +54,8 @@ export interface CategoryBreakdownItem {
   categoryColor: string;
   /** Category icon */
   categoryIcon: string;
+  /** Expense group (fixed/variable/null) */
+  expenseGroup: string | null;
   /** Total amount for this category */
   total: number;
   /** Number of transactions */
@@ -83,6 +93,20 @@ export interface UseDashboardDataReturn {
   expenseBreakdown: CategoryBreakdownItem[];
   /** Income breakdown by category */
   incomeBreakdown: CategoryBreakdownItem[];
+  /** Fixed expense breakdown (categories with expenseGroup = 'fixed') */
+  fixedBreakdown: CategoryBreakdownItem[];
+  /** Variable expense breakdown (categories with expenseGroup = 'variable') */
+  variableBreakdown: CategoryBreakdownItem[];
+  /** Total of all fixed expenses */
+  fixedTotal: number;
+  /** Total of all variable expenses */
+  variableTotal: number;
+  /** Total of weekly recurring expenses for the selected month */
+  weeklyTotal: number;
+  /** Current chart filter */
+  chartFilter: ChartFilterOption;
+  /** Set the chart filter */
+  setChartFilter: (filter: ChartFilterOption) => void;
   /** Trend data for the selected period */
   trendData: TrendDataPoint[];
   /** Available months with transactions */
@@ -176,6 +200,14 @@ function getMonthsForTrend(currentMonth: string, period: TrendPeriod): string[] 
 export function useDashboardData(): UseDashboardDataReturn {
   const [selectedMonth, setSelectedMonth] = useState(getCurrentMonth());
   const [trendPeriod, setTrendPeriod] = useState<TrendPeriod>(3);
+  const [chartFilter, setChartFilter] = useState<ChartFilterOption>('all');
+
+  // Weekly recurring: trigger occurrence generation on month navigation
+  const weeklyTotal = useWeeklyMonthlyTotal(selectedMonth);
+
+  useEffect(() => {
+    useWeeklyRecurringStore.getState().loadOccurrencesForMonth(selectedMonth);
+  }, [selectedMonth]);
 
   // Calculate months for trend
   const trendMonths = useMemo(
@@ -193,6 +225,39 @@ export function useDashboardData(): UseDashboardDataReturn {
   const { data: breakdownData } = useLiveQuery(getCategoryBreakdownQuery(selectedMonth), [
     selectedMonth,
   ]);
+
+  // Live query for weekly occurrences breakdown
+  const { data: weeklyBreakdownData } = useLiveQuery(getWeeklyOccurrenceBreakdownQuery(selectedMonth), [
+    selectedMonth,
+  ]);
+
+  // Merge transaction breakdown with weekly occurrences breakdown
+  const mergedBreakdownData = useMemo(() => {
+    const txData = breakdownData ?? [];
+    const weeklyData = weeklyBreakdownData ?? [];
+    if (weeklyData.length === 0) return txData;
+
+    // Merge weekly data into transaction data by categoryId
+    const merged = [...txData];
+    for (const weeklyItem of weeklyData) {
+      const existingIndex = merged.findIndex(
+        (item) => item.categoryId === weeklyItem.categoryId && item.isExpense === 1
+      );
+      if (existingIndex >= 0) {
+        // Add to existing category
+        const existing = merged[existingIndex]!;
+        merged[existingIndex] = {
+          ...existing,
+          total: (existing.total ?? 0) + (weeklyItem.total ?? 0),
+          count: (existing.count ?? 0) + (weeklyItem.count ?? 0),
+        };
+      } else {
+        // New category from weekly
+        merged.push(weeklyItem);
+      }
+    }
+    return merged;
+  }, [breakdownData, weeklyBreakdownData]);
 
   // Live query for trend data using dashboard query module
   const { data: trendRawData } = useLiveQuery(getTrendDataQuery(trendMonths), [trendMonths]);
@@ -226,9 +291,9 @@ export function useDashboardData(): UseDashboardDataReturn {
 
   // Transform expense breakdown
   const expenseBreakdown = useMemo<CategoryBreakdownItem[]>(() => {
-    if (!breakdownData) return [];
+    if (!mergedBreakdownData) return [];
 
-    const expenses = breakdownData.filter((item) => item.isExpense === 1);
+    const expenses = mergedBreakdownData.filter((item) => item.isExpense === 1);
     const totalExpenses = expenses.reduce((sum, item) => sum + (item.total ?? 0), 0);
 
     return expenses
@@ -238,18 +303,80 @@ export function useDashboardData(): UseDashboardDataReturn {
         categoryType: (item.categoryType as CategoryType) ?? null,
         categoryColor: item.categoryColor ?? '#808080',
         categoryIcon: item.categoryIcon ?? 'help-circle',
+        expenseGroup: item.expenseGroup ?? null,
         total: item.total ?? 0,
         count: item.count ?? 0,
         percentage: totalExpenses > 0 ? ((item.total ?? 0) / totalExpenses) * 100 : 0,
       }))
       .sort((a, b) => b.total - a.total);
-  }, [breakdownData]);
+  }, [mergedBreakdownData]);
+
+  // Compute fixed breakdown with roundPercentages
+  const fixedBreakdown = useMemo<CategoryBreakdownItem[]>(() => {
+    if (!mergedBreakdownData) return [];
+
+    const fixedItems = mergedBreakdownData.filter(
+      (item) => item.isExpense === 1 && item.expenseGroup === 'fixed'
+    );
+    const fixedTotal = fixedItems.reduce((sum, item) => sum + (item.total ?? 0), 0);
+    const values = fixedItems.map((item) => item.total ?? 0);
+    const percentages = roundPercentages(values, fixedTotal);
+
+    return fixedItems
+      .map((item, index) => ({
+        categoryId: item.categoryId,
+        categoryName: item.categoryName ?? 'Uncategorized',
+        categoryType: (item.categoryType as CategoryType) ?? null,
+        categoryColor: item.categoryColor ?? '#808080',
+        categoryIcon: item.categoryIcon ?? 'help-circle',
+        expenseGroup: item.expenseGroup ?? null,
+        total: item.total ?? 0,
+        count: item.count ?? 0,
+        percentage: percentages[index] ?? 0,
+      }))
+      .sort((a, b) => b.total - a.total);
+  }, [mergedBreakdownData]);
+
+  // Compute variable breakdown with roundPercentages
+  const variableBreakdown = useMemo<CategoryBreakdownItem[]>(() => {
+    if (!mergedBreakdownData) return [];
+
+    const variableItems = mergedBreakdownData.filter(
+      (item) => item.isExpense === 1 && item.expenseGroup === 'variable'
+    );
+    const variableTotal = variableItems.reduce((sum, item) => sum + (item.total ?? 0), 0);
+    const values = variableItems.map((item) => item.total ?? 0);
+    const percentages = roundPercentages(values, variableTotal);
+
+    return variableItems
+      .map((item, index) => ({
+        categoryId: item.categoryId,
+        categoryName: item.categoryName ?? 'Uncategorized',
+        categoryType: (item.categoryType as CategoryType) ?? null,
+        categoryColor: item.categoryColor ?? '#808080',
+        categoryIcon: item.categoryIcon ?? 'help-circle',
+        expenseGroup: item.expenseGroup ?? null,
+        total: item.total ?? 0,
+        count: item.count ?? 0,
+        percentage: percentages[index] ?? 0,
+      }))
+      .sort((a, b) => b.total - a.total);
+  }, [mergedBreakdownData]);
+
+  // Compute group totals
+  const fixedTotal = useMemo(() => {
+    return fixedBreakdown.reduce((sum, item) => sum + item.total, 0);
+  }, [fixedBreakdown]);
+
+  const variableTotal = useMemo(() => {
+    return variableBreakdown.reduce((sum, item) => sum + item.total, 0);
+  }, [variableBreakdown]);
 
   // Transform income breakdown
   const incomeBreakdown = useMemo<CategoryBreakdownItem[]>(() => {
-    if (!breakdownData) return [];
+    if (!mergedBreakdownData) return [];
 
-    const income = breakdownData.filter((item) => item.isExpense === 0);
+    const income = mergedBreakdownData.filter((item) => item.isExpense === 0);
     const totalIncome = income.reduce((sum, item) => sum + (item.total ?? 0), 0);
 
     return income
@@ -259,12 +386,13 @@ export function useDashboardData(): UseDashboardDataReturn {
         categoryType: (item.categoryType as CategoryType) ?? null,
         categoryColor: item.categoryColor ?? '#808080',
         categoryIcon: item.categoryIcon ?? 'help-circle',
+        expenseGroup: item.expenseGroup ?? null,
         total: item.total ?? 0,
         count: item.count ?? 0,
         percentage: totalIncome > 0 ? ((item.total ?? 0) / totalIncome) * 100 : 0,
       }))
       .sort((a, b) => b.total - a.total);
-  }, [breakdownData]);
+  }, [mergedBreakdownData]);
 
   // Transform trend data
   const trendData = useMemo<TrendDataPoint[]>(() => {
@@ -322,6 +450,13 @@ export function useDashboardData(): UseDashboardDataReturn {
     summary,
     expenseBreakdown,
     incomeBreakdown,
+    fixedBreakdown,
+    variableBreakdown,
+    fixedTotal,
+    variableTotal,
+    weeklyTotal,
+    chartFilter,
+    setChartFilter,
     trendData,
     availableMonths,
     selectedMonth,

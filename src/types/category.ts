@@ -4,6 +4,11 @@
 export type CategoryType = 'income' | 'expense';
 
 /**
+ * Expense group classification - fixed costs or variable costs
+ */
+export type ExpenseGroup = 'fixed' | 'variable';
+
+/**
  * Category entity for transaction classification
  */
 export interface Category {
@@ -19,6 +24,8 @@ export interface Category {
   color: string;
   /** Whether the category is active (soft delete) */
   isActive: boolean;
+  /** Expense group classification (null for income categories) */
+  expenseGroup: ExpenseGroup | null;
   /** Creation timestamp */
   createdAt: Date;
 }
@@ -31,6 +38,7 @@ export interface CreateCategoryDTO {
   type: CategoryType;
   icon: string;
   color: string;
+  expenseGroup?: ExpenseGroup | null;
 }
 
 /**
@@ -42,4 +50,5 @@ export interface UpdateCategoryDTO {
   icon?: string;
   color?: string;
   isActive?: boolean;
+  expenseGroup?: ExpenseGroup | null;
 }

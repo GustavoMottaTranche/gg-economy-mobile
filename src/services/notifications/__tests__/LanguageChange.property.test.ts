@@ -26,7 +26,7 @@ import type {
 const mockScheduleNotificationAsync = jest.fn();
 const mockCancelAllScheduledNotificationsAsync = jest.fn();
 
-jest.mock('expo-notifications', () => ({
+const mockNotificationsModule = {
   scheduleNotificationAsync: (...args: unknown[]) => mockScheduleNotificationAsync(...args),
   cancelScheduledNotificationAsync: jest.fn(),
   cancelAllScheduledNotificationsAsync: (...args: unknown[]) =>
@@ -35,11 +35,44 @@ jest.mock('expo-notifications', () => ({
   SchedulableTriggerInputTypes: {
     TIME_INTERVAL: 'timeInterval',
   },
+};
+
+jest.mock('expo-notifications', () => mockNotificationsModule);
+
+// Mock the NotificationsModuleLoader module
+jest.mock('../NotificationsModuleLoader', () => {
+  let _testModule: unknown = null;
+  return {
+    __setTestModule: (mod: unknown) => {
+      _testModule = mod;
+    },
+    getNotifications: jest.fn(async () => _testModule),
+  };
+});
+
+// Mock the logging module
+jest.mock('../../logging', () => ({
+  logger: {
+    debug: jest.fn(),
+    info: jest.fn(),
+    warn: jest.fn(),
+    error: jest.fn(),
+  },
 }));
 
 // Mock i18n to return the correct translations based on locale
+interface MockI18n {
+  language: string;
+  isInitialized: boolean;
+  t: jest.Mock;
+  changeLanguage: jest.Mock;
+  on: jest.Mock;
+  off: jest.Mock;
+  _handlers?: Map<string, Set<() => void>>;
+}
+
 jest.mock('i18next', () => {
-  const actualI18n = {
+  const actualI18n: MockI18n = {
     language: 'en',
     isInitialized: true,
     t: jest.fn((key: string, options?: { lng?: string }) => {
@@ -56,34 +89,26 @@ jest.mock('i18next', () => {
       };
       return translations[locale]?.[key] || translations.en[key] || key;
     }),
-    changeLanguage: jest.fn(async (lng: string) => {
+    changeLanguage: jest.fn(async (lng: string): Promise<MockI18n> => {
       actualI18n.language = lng;
       // Emit languageChanged event
-      const handlers = (
-        actualI18n as typeof actualI18n & { _handlers: Map<string, Set<() => void>> }
-      )._handlers?.get('languageChanged');
+      const handlers = actualI18n._handlers?.get('languageChanged');
       if (handlers) {
-        handlers.forEach((handler) => handler());
+        handlers.forEach((handler: () => void) => handler());
       }
       return actualI18n;
     }),
     on: jest.fn((event: string, handler: () => void) => {
-      const i18nWithHandlers = actualI18n as typeof actualI18n & {
-        _handlers: Map<string, Set<() => void>>;
-      };
-      if (!i18nWithHandlers._handlers) {
-        i18nWithHandlers._handlers = new Map();
+      if (!actualI18n._handlers) {
+        actualI18n._handlers = new Map();
       }
-      if (!i18nWithHandlers._handlers.has(event)) {
-        i18nWithHandlers._handlers.set(event, new Set());
+      if (!actualI18n._handlers.has(event)) {
+        actualI18n._handlers.set(event, new Set());
       }
-      i18nWithHandlers._handlers.get(event)!.add(handler);
+      actualI18n._handlers.get(event)!.add(handler);
     }),
     off: jest.fn((event: string, handler: () => void) => {
-      const i18nWithHandlers = actualI18n as typeof actualI18n & {
-        _handlers: Map<string, Set<() => void>>;
-      };
-      i18nWithHandlers._handlers?.get(event)?.delete(handler);
+      actualI18n._handlers?.get(event)?.delete(handler);
     }),
   };
   return actualI18n;
@@ -128,6 +153,7 @@ jest.mock('../../../stores/notificationStore', () => ({
 
 // Import after mocks are set up
 import { notificationScheduler } from '../NotificationScheduler';
+import { __setTestModule } from '../NotificationsModuleLoader';
 
 /**
  * Expected translations for each supported locale
@@ -202,6 +228,8 @@ describe('Property 8: Language Change Propagation', () => {
     jest.clearAllMocks();
     mockScheduleNotificationAsync.mockResolvedValue('mock-notification-id');
     mockCancelAllScheduledNotificationsAsync.mockResolvedValue(undefined);
+    // Provide the mock notifications module via the test hook
+    __setTestModule(mockNotificationsModule as any);
     // Reset i18n language
     i18n.language = 'en';
     // Reset store settings
@@ -215,6 +243,10 @@ describe('Property 8: Language Change Propagation', () => {
     };
   });
 
+  afterAll(() => {
+    __setTestModule(null);
+  });
+
   describe('Rescheduling on Language Change', () => {
     it('should reschedule notification when language changes and notifications are enabled', async () => {
       /**
@@ -222,36 +254,40 @@ describe('Property 8: Language Change Propagation', () => {
        * when language changes, cancelAll should be called followed by scheduleNext
        */
       await fc.assert(
-        fc.asyncProperty(arbitraryLocale, arbitraryEnabledSettings, async (newLocale, settings) => {
-          jest.clearAllMocks();
-          mockStoreSettings = settings;
+        fc.asyncProperty(
+          arbitraryLocale,
+          arbitraryEnabledSettings,
+          async (_newLocale, settings) => {
+            jest.clearAllMocks();
+            mockStoreSettings = settings;
 
-          // Track call order
-          const callOrder: string[] = [];
-          mockCancelAllScheduledNotificationsAsync.mockImplementation(async () => {
-            callOrder.push('cancelAll');
-          });
-          mockScheduleNotificationAsync.mockImplementation(async () => {
-            callOrder.push('scheduleNext');
-            return 'mock-notification-id';
-          });
+            // Track call order
+            const callOrder: string[] = [];
+            mockCancelAllScheduledNotificationsAsync.mockImplementation(async () => {
+              callOrder.push('cancelAll');
+            });
+            mockScheduleNotificationAsync.mockImplementation(async () => {
+              callOrder.push('scheduleNext');
+              return 'mock-notification-id';
+            });
 
-          // Simulate the language change handler behavior from _layout.tsx
-          // When language changes and notifications are enabled, reschedule
-          if (settings.isEnabled && settings.frequency !== 'disabled') {
-            await notificationScheduler.cancelAll();
-            await notificationScheduler.scheduleNext(settings);
+            // Simulate the language change handler behavior from _layout.tsx
+            // When language changes and notifications are enabled, reschedule
+            if (settings.isEnabled && settings.frequency !== 'disabled') {
+              await notificationScheduler.cancelAll();
+              await notificationScheduler.scheduleNext(settings);
+            }
+
+            // Verify cancelAll was called
+            expect(mockCancelAllScheduledNotificationsAsync).toHaveBeenCalledTimes(1);
+
+            // Verify scheduleNext was called
+            expect(mockScheduleNotificationAsync).toHaveBeenCalledTimes(1);
+
+            // Verify call order: cancelAll before scheduleNext
+            expect(callOrder).toEqual(['cancelAll', 'scheduleNext']);
           }
-
-          // Verify cancelAll was called
-          expect(mockCancelAllScheduledNotificationsAsync).toHaveBeenCalledTimes(1);
-
-          // Verify scheduleNext was called
-          expect(mockScheduleNotificationAsync).toHaveBeenCalledTimes(1);
-
-          // Verify call order: cancelAll before scheduleNext
-          expect(callOrder).toEqual(['cancelAll', 'scheduleNext']);
-        }),
+        ),
         { numRuns: 100 }
       );
     });
@@ -294,23 +330,27 @@ describe('Property 8: Language Change Propagation', () => {
        * scheduleNext should be called with the current settings
        */
       await fc.assert(
-        fc.asyncProperty(arbitraryLocale, arbitraryEnabledSettings, async (newLocale, settings) => {
-          jest.clearAllMocks();
-          mockStoreSettings = settings;
+        fc.asyncProperty(
+          arbitraryLocale,
+          arbitraryEnabledSettings,
+          async (_newLocale, settings) => {
+            jest.clearAllMocks();
+            mockStoreSettings = settings;
 
-          // Simulate language change handler
-          if (settings.isEnabled && settings.frequency !== 'disabled') {
-            await notificationScheduler.cancelAll();
-            await notificationScheduler.scheduleNext(settings);
+            // Simulate language change handler
+            if (settings.isEnabled && settings.frequency !== 'disabled') {
+              await notificationScheduler.cancelAll();
+              await notificationScheduler.scheduleNext(settings);
+            }
+
+            // Verify scheduleNext was called
+            expect(mockScheduleNotificationAsync).toHaveBeenCalledTimes(1);
+
+            // Verify the scheduled notification has correct trigger timing
+            const scheduledCall = mockScheduleNotificationAsync.mock.calls[0][0];
+            expect(scheduledCall.trigger.seconds).toBeGreaterThan(0);
           }
-
-          // Verify scheduleNext was called
-          expect(mockScheduleNotificationAsync).toHaveBeenCalledTimes(1);
-
-          // Verify the scheduled notification has correct trigger timing
-          const scheduledCall = mockScheduleNotificationAsync.mock.calls[0][0];
-          expect(scheduledCall.trigger.seconds).toBeGreaterThan(0);
-        }),
+        ),
         { numRuns: 100 }
       );
     });
@@ -326,7 +366,7 @@ describe('Property 8: Language Change Propagation', () => {
         fc.asyncProperty(
           arbitraryLocale,
           arbitraryDisabledSettings,
-          async (newLocale, settings) => {
+          async (_newLocale, settings) => {
             jest.clearAllMocks();
             mockStoreSettings = settings;
 
@@ -365,7 +405,7 @@ describe('Property 8: Language Change Propagation', () => {
         fc.asyncProperty(
           arbitraryLocale,
           arbitraryFrequencyDisabledSettings,
-          async (newLocale, settings) => {
+          async (_newLocale, settings) => {
             jest.clearAllMocks();
             mockStoreSettings = settings;
 

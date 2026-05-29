@@ -15,11 +15,7 @@ import React from 'react';
 import { render, fireEvent, waitFor, act } from '@testing-library/react-native';
 import { Alert } from 'react-native';
 import * as DocumentPicker from 'expo-document-picker';
-import {
-  MultiFileSelector,
-  type MultiFileSelectorProps,
-  type SelectedFile,
-} from '../MultiFileSelector';
+import { MultiFileSelector, type MultiFileSelectorProps } from '../MultiFileSelector';
 
 // Mock expo-document-picker
 jest.mock('expo-document-picker', () => ({
@@ -548,7 +544,10 @@ describe('MultiFileSelector', () => {
       });
 
       await waitFor(() => {
-        expect(Alert.alert).toHaveBeenCalledWith('common.error', 'fileImport.multiFile.selectionError');
+        expect(Alert.alert).toHaveBeenCalledWith(
+          'common.error',
+          'fileImport.multiFile.selectionError'
+        );
       });
     });
   });

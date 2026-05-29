@@ -317,8 +317,8 @@ describe('GoogleDriveClient', () => {
       const files = await client.listBackups(mockAccessToken, 'folder-123');
 
       expect(files).toHaveLength(2);
-      expect(files[0].id).toBe('file-1');
-      expect(files[1].id).toBe('file-2');
+      expect(files[0]!.id).toBe('file-1');
+      expect(files[1]!.id).toBe('file-2');
     });
 
     it('should return empty array when no backups exist', async () => {

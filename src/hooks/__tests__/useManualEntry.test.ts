@@ -6,7 +6,7 @@
  *
  * **Validates: Requirements 15.6, 15.7, 15.10, 15.11, 15.12**
  */
-import { renderHook, act, waitFor } from '@testing-library/react-native';
+import { renderHook, act } from '@testing-library/react-native';
 
 // Mock the createTransaction and getAllTransactions functions
 const mockCreateTransaction = jest.fn();
@@ -49,6 +49,7 @@ describe('useManualEntry', () => {
     date: new Date('2024-01-15'),
     amount: -5000, // -50.00 in cents
     description: 'Test manual transaction',
+    title: '',
     categoryId: 'cat-1',
     referenceMonth: '2024-01',
     needsReview: true,

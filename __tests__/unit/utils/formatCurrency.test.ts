@@ -8,7 +8,6 @@ import {
   getCurrencySymbol,
   getDecimalSeparator,
   getGroupingSeparator,
-  SupportedLocale,
 } from '../../../src/utils/formatCurrency';
 
 describe('formatCurrency', () => {

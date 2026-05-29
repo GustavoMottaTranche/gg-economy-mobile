@@ -22,6 +22,7 @@ export type DraftFormType =
  * Draft data for manual transaction entry form
  */
 export interface ManualEntryDraft {
+  title?: string; // Primary identifier for the entry (1-100 chars)
   date?: string; // ISO date string
   amount?: string; // String to preserve user input format
   description?: string;

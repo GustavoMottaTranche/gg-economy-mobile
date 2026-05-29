@@ -66,7 +66,7 @@ const mockRule2 = {
 const defaultUseCategorizationRulesReturn = {
   rules: [mockRule, mockRule2],
   isLoading: false,
-  error: null,
+  error: null as string | null,
   totalCount: 2,
   activeCount: 2,
   create: mockCreate,
@@ -87,6 +87,36 @@ jest.mock('../../src/hooks/useCategories', () => ({
   useCategories: () => ({
     categories: mockCategories,
   }),
+}));
+
+// Mock CategorySelector
+jest.mock('../../src/components/CategorySelector', () => ({
+  CategorySelector: ({
+    onSelect,
+    testID,
+  }: {
+    selectedCategoryId?: string | null;
+    onSelect: (category: { id: string; name: string; type: string }) => void;
+    includeIncome?: boolean;
+    testID?: string;
+  }) => {
+    const { View, Text, TouchableOpacity } = require('react-native');
+    return (
+      <View testID={testID}>
+        {mockCategories.map(
+          (cat: { id: string; name: string; type: string; icon: string; color: string }) => (
+            <TouchableOpacity
+              key={cat.id}
+              testID={`category-option-${cat.id}`}
+              onPress={() => onSelect(cat)}
+            >
+              <Text>{cat.name}</Text>
+            </TouchableOpacity>
+          )
+        )}
+      </View>
+    );
+  },
 }));
 
 // Mock i18n

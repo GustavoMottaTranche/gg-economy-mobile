@@ -18,17 +18,6 @@ describe('Property 12: Categorization Rule Matching', () => {
   const engine = new CategorizationEngine();
 
   /**
-   * Arbitrary for generating valid match types
-   */
-  const matchTypeArb: fc.Arbitrary<MatchType> = fc.constantFrom(
-    'contains',
-    'starts_with',
-    'ends_with',
-    'exact',
-    'regex'
-  );
-
-  /**
    * Arbitrary for generating valid patterns
    * Excludes characters that would cause regex issues
    */
@@ -119,13 +108,6 @@ describe('Property 12: Categorization Rule Matching', () => {
     return [...rules].sort((a, b) => b.priority - a.priority);
   }
 
-  /**
-   * Helper to get only active rules
-   */
-  function getActiveRules(rules: CategorizationRule[]): CategorizationRule[] {
-    return rules.filter((r) => r.isActive);
-  }
-
   describe('Determinism Property', () => {
     it('categorization is deterministic: same input always produces same output', () => {
       fc.assert(
@@ -203,7 +185,7 @@ describe('Property 12: Categorization Rule Matching', () => {
           fc.array(ruleArb, { minLength: 2, maxLength: 10 }),
           (description, rules) => {
             // Set all rules to same priority and make them all match
-            const samePriorityRules = rules.map((r, i) => ({
+            const samePriorityRules = rules.map((r, _i) => ({
               ...r,
               priority: 100,
               isActive: true,
@@ -216,7 +198,7 @@ describe('Property 12: Categorization Rule Matching', () => {
 
             if (result.matched && sortedRules.length > 0) {
               // Should match the first rule in the sorted array
-              expect(result.matchedRule?.id).toBe(sortedRules[0].id);
+              expect(result.matchedRule?.id).toBe(sortedRules[0]!.id);
             }
           }
         ),
@@ -280,7 +262,7 @@ describe('Property 12: Categorization Rule Matching', () => {
           const result = engine.categorize(description, nonMatchingRules);
 
           // Should not match unless description is exactly the pattern
-          if (description.toLowerCase() !== nonMatchingRules[0].pattern.toLowerCase()) {
+          if (description.toLowerCase() !== nonMatchingRules[0]!.pattern.toLowerCase()) {
             expect(result.matched).toBe(false);
             expect(result.categoryId).toBeNull();
             expect(result.matchedRule).toBeNull();

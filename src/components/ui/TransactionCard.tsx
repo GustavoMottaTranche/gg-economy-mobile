@@ -1,18 +1,21 @@
 /**
  * TransactionCard Component
  *
- * Displays a transaction with date, description, amount, and category.
+ * Displays a transaction with title as primary text, optional description as secondary text,
+ * date+time in localized format, amount, and category.
  * Provides visual distinction for income (green) vs expenses (red).
  * Supports accessibility and i18n.
  *
- * **Validates: Requirements 30**
+ * **Validates: Requirements 8.1, 8.2, 8.3, 8.4, 30**
  */
 
 import React, { memo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ViewStyle, TextStyle } from 'react-native';
 import { useTranslation } from 'react-i18next';
-import { formatCurrencyLocale, formatDateLocale, getCurrentLocale } from '../../i18n';
-import { TRANSACTION_COLORS } from '../../constants/theme';
+import { formatCurrencyLocale, getCurrentLocale } from '../../i18n';
+import { formatDateTimeForLocale } from './DateTimePicker';
+import { TRANSACTION_COLORS, spacing, borderRadius, typography } from '../../constants/theme';
+import { useThemeColors } from '../../hooks/useThemeColors';
 import type { Transaction } from '../../types/transaction';
 import type { Category } from '../../types/category';
 
@@ -59,13 +62,15 @@ function TransactionCardComponent({
   showExcludedIndicator = true,
   style,
   testID,
-}: TransactionCardProps): JSX.Element {
+}: TransactionCardProps): React.JSX.Element {
   const { t } = useTranslation();
   const locale = getCurrentLocale();
+  const themeColors = useThemeColors();
 
   const isIncome = transaction.amount > 0;
   const isExcluded = transaction.isExcludedFromTotals;
   const isDuplicate = !!transaction.duplicateOf;
+  const isRecurring = !!transaction.recurringId;
 
   // Determine colors based on transaction type and state
   const getColors = () => {
@@ -75,28 +80,27 @@ function TransactionCardComponent({
     return isIncome ? TRANSACTION_COLORS.income : TRANSACTION_COLORS.expense;
   };
 
-  const colors = getColors();
+  const txColors = getColors();
 
-  // Format the date
-  const formattedDate = formatDateLocale(transaction.date, locale, {
-    dateStyle: 'short',
-  });
+  // Format the date+time using locale-aware formatter
+  const formattedDate = formatDateTimeForLocale(transaction.date, locale);
 
-  // Format the amount
+  // Format the amount (sign is handled manually in the template)
   const formattedAmount = formatCurrencyLocale(
     Math.abs(transaction.amount) / 100, // Convert from cents
-    locale,
-    { showPositiveSign: isIncome }
+    locale
   );
 
   // Build accessibility label
   const accessibilityLabel = [
+    transaction.title,
+    transaction.description || undefined,
     t('transactions.date'),
     formattedDate,
-    transaction.description,
     isIncome ? t('dashboard.income') : t('dashboard.expenses'),
     formattedAmount,
     category?.name,
+    isRecurring ? t('transactions.recurring') : '',
     isExcluded ? t('transactions.excluded') : '',
     isDuplicate ? t('transactions.duplicate') : '',
   ]
@@ -111,6 +115,7 @@ function TransactionCardComponent({
 
   const containerStyle: ViewStyle[] = [
     styles.container,
+    { backgroundColor: themeColors.surface.card, borderColor: themeColors.border.default },
     selected && styles.selectedContainer,
     isExcluded && styles.excludedContainer,
     style,
@@ -118,24 +123,29 @@ function TransactionCardComponent({
 
   const amountStyle: TextStyle[] = [
     styles.amount,
-    { color: colors.text },
+    { color: txColors.text },
     isExcluded && styles.excludedText,
   ].filter(Boolean) as TextStyle[];
 
   const content = (
     <View style={containerStyle} testID={testID}>
-      {/* Left section: Date and Description */}
+      {/* Left section: Title, Description, Date, and Category */}
       <View style={styles.leftSection}>
-        <Text style={styles.date} numberOfLines={1}>
-          {formattedDate}
+        <Text style={[styles.title, { color: themeColors.text.primary }]} numberOfLines={1}>
+          {transaction.title}
         </Text>
-        <Text style={styles.description} numberOfLines={2}>
-          {transaction.description}
+        {transaction.description !== '' && (
+          <Text style={[styles.description, { color: themeColors.text.secondary }]} numberOfLines={2}>
+            {transaction.description}
+          </Text>
+        )}
+        <Text style={[styles.date, { color: themeColors.text.tertiary }]} numberOfLines={1}>
+          {formattedDate}
         </Text>
         {category && (
           <View style={styles.categoryContainer}>
             <View style={[styles.categoryDot, { backgroundColor: category.color }]} />
-            <Text style={styles.categoryName} numberOfLines={1}>
+            <Text style={[styles.categoryName, { color: themeColors.text.secondary }]} numberOfLines={1}>
               {category.name}
             </Text>
           </View>
@@ -151,6 +161,11 @@ function TransactionCardComponent({
 
         {/* Indicators */}
         <View style={styles.indicators}>
+          {isRecurring && (
+            <View style={styles.indicator} accessibilityLabel={t('transactions.recurring')}>
+              <Text style={[styles.recurringIndicator, { color: themeColors.semantic.info.base }]}>∞</Text>
+            </View>
+          )}
           {showDuplicateIndicator && isDuplicate && (
             <View style={styles.indicator} accessibilityLabel={t('transactions.duplicate')}>
               <Text style={styles.indicatorText}>⚠️</Text>
@@ -196,18 +211,16 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: '#ffffff',
-    borderRadius: 12,
-    padding: 16,
-    marginVertical: 4,
-    marginHorizontal: 16,
+    borderRadius: borderRadius.md,
+    padding: spacing.base,
+    marginVertical: spacing.xs,
+    marginHorizontal: spacing.base,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
     shadowRadius: 2,
     elevation: 2,
     borderWidth: 1,
-    borderColor: '#e5e7eb',
   },
   selectedContainer: {
     borderColor: TRANSACTION_COLORS.selected.border,
@@ -219,27 +232,29 @@ const styles = StyleSheet.create({
   },
   leftSection: {
     flex: 1,
-    marginRight: 12,
+    marginRight: spacing.md,
   },
   rightSection: {
     alignItems: 'flex-end',
     justifyContent: 'center',
   },
-  date: {
-    fontSize: 12,
-    color: '#6b7280',
-    marginBottom: 4,
+  title: {
+    fontSize: typography.body.fontSize,
+    fontWeight: '500',
+    marginBottom: 2,
   },
   description: {
-    fontSize: 16,
-    fontWeight: '500',
-    color: '#111827',
-    marginBottom: 4,
+    fontSize: typography.caption.fontSize,
+    marginBottom: 2,
+  },
+  date: {
+    fontSize: typography.overline.fontSize + 1,
+    marginBottom: spacing.xs,
   },
   categoryContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 4,
+    marginTop: spacing.xs,
   },
   categoryDot: {
     width: 8,
@@ -248,8 +263,7 @@ const styles = StyleSheet.create({
     marginRight: 6,
   },
   categoryName: {
-    fontSize: 12,
-    color: '#6b7280',
+    fontSize: typography.overline.fontSize + 1,
   },
   amount: {
     fontSize: 18,
@@ -261,13 +275,17 @@ const styles = StyleSheet.create({
   },
   indicators: {
     flexDirection: 'row',
-    marginTop: 4,
+    marginTop: spacing.xs,
   },
   indicator: {
-    marginLeft: 4,
+    marginLeft: spacing.xs,
   },
   indicatorText: {
-    fontSize: 12,
+    fontSize: typography.overline.fontSize + 1,
+  },
+  recurringIndicator: {
+    fontSize: typography.caption.fontSize + 1,
+    fontWeight: '700',
   },
 });
 

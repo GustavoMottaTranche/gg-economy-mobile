@@ -13,6 +13,8 @@ import { useTranslation } from 'react-i18next';
 import { BarChart, type BarChartDataPoint } from '../charts/BarChart';
 import { getMonthName, getCurrentLocale } from '../../i18n';
 import type { TrendDataPoint, TrendPeriod } from '../../hooks/useDashboardData';
+import { useThemeColors } from '../../hooks/useThemeColors';
+import { spacing, borderRadius } from '../../constants/theme';
 
 /**
  * Props for the TrendChart component
@@ -64,6 +66,7 @@ function TrendChartComponent({
   testID,
 }: TrendChartProps): React.ReactElement {
   const { t } = useTranslation();
+  const colors = useThemeColors();
   const locale = getCurrentLocale();
 
   // Transform data for the BarChart
@@ -95,27 +98,30 @@ function TrendChartComponent({
   // Empty state
   if (data.length === 0) {
     return (
-      <View style={[styles.container, style]} testID={testID}>
+      <View style={[styles.container, { backgroundColor: colors.surface.card }, style]} testID={testID}>
         <View style={styles.header}>
-          <Text style={styles.title}>{t('dashboard.trend')}</Text>
+          <Text style={[styles.title, { color: colors.text.primary }]}>{t('dashboard.trend')}</Text>
         </View>
         <View style={styles.emptyState}>
-          <Text style={styles.emptyText}>{t('dashboard.noData')}</Text>
+          <Text style={[styles.emptyText, { color: colors.text.tertiary }]}>{t('dashboard.noData')}</Text>
         </View>
       </View>
     );
   }
 
   return (
-    <View style={[styles.container, style]} testID={testID}>
+    <View style={[styles.container, { backgroundColor: colors.surface.card }, style]} testID={testID}>
       {/* Header with title and period selector */}
       <View style={styles.header}>
-        <Text style={styles.title}>{t('dashboard.trend')}</Text>
-        <View style={styles.periodSelector}>
+        <Text style={[styles.title, { color: colors.text.primary }]}>{t('dashboard.trend')}</Text>
+        <View style={[styles.periodSelector, { backgroundColor: colors.background.tertiary }]}>
           {TREND_PERIODS.map((period) => (
             <TouchableOpacity
               key={period}
-              style={[styles.periodButton, selectedPeriod === period && styles.periodButtonActive]}
+              style={[
+                styles.periodButton,
+                selectedPeriod === period && [styles.periodButtonActive, { backgroundColor: colors.surface.card }],
+              ]}
               onPress={() => onPeriodChange(period)}
               accessibilityRole="button"
               accessibilityLabel={getPeriodLabel(period)}
@@ -125,7 +131,8 @@ function TrendChartComponent({
               <Text
                 style={[
                   styles.periodButtonText,
-                  selectedPeriod === period && styles.periodButtonTextActive,
+                  { color: colors.text.secondary },
+                  selectedPeriod === period && { color: colors.text.primary },
                 ]}
               >
                 {period}
@@ -149,9 +156,8 @@ function TrendChartComponent({
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    padding: 20,
+    borderRadius: borderRadius.lg,
+    padding: spacing.lg,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -162,28 +168,25 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 16,
+    marginBottom: spacing.base,
   },
   title: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#1F2937',
   },
   periodSelector: {
     flexDirection: 'row',
-    backgroundColor: '#F3F4F6',
-    borderRadius: 8,
+    borderRadius: borderRadius.sm,
     padding: 2,
   },
   periodButton: {
-    paddingHorizontal: 12,
+    paddingHorizontal: spacing.md,
     paddingVertical: 6,
     borderRadius: 6,
     minWidth: 36,
     alignItems: 'center',
   },
   periodButtonActive: {
-    backgroundColor: '#FFFFFF',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
@@ -193,10 +196,6 @@ const styles = StyleSheet.create({
   periodButtonText: {
     fontSize: 13,
     fontWeight: '500',
-    color: '#6B7280',
-  },
-  periodButtonTextActive: {
-    color: '#1F2937',
   },
   emptyState: {
     alignItems: 'center',
@@ -205,7 +204,6 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 14,
-    color: '#9CA3AF',
   },
 });
 

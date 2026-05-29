@@ -499,6 +499,7 @@ describe('ImportOrchestrator', () => {
         date: new Date(2024, 0, 15),
         amount: 100,
         description: 'Income',
+        title: '',
         categoryId: null,
         originId: null,
         batchId: 'old-batch',
@@ -506,6 +507,8 @@ describe('ImportOrchestrator', () => {
         needsReview: false,
         isExcludedFromTotals: false,
         duplicateOf: null,
+        installmentGroupId: null,
+        recurringId: null,
         createdAt: new Date(),
         updatedAt: new Date(),
       };
@@ -690,6 +693,107 @@ describe('ImportOrchestrator', () => {
       expect(orchestrator.isExcelFileType('xlsx')).toBe(true);
       expect(orchestrator.isExcelFileType('xls')).toBe(true);
       expect(orchestrator.isExcelFileType('csv')).toBe(false);
+    });
+  });
+
+  describe('saveBatchWithTransactions - amount conversion', () => {
+    it('should convert parser amounts from reais to negative cents (e.g., 18.89 → -1889)', async () => {
+      const transactionsInReais: RawTransaction[] = [
+        { date: new Date(2024, 0, 15), amount: 18.89, description: 'Compra Supermercado' },
+        { date: new Date(2024, 0, 16), amount: 42.5, description: 'Restaurante' },
+        { date: new Date(2024, 0, 17), amount: 7.0, description: 'Padaria' },
+      ];
+
+      mockCsvParser.parse.mockReturnValue({
+        transactions: transactionsInReais,
+        errors: [],
+        warnings: [],
+        delimiter: ',',
+        columnMapping: { dateIndex: 0, amountIndex: 1, descriptionIndex: 2 },
+        totalLines: 4,
+        successfulLines: 3,
+      });
+
+      mockDedupeEngine.findDuplicates.mockReturnValue({
+        uniqueTransactions: transactionsInReais,
+        duplicates: [],
+        totalProcessed: 3,
+      });
+
+      await orchestrator.importFile('file:///path/to/fatura.csv', 'fatura.csv', 'csv');
+
+      expect(mockTransactionRepo.createMany).toHaveBeenCalledWith(
+        expect.arrayContaining([
+          expect.objectContaining({ amount: -1889, description: 'Compra Supermercado' }),
+          expect.objectContaining({ amount: -4250, description: 'Restaurante' }),
+          expect.objectContaining({ amount: -700, description: 'Padaria' }),
+        ])
+      );
+    });
+
+    it('should store zero amounts as zero after conversion', async () => {
+      const transactionsWithZero: RawTransaction[] = [
+        { date: new Date(2024, 0, 15), amount: 0, description: 'Zero amount transaction' },
+      ];
+
+      mockCsvParser.parse.mockReturnValue({
+        transactions: transactionsWithZero,
+        errors: [],
+        warnings: [],
+        delimiter: ',',
+        columnMapping: { dateIndex: 0, amountIndex: 1, descriptionIndex: 2 },
+        totalLines: 2,
+        successfulLines: 1,
+      });
+
+      mockDedupeEngine.findDuplicates.mockReturnValue({
+        uniqueTransactions: transactionsWithZero,
+        duplicates: [],
+        totalProcessed: 1,
+      });
+
+      await orchestrator.importFile('file:///path/to/fatura.csv', 'fatura.csv', 'csv');
+
+      expect(mockTransactionRepo.createMany).toHaveBeenCalledWith(
+        expect.arrayContaining([
+          expect.objectContaining({ amount: 0, description: 'Zero amount transaction' }),
+        ])
+      );
+    });
+
+    it('should convert negative parser amounts to positive cents (credits/refunds)', async () => {
+      const transactionsWithNegative: RawTransaction[] = [
+        { date: new Date(2024, 0, 15), amount: -5.5, description: 'Refund partial' },
+        { date: new Date(2024, 0, 16), amount: -123.45, description: 'Large refund' },
+      ];
+
+      mockCsvParser.parse.mockReturnValue({
+        transactions: transactionsWithNegative,
+        errors: [],
+        warnings: [],
+        delimiter: ',',
+        columnMapping: { dateIndex: 0, amountIndex: 1, descriptionIndex: 2 },
+        totalLines: 3,
+        successfulLines: 2,
+      });
+
+      mockDedupeEngine.findDuplicates.mockReturnValue({
+        uniqueTransactions: transactionsWithNegative,
+        duplicates: [],
+        totalProcessed: 2,
+      });
+
+      await orchestrator.importFile('file:///path/to/fatura.csv', 'fatura.csv', 'csv');
+
+      // Negative in source = credit/refund → store as positive cents
+      // -5.50 → abs(5.50) * 100 = 550 (positive)
+      // -123.45 → abs(123.45) * 100 = 12345 (positive)
+      expect(mockTransactionRepo.createMany).toHaveBeenCalledWith(
+        expect.arrayContaining([
+          expect.objectContaining({ amount: 550, description: 'Refund partial' }),
+          expect.objectContaining({ amount: 12345, description: 'Large refund' }),
+        ])
+      );
     });
   });
 });

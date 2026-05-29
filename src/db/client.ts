@@ -61,25 +61,41 @@ export function resetDbClient() {
   }
 }
 
+// Track if we're already inside a transaction
+let isInTransaction = false;
+
 /**
  * Execute a function within a database transaction
  * Ensures atomicity - all changes are committed or rolled back together
+ * Supports re-entrant calls (if already in a transaction, just runs the function)
  *
  * @param fn - Function to execute within the transaction
  * @returns The result of the function
  * @throws If the function throws, the transaction is rolled back
  */
 export async function withTransaction<T>(fn: () => Promise<T>): Promise<T> {
-  const sqlite = getExpoDatabase();
+  // If already in a transaction, just run the function (no nesting)
+  if (isInTransaction) {
+    return fn();
+  }
 
+  const sqlite = getExpoDatabase();
+  isInTransaction = true;
+
+  sqlite.execSync('BEGIN TRANSACTION');
   try {
-    sqlite.execSync('BEGIN TRANSACTION');
     const result = await fn();
     sqlite.execSync('COMMIT');
     return result;
   } catch (error) {
-    sqlite.execSync('ROLLBACK');
+    try {
+      sqlite.execSync('ROLLBACK');
+    } catch {
+      // Ignore rollback errors
+    }
     throw error;
+  } finally {
+    isInTransaction = false;
   }
 }
 

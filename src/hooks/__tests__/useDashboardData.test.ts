@@ -31,8 +31,40 @@ jest.mock('../../db/schema', () => ({
     type: 'type',
     color: 'color',
     icon: 'icon',
+    expenseGroup: 'expense_group',
+  },
+  weeklyRecurringGroups: {
+    id: 'id',
+    categoryId: 'category_id',
+    name: 'name',
+    defaultAmount: 'default_amount',
+  },
+  weeklyOccurrences: {
+    id: 'id',
+    weeklyGroupId: 'weekly_group_id',
+    amount: 'amount',
+    referenceMonth: 'reference_month',
+    isPaid: 'is_paid',
   },
 }));
+
+jest.mock('../../stores/weeklyRecurringStore', () => {
+  const mockState = {
+    groups: [],
+    occurrences: [],
+    expandedGroupIds: new Set(),
+    toggleGroupExpansion: jest.fn(),
+    collapseAllGroups: jest.fn(),
+    loadOccurrencesForMonth: jest.fn(),
+    updateOccurrence: jest.fn(),
+  };
+  const useWeeklyRecurringStore = jest.fn(() => mockState);
+  useWeeklyRecurringStore.getState = jest.fn(() => mockState);
+  return {
+    useWeeklyRecurringStore,
+    useWeeklyMonthlyTotal: () => 0,
+  };
+});
 
 jest.mock('drizzle-orm', () => ({
   eq: jest.fn((a, b) => ({ type: 'eq', a, b })),
@@ -53,6 +85,7 @@ describe('useDashboardData', () => {
     mockGetDb.mockReturnValue({
       select: jest.fn().mockReturnThis(),
       from: jest.fn().mockReturnThis(),
+      innerJoin: jest.fn().mockReturnThis(),
       leftJoin: jest.fn().mockReturnThis(),
       where: jest.fn().mockReturnThis(),
       groupBy: jest.fn().mockReturnThis(),

@@ -650,15 +650,33 @@ export class ImportOrchestrator {
     });
 
     // Convert raw transactions to DTOs
-    const transactionDTOs: CreateTransactionDTO[] = transactions.map((tx) => ({
-      date: tx.date,
-      amount: tx.amount,
-      description: tx.description,
-      batchId: batch.id,
-      referenceMonth: this.calculateReferenceMonth(tx.date),
-      needsReview: true,
-      isExcludedFromTotals: false,
-    }));
+    // Parser returns amounts in reais. We convert to cents and preserve the sign semantics:
+    // - Positive parser amount = expense → store as negative cents
+    // - Negative parser amount = credit/refund → store as positive cents
+    // - Zero stays zero
+    const transactionDTOs: CreateTransactionDTO[] = transactions.map((tx) => {
+      const cents = Math.round(Math.abs(tx.amount) * 100);
+      let amount: number;
+      if (cents === 0) {
+        amount = 0;
+      } else if (tx.amount < 0) {
+        // Negative in source = credit/payment received → store as positive
+        amount = cents;
+      } else {
+        // Positive in source = expense → store as negative
+        amount = cents * -1;
+      }
+      return {
+        title: tx.description || '',
+        date: tx.date,
+        amount,
+        description: tx.description,
+        batchId: batch.id,
+        referenceMonth: this.calculateReferenceMonth(tx.date),
+        needsReview: true,
+        isExcludedFromTotals: false,
+      };
+    });
 
     // Create all transactions
     await this.transactionRepo.createMany(transactionDTOs);

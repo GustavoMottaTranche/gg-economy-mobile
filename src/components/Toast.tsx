@@ -23,32 +23,18 @@ import {
   Dimensions,
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
+import { useThemeColors } from '../hooks/useThemeColors';
+import { spacing, borderRadius, typography } from '../constants/theme';
 import { useToasts, useToastStore, Toast as ToastType, ToastSeverity } from '../stores/toastStore';
 
 /**
- * Color schemes for different toast severities
+ * Severity icon mapping
  */
-const SEVERITY_COLORS: Record<ToastSeverity, { background: string; text: string; icon: string }> = {
-  error: {
-    background: '#fee2e2',
-    text: '#991b1b',
-    icon: '❌',
-  },
-  warning: {
-    background: '#fef3c7',
-    text: '#92400e',
-    icon: '⚠️',
-  },
-  info: {
-    background: '#dbeafe',
-    text: '#1e40af',
-    icon: 'ℹ️',
-  },
-  success: {
-    background: '#dcfce7',
-    text: '#166534',
-    icon: '✓',
-  },
+const SEVERITY_ICONS: Record<ToastSeverity, string> = {
+  error: '❌',
+  warning: '⚠️',
+  info: 'ℹ️',
+  success: '✓',
 };
 
 /**
@@ -72,11 +58,21 @@ interface ToastItemProps {
 /**
  * Individual Toast notification component
  */
-function ToastItem({ toast, onDismiss }: ToastItemProps): JSX.Element {
+function ToastItem({ toast, onDismiss }: ToastItemProps): React.JSX.Element {
   const { t } = useTranslation();
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const translateX = useRef(new Animated.Value(0)).current;
-  const colors = SEVERITY_COLORS[toast.severity];
+  const themeColors = useThemeColors();
+
+  // Derive severity colors from theme
+  const severityColorMap: Record<ToastSeverity, { background: string; text: string }> = {
+    error: { background: themeColors.semantic.danger.light, text: themeColors.semantic.danger.dark },
+    warning: { background: themeColors.semantic.warning.light, text: themeColors.semantic.warning.dark },
+    info: { background: themeColors.semantic.info.light, text: themeColors.semantic.info.dark },
+    success: { background: themeColors.semantic.success.light, text: themeColors.semantic.success.dark },
+  };
+  const colors = severityColorMap[toast.severity];
+  const icon = SEVERITY_ICONS[toast.severity];
 
   // Animate in on mount
   useEffect(() => {
@@ -160,7 +156,7 @@ function ToastItem({ toast, onDismiss }: ToastItemProps): JSX.Element {
       {...panResponder.panHandlers}
     >
       <View style={styles.toastContent}>
-        <Text style={styles.icon}>{colors.icon}</Text>
+        <Text style={styles.icon}>{icon}</Text>
         <View style={styles.textContainer}>
           {title && <Text style={[styles.title, { color: colors.text }]}>{title}</Text>}
           <Text style={[styles.message, { color: colors.text }]}>{message}</Text>
@@ -203,7 +199,7 @@ function ToastItem({ toast, onDismiss }: ToastItemProps): JSX.Element {
 /**
  * Toast container component that renders all active toasts
  */
-export function ToastContainer(): JSX.Element | null {
+export function ToastContainer(): React.JSX.Element | null {
   const toasts = useToasts();
   const dismissToast = useToastStore((state) => state.dismissToast);
 
@@ -238,11 +234,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginHorizontal: 16,
-    marginVertical: 4,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 12,
+    marginHorizontal: spacing.base,
+    marginVertical: spacing.xs,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.base,
+    borderRadius: borderRadius.md,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -258,39 +254,39 @@ const styles = StyleSheet.create({
   },
   icon: {
     fontSize: 18,
-    marginRight: 12,
+    marginRight: spacing.md,
   },
   textContainer: {
     flex: 1,
   },
   title: {
-    fontSize: 14,
+    fontSize: typography.caption.fontSize + 1,
     fontWeight: '600',
     marginBottom: 2,
   },
   message: {
-    fontSize: 14,
+    fontSize: typography.caption.fontSize + 1,
     lineHeight: 20,
   },
   actions: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginLeft: 12,
+    marginLeft: spacing.md,
   },
   actionButton: {
-    paddingHorizontal: 12,
+    paddingHorizontal: spacing.md,
     paddingVertical: 6,
-    marginRight: 8,
+    marginRight: spacing.sm,
   },
   actionText: {
-    fontSize: 14,
+    fontSize: typography.caption.fontSize + 1,
     fontWeight: '600',
   },
   dismissButton: {
-    padding: 4,
+    padding: spacing.xs,
   },
   dismissText: {
-    fontSize: 16,
+    fontSize: typography.body.fontSize,
     fontWeight: '500',
   },
 });

@@ -12,7 +12,6 @@ import {
   parseReferenceMonth,
   isSameDay,
   isSameMonth,
-  DateFormat,
 } from '../../../src/utils/formatDate';
 
 describe('formatDate', () => {

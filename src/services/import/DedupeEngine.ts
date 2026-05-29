@@ -458,7 +458,7 @@ export class DedupeEngine {
   private findCrossFileDuplicateFor(
     tx: RawTransaction,
     currentFileId: string,
-    seenTransactions: Array<{ tx: RawTransaction; fileId: string }>,
+    _seenTransactions: Array<{ tx: RawTransaction; fileId: string }>,
     fitIdIndex: Map<string, { tx: RawTransaction; fileId: string }>,
     dateAmountIndex: Map<string, Array<{ tx: RawTransaction; fileId: string }>>,
     options: {
@@ -640,7 +640,7 @@ export class DedupeEngine {
    */
   private findDuplicateFor(
     newTx: RawTransaction,
-    existingTransactions: (Transaction | RawTransaction)[],
+    _existingTransactions: (Transaction | RawTransaction)[],
     fitIdIndex: Map<string, Transaction | RawTransaction>,
     dateAmountIndex: Map<string, (Transaction | RawTransaction)[]>,
     options: { useFitId: boolean; useDescriptionSimilarity: boolean }
@@ -763,34 +763,34 @@ export class DedupeEngine {
     // Create distance matrix
     const dp: number[][] = Array(m + 1)
       .fill(null)
-      .map(() => Array(n + 1).fill(0));
+      .map(() => Array(n + 1).fill(0) as number[]);
 
     // Initialize first row and column
     for (let i = 0; i <= m; i++) {
-      dp[i][0] = i;
+      dp[i]![0] = i;
     }
     for (let j = 0; j <= n; j++) {
-      dp[0][j] = j;
+      dp[0]![j] = j;
     }
 
     // Fill in the rest of the matrix
     for (let i = 1; i <= m; i++) {
       for (let j = 1; j <= n; j++) {
         if (str1[i - 1] === str2[j - 1]) {
-          dp[i][j] = dp[i - 1][j - 1];
+          dp[i]![j] = dp[i - 1]![j - 1]!;
         } else {
-          dp[i][j] =
+          dp[i]![j] =
             1 +
             Math.min(
-              dp[i - 1][j], // deletion
-              dp[i][j - 1], // insertion
-              dp[i - 1][j - 1] // substitution
+              dp[i - 1]![j]!, // deletion
+              dp[i]![j - 1]!, // insertion
+              dp[i - 1]![j - 1]! // substitution
             );
         }
       }
     }
 
-    return dp[m][n];
+    return dp[m]![n]!;
   }
 
   /**

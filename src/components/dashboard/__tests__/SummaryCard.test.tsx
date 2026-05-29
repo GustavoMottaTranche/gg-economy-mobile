@@ -34,6 +34,16 @@ jest.mock('../../../i18n', () => ({
   getCurrencySymbol: () => '$',
 }));
 
+// Mock paymentStatusStore
+const mockLoadPaymentTotalsForMonth = jest.fn();
+jest.mock('../../../stores/paymentStatusStore', () => ({
+  usePaymentStatusStore: (selector: (state: unknown) => unknown) => {
+    const state = { loadPaymentTotalsForMonth: mockLoadPaymentTotalsForMonth };
+    return selector(state);
+  },
+  usePaymentTotals: () => null,
+}));
+
 describe('SummaryCard', () => {
   const defaultProps = {
     income: 500000, // $5,000.00 in cents

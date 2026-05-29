@@ -270,12 +270,12 @@ describe('ImportSummary', () => {
       const result = createAllFailedResult();
       const { getByText } = render(<ImportSummary {...defaultProps} result={result} />);
 
-      expect(getByText('fileImport.summary.troubleshooting.checkFileFormat')).toBeTruthy();
-      expect(getByText('fileImport.summary.troubleshooting.checkFileNotCorrupted')).toBeTruthy();
+      expect(getByText('import.summary.troubleshooting.checkFileFormat')).toBeTruthy();
+      expect(getByText('import.summary.troubleshooting.checkFileNotCorrupted')).toBeTruthy();
       expect(
-        getByText('fileImport.summary.troubleshooting.checkFileNotPasswordProtected')
+        getByText('import.summary.troubleshooting.checkFileNotPasswordProtected')
       ).toBeTruthy();
-      expect(getByText('fileImport.summary.troubleshooting.tryDifferentFile')).toBeTruthy();
+      expect(getByText('import.summary.troubleshooting.tryDifferentFile')).toBeTruthy();
     });
 
     it('does not display error container when some files succeed', () => {

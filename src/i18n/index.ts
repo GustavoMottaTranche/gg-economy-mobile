@@ -40,6 +40,7 @@ export const LOCALE_DISPLAY_NAMES: Record<SupportedLocale, string> = {
  */
 const resources = {
   'pt-BR': { translation: ptBR },
+  pt: { translation: ptBR },
   en: { translation: en },
 };
 
@@ -107,7 +108,6 @@ export async function initializeI18n(initialLocale?: SupportedLocale): Promise<v
     resources,
     lng: locale,
     fallbackLng: DEFAULT_LOCALE,
-    supportedLngs: SUPPORTED_LOCALES as unknown as string[],
 
     interpolation: {
       escapeValue: false, // React already escapes values

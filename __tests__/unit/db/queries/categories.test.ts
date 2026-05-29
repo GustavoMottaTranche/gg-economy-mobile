@@ -7,8 +7,8 @@ import { DEFAULT_CATEGORIES } from '../../../../src/db/queries/categories';
 
 describe('Category Query Functions', () => {
   describe('DEFAULT_CATEGORIES', () => {
-    it('should have 8 default categories', () => {
-      expect(DEFAULT_CATEGORIES).toHaveLength(8);
+    it('should have 61 default categories (30 fixed + 31 variable)', () => {
+      expect(DEFAULT_CATEGORIES).toHaveLength(61);
     });
 
     it('should have required properties for each category', () => {
@@ -17,68 +17,44 @@ describe('Category Query Functions', () => {
         expect(cat).toHaveProperty('type');
         expect(cat).toHaveProperty('icon');
         expect(cat).toHaveProperty('color');
-        expect(['income', 'expense']).toContain(cat.type);
+        expect(cat).toHaveProperty('expenseGroup');
+        expect(cat.type).toBe('expense');
+        expect(['fixed', 'variable']).toContain(cat.expenseGroup);
       });
     });
 
-    it('should have Salary as the only income category', () => {
-      const incomeCategories = DEFAULT_CATEGORIES.filter((c) => c.type === 'income');
-      expect(incomeCategories).toHaveLength(1);
-      expect(incomeCategories[0].name).toBe('Salary');
+    it('should have 30 fixed expense categories', () => {
+      const fixedCategories = DEFAULT_CATEGORIES.filter((c) => c.expenseGroup === 'fixed');
+      expect(fixedCategories).toHaveLength(30);
     });
 
-    it('should have 7 expense categories', () => {
-      const expenseCategories = DEFAULT_CATEGORIES.filter((c) => c.type === 'expense');
-      expect(expenseCategories).toHaveLength(7);
+    it('should have 31 variable expense categories', () => {
+      const variableCategories = DEFAULT_CATEGORIES.filter((c) => c.expenseGroup === 'variable');
+      expect(variableCategories).toHaveLength(31);
     });
 
-    it('should have Food category', () => {
-      const food = DEFAULT_CATEGORIES.find((c) => c.name === 'Food');
-      expect(food).toBeDefined();
-      expect(food?.type).toBe('expense');
-      expect(food?.icon).toBe('restaurant');
+    it('should have all categories as expense type', () => {
+      DEFAULT_CATEGORIES.forEach((cat) => {
+        expect(cat.type).toBe('expense');
+      });
     });
 
-    it('should have Transport category', () => {
-      const transport = DEFAULT_CATEGORIES.find((c) => c.name === 'Transport');
-      expect(transport).toBeDefined();
-      expect(transport?.type).toBe('expense');
-      expect(transport?.icon).toBe('car');
+    it('should have "Outros" (fixed) with icon ➕ and color #9E9E9E', () => {
+      const outrosFixed = DEFAULT_CATEGORIES.find(
+        (c) => c.name === 'Outros' && c.expenseGroup === 'fixed'
+      );
+      expect(outrosFixed).toBeDefined();
+      expect(outrosFixed?.icon).toBe('➕');
+      expect(outrosFixed?.color).toBe('#9E9E9E');
     });
 
-    it('should have Bills category', () => {
-      const bills = DEFAULT_CATEGORIES.find((c) => c.name === 'Bills');
-      expect(bills).toBeDefined();
-      expect(bills?.type).toBe('expense');
-      expect(bills?.icon).toBe('receipt');
-    });
-
-    it('should have Entertainment category', () => {
-      const entertainment = DEFAULT_CATEGORIES.find((c) => c.name === 'Entertainment');
-      expect(entertainment).toBeDefined();
-      expect(entertainment?.type).toBe('expense');
-      expect(entertainment?.icon).toBe('film');
-    });
-
-    it('should have Health category', () => {
-      const health = DEFAULT_CATEGORIES.find((c) => c.name === 'Health');
-      expect(health).toBeDefined();
-      expect(health?.type).toBe('expense');
-      expect(health?.icon).toBe('heart');
-    });
-
-    it('should have Shopping category', () => {
-      const shopping = DEFAULT_CATEGORIES.find((c) => c.name === 'Shopping');
-      expect(shopping).toBeDefined();
-      expect(shopping?.type).toBe('expense');
-      expect(shopping?.icon).toBe('shopping-bag');
-    });
-
-    it('should have Other category', () => {
-      const other = DEFAULT_CATEGORIES.find((c) => c.name === 'Other');
-      expect(other).toBeDefined();
-      expect(other?.type).toBe('expense');
-      expect(other?.icon).toBe('more-horizontal');
+    it('should have "Outros" (variable) with icon 📋 and color #757575', () => {
+      const outrosVariable = DEFAULT_CATEGORIES.find(
+        (c) => c.name === 'Outros' && c.expenseGroup === 'variable'
+      );
+      expect(outrosVariable).toBeDefined();
+      expect(outrosVariable?.icon).toBe('📋');
+      expect(outrosVariable?.color).toBe('#757575');
     });
 
     it('should have valid hex color codes', () => {
@@ -88,16 +64,27 @@ describe('Category Query Functions', () => {
       });
     });
 
-    it('should have unique names', () => {
-      const names = DEFAULT_CATEGORIES.map((c) => c.name);
-      const uniqueNames = new Set(names);
-      expect(uniqueNames.size).toBe(names.length);
+    it('should have non-empty icon for each category', () => {
+      DEFAULT_CATEGORIES.forEach((cat) => {
+        expect(cat.icon.length).toBeGreaterThan(0);
+      });
     });
 
-    it('should have unique colors', () => {
-      const colors = DEFAULT_CATEGORIES.map((c) => c.color);
-      const uniqueColors = new Set(colors);
-      expect(uniqueColors.size).toBe(colors.length);
+    it('should not contain old generic categories', () => {
+      const oldNames = [
+        'Food',
+        'Transport',
+        'Salary',
+        'Bills',
+        'Entertainment',
+        'Health',
+        'Shopping',
+        'Other',
+      ];
+      const names = DEFAULT_CATEGORIES.map((c) => c.name);
+      oldNames.forEach((oldName) => {
+        expect(names).not.toContain(oldName);
+      });
     });
   });
 });

@@ -14,13 +14,15 @@
  *
  * **Validates: Requirements 28, 30, 34, 3.2, 3.3, 3.4, 4.3, 7.4, 8.2**
  */
-import { useEffect, useState, useCallback, useRef } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { Stack, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
 import Constants from 'expo-constants';
 import { View, StyleSheet } from 'react-native';
 import { useTranslation } from 'react-i18next';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 import { DatabaseProvider } from '../src/db';
 import { ErrorBoundary } from '../src/components/ErrorBoundary';
@@ -29,6 +31,7 @@ import { initializeI18n, isI18nInitialized, i18n } from '../src/i18n';
 import { useAppStateCleanup } from '../src/hooks';
 import { notificationScheduler } from '../src/services/notifications';
 import { useNotificationStore } from '../src/stores/notificationStore';
+import { useThemeStore } from '../src/stores/themeStore';
 
 // Check if running in Expo Go (notifications not supported since SDK 53)
 const isExpoGo = Constants.appOwnership === 'expo';
@@ -74,6 +77,11 @@ function AppContent() {
   const { t } = useTranslation();
   const router = useRouter();
 
+  // Theme-aware status bar style: light-content for dark mode, dark-content for light mode
+  // Subscribes to resolvedScheme so status bar updates reactively within 500ms of theme change
+  const resolvedScheme = useThemeStore((s) => s.resolvedScheme);
+  const statusBarStyle = resolvedScheme === 'dark' ? 'light' : 'dark';
+
   // Get notification store state for restoration on app startup
   const { settings, isHydrated } = useNotificationStore();
 
@@ -100,7 +108,7 @@ function AppContent() {
   // Skip if running in Expo Go (notifications not supported)
   useEffect(() => {
     if (isExpoGo) {
-      console.log('[AppContent] Running in Expo Go - notifications disabled');
+      // Notifications not supported in Expo Go since SDK 53
       return;
     }
 
@@ -122,9 +130,17 @@ function AppContent() {
 
         // Listener for when notification is received while app is foregrounded
         // This triggers auto-rescheduling of the next notification
-        receivedSubscription = Notifications.addNotificationReceivedListener(() => {
-          notificationScheduler.handleNotificationReceived();
-        });
+        // For multi-slot mode, detects slotHour/slotMinute in payload to reschedule the specific slot
+        receivedSubscription = Notifications.addNotificationReceivedListener(
+          (notification: { request?: { content?: { data?: { slotHour?: number; slotMinute?: number } } } }) => {
+            const data = notification?.request?.content?.data;
+            if (data && typeof data.slotHour === 'number' && typeof data.slotMinute === 'number') {
+              notificationScheduler.handleSlotNotificationReceived(data.slotHour, data.slotMinute);
+            } else {
+              notificationScheduler.handleNotificationReceived();
+            }
+          }
+        );
 
         // Listener for when user taps on notification
         // Navigate to Manual Entry screen for quick data input
@@ -172,7 +188,7 @@ function AppContent() {
 
   return (
     <View style={styles.container} onLayout={onLayoutRootView}>
-      <StatusBar style="auto" />
+      <StatusBar style={statusBarStyle} />
       <Stack>
         <Stack.Screen
           name="(tabs)"
@@ -185,6 +201,7 @@ function AppContent() {
           options={{
             presentation: 'modal',
             headerShown: false,
+            // Import routes are deprecated - they redirect to manual entry
           }}
         />
         <Stack.Screen
@@ -193,6 +210,16 @@ function AppContent() {
             presentation: 'modal',
             title: t('transactions.editTransaction'),
             headerShown: true,
+            headerStyle: {
+              backgroundColor: resolvedScheme === 'dark' ? '#1C1C1E' : '#F5F5F7',
+            },
+            headerTintColor: resolvedScheme === 'dark' ? '#FFFFFF' : '#1C1C1E',
+          }}
+        />
+        <Stack.Screen
+          name="weekly-recurring"
+          options={{
+            headerShown: false,
           }}
         />
       </Stack>
@@ -206,13 +233,17 @@ function AppContent() {
  */
 export default function RootLayout() {
   return (
-    <ErrorBoundary>
-      <AppInitializer>
-        <DatabaseProvider>
-          <AppContent />
-        </DatabaseProvider>
-      </AppInitializer>
-    </ErrorBoundary>
+    <GestureHandlerRootView style={styles.container}>
+      <SafeAreaProvider>
+        <ErrorBoundary>
+          <AppInitializer>
+            <DatabaseProvider>
+              <AppContent />
+            </DatabaseProvider>
+          </AppInitializer>
+        </ErrorBoundary>
+      </SafeAreaProvider>
+    </GestureHandlerRootView>
   );
 }
 

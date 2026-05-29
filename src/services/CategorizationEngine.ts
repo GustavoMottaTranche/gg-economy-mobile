@@ -302,8 +302,9 @@ export class CategorizationEngine {
     similarities.sort((a, b) => b.similarity - a.similarity);
 
     // Return the category of the most similar description if similarity is high enough
-    if (similarities.length > 0 && similarities[0].similarity >= similarityThreshold) {
-      return similarities[0].categorization.categoryId;
+    const topMatch = similarities[0];
+    if (similarities.length > 0 && topMatch && topMatch.similarity >= similarityThreshold) {
+      return topMatch.categorization.categoryId;
     }
 
     return null;
@@ -363,10 +364,16 @@ export class CategorizationEngine {
     }
 
     const normalized = descriptions.map((d) => d.toLowerCase());
-    let prefix = normalized[0];
+    const firstNormalized = normalized[0];
+    if (!firstNormalized) {
+      return '';
+    }
+    let prefix = firstNormalized;
 
     for (let i = 1; i < normalized.length; i++) {
-      while (!normalized[i].startsWith(prefix) && prefix.length > 0) {
+      const current = normalized[i];
+      if (!current) continue;
+      while (!current.startsWith(prefix) && prefix.length > 0) {
         prefix = prefix.slice(0, -1);
       }
     }

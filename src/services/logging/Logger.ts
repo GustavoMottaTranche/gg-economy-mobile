@@ -45,7 +45,7 @@ export class Logger {
 
   constructor(config: Partial<LoggerConfig> = {}) {
     this.config = {
-      minLevel: __DEV__ ? 'debug' : 'warn',
+      minLevel: __DEV__ ? 'info' : 'warn',
       enableConsole: true,
       ...config,
     };

@@ -13,6 +13,8 @@ import { View, Text, StyleSheet, TouchableOpacity, FlatList, ScrollView } from '
 import { useTranslation } from 'react-i18next';
 import type { SheetInfo } from '../../services/import/types';
 import { useImportPreferences } from '../../hooks/useImportPreferences';
+import { useThemeColors } from '../../hooks/useThemeColors';
+import { spacing, borderRadius } from '../../constants/theme';
 
 /**
  * Default timeout in seconds for auto-selection
@@ -102,8 +104,9 @@ const SheetItem = memo(function SheetItem({
   isSelected: boolean;
   isSuggested: boolean;
   onPress: (sheetName: string) => void;
-}): JSX.Element {
+}): React.JSX.Element {
   const { t } = useTranslation();
+  const colors = useThemeColors();
 
   const handlePress = useCallback(() => {
     onPress(sheet.name);
@@ -113,8 +116,9 @@ const SheetItem = memo(function SheetItem({
     <TouchableOpacity
       style={[
         styles.sheetItem,
-        isSelected && styles.sheetItemSelected,
-        isSuggested && !isSelected && styles.sheetItemSuggested,
+        { backgroundColor: colors.background.secondary, borderColor: colors.border.default },
+        isSelected && { backgroundColor: colors.semantic.primary.light, borderColor: colors.interactive.primary },
+        isSuggested && !isSelected && { backgroundColor: colors.semantic.success.light, borderColor: colors.semantic.success.base },
       ]}
       onPress={handlePress}
       activeOpacity={0.7}
@@ -127,26 +131,32 @@ const SheetItem = memo(function SheetItem({
         <View style={styles.sheetTitleContainer}>
           <Text style={styles.sheetIcon}>📊</Text>
           <Text
-            style={[styles.sheetName, isSelected && styles.sheetNameSelected]}
+            style={[
+              styles.sheetName,
+              { color: colors.text.primary },
+              isSelected && { color: colors.interactive.primaryPressed },
+            ]}
             numberOfLines={1}
           >
             {sheet.name}
           </Text>
           {/* Suggested badge (Requirement 11.3) */}
           {isSuggested && (
-            <View style={styles.suggestedBadge} testID={`suggested-badge-${sheet.name}`}>
-              <Text style={styles.suggestedBadgeText}>{t('fileImport.sheetSelector.suggested')}</Text>
+            <View style={[styles.suggestedBadge, { backgroundColor: colors.semantic.success.light }]} testID={`suggested-badge-${sheet.name}`}>
+              <Text style={[styles.suggestedBadgeText, { color: colors.semantic.success.dark }]}>
+                {t('fileImport.sheetSelector.suggested')}
+              </Text>
             </View>
           )}
         </View>
-        <Text style={styles.sheetRowCount}>
+        <Text style={[styles.sheetRowCount, { color: colors.text.secondary }]}>
           {t('fileImport.sheetSelector.rowCount', { count: sheet.rowCount })}
         </Text>
       </View>
 
       {/* Preview of first rows (Requirement 9.3) */}
       {sheet.preview.length > 0 && (
-        <View style={styles.previewContainer}>
+        <View style={[styles.previewContainer, { backgroundColor: colors.surface.card, borderColor: colors.border.default }]}>
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
@@ -158,7 +168,11 @@ const SheetItem = memo(function SheetItem({
                   {row.slice(0, 5).map((cell, cellIndex) => (
                     <Text
                       key={cellIndex}
-                      style={[styles.previewCell, rowIndex === 0 && styles.previewCellHeader]}
+                      style={[
+                        styles.previewCell,
+                        { color: colors.text.primary },
+                        rowIndex === 0 && { fontWeight: '600', color: colors.text.primary, backgroundColor: colors.background.tertiary },
+                      ]}
                       numberOfLines={1}
                     >
                       {cell || '-'}
@@ -172,8 +186,8 @@ const SheetItem = memo(function SheetItem({
       )}
 
       {isSelected && (
-        <View style={styles.selectedIndicator}>
-          <Text style={styles.selectedIcon}>✓</Text>
+        <View style={[styles.selectedIndicator, { backgroundColor: colors.interactive.primary }]}>
+          <Text style={[styles.selectedIcon, { color: colors.text.inverse }]}>✓</Text>
         </View>
       )}
     </TouchableOpacity>
@@ -212,8 +226,9 @@ function SheetSelectorComponent({
   onTimeout,
   timeout = DEFAULT_SHEET_SELECTION_TIMEOUT,
   fileName,
-}: SheetSelectorProps): JSX.Element {
+}: SheetSelectorProps): React.JSX.Element {
   const { t } = useTranslation();
+  const colors = useThemeColors();
   const { getSheetPreference, setSheetPreference } = useImportPreferences();
 
   // Extract file pattern for preference matching (Requirement 11.2, 11.3)
@@ -312,10 +327,11 @@ function SheetSelectorComponent({
    * Saves the sheet preference for future imports (Requirement 11.2)
    */
   const handleSelectFirst = useCallback(() => {
-    if (sheets.length > 0) {
+    const firstSheet = sheets[0];
+    if (sheets.length > 0 && firstSheet) {
       setUserInteracted(true);
       clearTimers();
-      const firstSheetName = sheets[0].name;
+      const firstSheetName = firstSheet.name;
       // Save sheet preference for this file pattern (Requirement 11.2)
       if (filePattern) {
         setSheetPreference(filePattern, firstSheetName);
@@ -345,24 +361,24 @@ function SheetSelectorComponent({
   const showCountdown = !userInteracted && remainingTime > 0;
 
   return (
-    <View style={styles.container} testID="sheet-selector">
+    <View style={[styles.container, { backgroundColor: colors.surface.card }]} testID="sheet-selector">
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.title}>{t('fileImport.sheetSelector.title')}</Text>
-        <Text style={styles.subtitle}>
+        <Text style={[styles.title, { color: colors.text.primary }]}>{t('fileImport.sheetSelector.title')}</Text>
+        <Text style={[styles.subtitle, { color: colors.text.secondary }]}>
           {t('fileImport.sheetSelector.subtitle', { count: sheets.length })}
         </Text>
       </View>
 
       {/* Countdown Timer (Requirement 9.4) */}
       {showCountdown && (
-        <View style={styles.countdownContainer} testID="countdown-container">
-          <Text style={styles.countdownText}>
+        <View style={[styles.countdownContainer, { backgroundColor: colors.semantic.warning.light, borderColor: colors.semantic.warning.base }]} testID="countdown-container">
+          <Text style={[styles.countdownText, { color: colors.semantic.warning.dark }]}>
             {t('fileImport.sheetSelector.autoSelectIn', { seconds: remainingTime })}
           </Text>
-          <View style={styles.countdownBar}>
+          <View style={[styles.countdownBar, { backgroundColor: colors.semantic.warning.light }]}>
             <View
-              style={[styles.countdownBarFill, { width: `${(remainingTime / timeout) * 100}%` }]}
+              style={[styles.countdownBarFill, { width: `${(remainingTime / timeout) * 100}%`, backgroundColor: colors.semantic.warning.base }]}
               testID="countdown-bar-fill"
             />
           </View>
@@ -381,22 +397,26 @@ function SheetSelectorComponent({
       />
 
       {/* Action Buttons */}
-      <View style={styles.actionContainer}>
+      <View style={[styles.actionContainer, { borderTopColor: colors.border.default }]}>
         {!hasSelection && (
           <TouchableOpacity
-            style={styles.defaultButton}
+            style={[styles.defaultButton, { backgroundColor: colors.background.tertiary }]}
             onPress={handleSelectFirst}
             activeOpacity={0.7}
             accessibilityRole="button"
             accessibilityLabel={t('fileImport.sheetSelector.useFirst')}
             testID="use-first-button"
           >
-            <Text style={styles.defaultButtonText}>{t('fileImport.sheetSelector.useFirst')}</Text>
+            <Text style={[styles.defaultButtonText, { color: colors.text.primary }]}>{t('fileImport.sheetSelector.useFirst')}</Text>
           </TouchableOpacity>
         )}
 
         <TouchableOpacity
-          style={[styles.confirmButton, !hasSelection && styles.confirmButtonDisabled]}
+          style={[
+            styles.confirmButton,
+            { backgroundColor: colors.interactive.primary },
+            !hasSelection && { backgroundColor: colors.interactive.disabled },
+          ]}
           onPress={handleConfirm}
           disabled={!hasSelection}
           activeOpacity={0.7}
@@ -406,7 +426,11 @@ function SheetSelectorComponent({
           testID="confirm-sheet-button"
         >
           <Text
-            style={[styles.confirmButtonText, !hasSelection && styles.confirmButtonTextDisabled]}
+            style={[
+              styles.confirmButtonText,
+              { color: colors.text.inverse },
+              !hasSelection && { color: colors.text.tertiary },
+            ]}
           >
             {hasSelection
               ? t('fileImport.sheetSelector.importSheet', { name: selectedSheet })
@@ -424,78 +448,60 @@ function SheetSelectorComponent({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#ffffff',
   },
   header: {
-    paddingHorizontal: 16,
-    paddingTop: 16,
-    paddingBottom: 12,
+    paddingHorizontal: spacing.base,
+    paddingTop: spacing.base,
+    paddingBottom: spacing.md,
   },
   title: {
     fontSize: 24,
     fontWeight: '700',
-    color: '#111827',
-    marginBottom: 4,
+    marginBottom: spacing.xs,
   },
   subtitle: {
     fontSize: 14,
-    color: '#6b7280',
     lineHeight: 20,
   },
   countdownContainer: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    backgroundColor: '#fef3c7',
+    paddingHorizontal: spacing.base,
+    paddingVertical: spacing.md,
     borderTopWidth: 1,
     borderBottomWidth: 1,
-    borderColor: '#fcd34d',
   },
   countdownText: {
     fontSize: 14,
-    color: '#92400e',
     fontWeight: '500',
-    marginBottom: 8,
+    marginBottom: spacing.sm,
     textAlign: 'center',
   },
   countdownBar: {
     height: 4,
-    backgroundColor: '#fde68a',
     borderRadius: 2,
     overflow: 'hidden',
   },
   countdownBarFill: {
     height: '100%',
-    backgroundColor: '#f59e0b',
     borderRadius: 2,
   },
   sheetList: {
     flex: 1,
   },
   sheetListContent: {
-    paddingVertical: 8,
+    paddingVertical: spacing.sm,
   },
   sheetItem: {
-    marginHorizontal: 16,
+    marginHorizontal: spacing.base,
     marginVertical: 6,
-    padding: 12,
-    backgroundColor: '#f9fafb',
-    borderRadius: 12,
+    padding: spacing.md,
+    borderRadius: borderRadius.md,
     borderWidth: 2,
-    borderColor: '#e5e7eb',
-  },
-  sheetItemSelected: {
-    backgroundColor: '#eff6ff',
-    borderColor: '#3b82f6',
-  },
-  sheetItemSuggested: {
-    backgroundColor: '#f0fdf4',
-    borderColor: '#86efac',
   },
   sheetHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: spacing.sm,
   },
   sheetTitleContainer: {
     flexDirection: 'row',
@@ -504,115 +510,86 @@ const styles = StyleSheet.create({
   },
   sheetIcon: {
     fontSize: 20,
-    marginRight: 8,
+    marginRight: spacing.sm,
   },
   sheetName: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#111827',
     flex: 1,
   },
-  sheetNameSelected: {
-    color: '#1d4ed8',
-  },
   suggestedBadge: {
-    marginLeft: 8,
-    paddingHorizontal: 8,
+    marginLeft: spacing.sm,
+    paddingHorizontal: spacing.sm,
     paddingVertical: 2,
-    backgroundColor: '#dcfce7',
     borderRadius: 10,
   },
   suggestedBadgeText: {
     fontSize: 10,
     fontWeight: '600',
-    color: '#166534',
     textTransform: 'uppercase',
   },
   sheetRowCount: {
     fontSize: 12,
-    color: '#6b7280',
-    marginLeft: 8,
+    marginLeft: spacing.sm,
   },
   previewContainer: {
-    backgroundColor: '#ffffff',
-    borderRadius: 8,
+    borderRadius: borderRadius.sm,
     overflow: 'hidden',
     borderWidth: 1,
-    borderColor: '#e5e7eb',
   },
   previewScroll: {
     maxHeight: 100,
   },
   previewTable: {
-    padding: 8,
+    padding: spacing.sm,
   },
   previewRow: {
     flexDirection: 'row',
-    marginBottom: 4,
+    marginBottom: spacing.xs,
   },
   previewCell: {
     width: 80,
     fontSize: 11,
-    color: '#374151',
-    paddingHorizontal: 4,
+    paddingHorizontal: spacing.xs,
     paddingVertical: 2,
-  },
-  previewCellHeader: {
-    fontWeight: '600',
-    color: '#111827',
-    backgroundColor: '#f3f4f6',
-    borderRadius: 2,
   },
   selectedIndicator: {
     position: 'absolute',
-    top: 12,
-    right: 12,
+    top: spacing.md,
+    right: spacing.md,
     width: 24,
     height: 24,
     borderRadius: 12,
-    backgroundColor: '#3b82f6',
     justifyContent: 'center',
     alignItems: 'center',
   },
   selectedIcon: {
     fontSize: 14,
-    color: '#ffffff',
     fontWeight: '700',
   },
   actionContainer: {
-    paddingHorizontal: 16,
-    paddingVertical: 16,
+    paddingHorizontal: spacing.base,
+    paddingVertical: spacing.base,
     borderTopWidth: 1,
-    borderTopColor: '#e5e7eb',
-    gap: 12,
+    gap: spacing.md,
   },
   defaultButton: {
-    paddingVertical: 12,
-    backgroundColor: '#f3f4f6',
-    borderRadius: 12,
+    paddingVertical: spacing.md,
+    borderRadius: borderRadius.md,
     alignItems: 'center',
   },
   defaultButtonText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#374151',
   },
   confirmButton: {
     paddingVertical: 14,
-    backgroundColor: '#3b82f6',
-    borderRadius: 12,
+    borderRadius: borderRadius.md,
     alignItems: 'center',
-  },
-  confirmButtonDisabled: {
-    backgroundColor: '#d1d5db',
   },
   confirmButtonText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#ffffff',
-  },
-  confirmButtonTextDisabled: {
-    color: '#9ca3af',
   },
 });
 

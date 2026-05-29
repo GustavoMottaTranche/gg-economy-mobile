@@ -13,7 +13,30 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 /**
  * Notification frequency options
  */
-export type NotificationFrequency = 'daily' | 'every2days' | 'every3days' | 'weekly' | 'disabled';
+export type NotificationFrequency =
+  | 'daily'
+  | 'every2days'
+  | 'every3days'
+  | 'weekly'
+  | 'disabled'
+  | 'multipleDaily';
+
+/**
+ * A specific hour and minute combination representing a scheduled notification time within a day
+ */
+export interface TimeSlot {
+  /** Hour of the day (0-23) */
+  hour: number;
+  /** Minute of the hour (0, 15, 30, 45) */
+  minute: number;
+}
+
+/**
+ * Returns a zero-padded "HH:MM" string key for a TimeSlot
+ */
+export function timeSlotKey(slot: TimeSlot): string {
+  return `${slot.hour.toString().padStart(2, '0')}:${slot.minute.toString().padStart(2, '0')}`;
+}
 
 /**
  * Notification settings state
@@ -31,6 +54,10 @@ export interface NotificationSettings {
   scheduledNotificationId: string | null;
   /** Last notification delivery time (ISO string) */
   lastDeliveryTime: string | null;
+  /** Configured time slots for multipleDaily frequency */
+  timeSlots: TimeSlot[];
+  /** Mapping of time slot keys ("HH:MM") to scheduled notification IDs */
+  timeSlotNotificationIds: Record<string, string>;
 }
 
 /**
@@ -48,6 +75,8 @@ export const DEFAULT_NOTIFICATION_SETTINGS: NotificationSettings = {
   preferredMinute: 0,
   scheduledNotificationId: null,
   lastDeliveryTime: null,
+  timeSlots: [],
+  timeSlotNotificationIds: {},
 };
 
 /**
@@ -86,6 +115,18 @@ interface NotificationStoreActions {
 
   /** Reset store to defaults */
   reset: () => void;
+
+  /** Add a time slot (sorted insertion, validates uniqueness and max 5). Returns false if rejected. */
+  addTimeSlot: (slot: TimeSlot) => boolean;
+
+  /** Remove a time slot by key (validates min 1). Returns false if rejected. */
+  removeTimeSlot: (key: string) => boolean;
+
+  /** Update the notification ID mapping for a specific slot. If id is null, deletes the key. */
+  setTimeSlotNotificationId: (key: string, id: string | null) => void;
+
+  /** Bulk replace all time slot notification IDs */
+  setTimeSlotNotificationIds: (ids: Record<string, string>) => void;
 }
 
 type NotificationStore = NotificationStoreState & NotificationStoreActions;
@@ -104,7 +145,7 @@ const initialState: NotificationStoreState = {
  */
 export const useNotificationStore = create<NotificationStore>()(
   persist(
-    (set, get) => ({
+    (set, _get) => ({
       ...initialState,
 
       setFrequency: (frequency: NotificationFrequency) => {
@@ -176,6 +217,90 @@ export const useNotificationStore = create<NotificationStore>()(
       reset: () => {
         set(initialState);
       },
+
+      addTimeSlot: (slot: TimeSlot): boolean => {
+        const state = _get();
+        const currentSlots = state.settings.timeSlots;
+
+        // Enforce max 5
+        if (currentSlots.length >= 5) {
+          return false;
+        }
+
+        // Check uniqueness via timeSlotKey
+        const newKey = timeSlotKey(slot);
+        const isDuplicate = currentSlots.some((s) => timeSlotKey(s) === newKey);
+        if (isDuplicate) {
+          return false;
+        }
+
+        // Insert in sorted chronological order (compare hour first, then minute)
+        const newSlots = [...currentSlots, slot].sort((a, b) => {
+          if (a.hour !== b.hour) return a.hour - b.hour;
+          return a.minute - b.minute;
+        });
+
+        set((s) => ({
+          settings: {
+            ...s.settings,
+            timeSlots: newSlots,
+          },
+        }));
+
+        return true;
+      },
+
+      removeTimeSlot: (key: string): boolean => {
+        const state = _get();
+        const currentSlots = state.settings.timeSlots;
+
+        // Enforce min 1
+        if (currentSlots.length <= 1) {
+          return false;
+        }
+
+        const newSlots = currentSlots.filter((s) => timeSlotKey(s) !== key);
+
+        // If no slot was found matching the key, return false
+        if (newSlots.length === currentSlots.length) {
+          return false;
+        }
+
+        set((s) => ({
+          settings: {
+            ...s.settings,
+            timeSlots: newSlots,
+          },
+        }));
+
+        return true;
+      },
+
+      setTimeSlotNotificationId: (key: string, id: string | null): void => {
+        set((state) => {
+          const newMapping = { ...state.settings.timeSlotNotificationIds };
+          if (id === null) {
+            delete newMapping[key];
+          } else {
+            newMapping[key] = id;
+          }
+          return {
+            settings: {
+              ...state.settings,
+              timeSlotNotificationIds: newMapping,
+            },
+          };
+        });
+      },
+
+      setTimeSlotNotificationIds: (ids: Record<string, string>): void => {
+        set((state) => ({
+          settings: {
+            ...state.settings,
+            timeSlotNotificationIds: ids,
+          },
+        }));
+      },
     }),
     {
       name: 'gg-economy-notification-store',
@@ -188,6 +313,38 @@ export const useNotificationStore = create<NotificationStore>()(
       onRehydrateStorage: () => (state) => {
         if (state) {
           state.isHydrated = true;
+
+          // Backward compatibility: initialize timeSlots if missing
+          if (!state.settings.timeSlots) {
+            state.settings.timeSlots = [
+              {
+                hour: state.settings.preferredHour,
+                minute: state.settings.preferredMinute,
+              },
+            ];
+          }
+
+          // Initialize mapping if missing
+          if (!state.settings.timeSlotNotificationIds) {
+            state.settings.timeSlotNotificationIds = {};
+          }
+
+          // Validate frequency - fallback to defaults if invalid
+          const validFrequencies: string[] = [
+            'daily',
+            'every2days',
+            'every3days',
+            'weekly',
+            'disabled',
+            'multipleDaily',
+          ];
+          if (!validFrequencies.includes(state.settings.frequency)) {
+            state.settings = {
+              ...DEFAULT_NOTIFICATION_SETTINGS,
+              timeSlots: [],
+              timeSlotNotificationIds: {},
+            };
+          }
         }
       },
     }
@@ -206,6 +363,14 @@ export function useNotificationSettings() {
     (state) => state.setScheduledNotificationId
   );
   const recordDelivery = useNotificationStore((state) => state.recordDelivery);
+  const addTimeSlot = useNotificationStore((state) => state.addTimeSlot);
+  const removeTimeSlot = useNotificationStore((state) => state.removeTimeSlot);
+  const setTimeSlotNotificationId = useNotificationStore(
+    (state) => state.setTimeSlotNotificationId
+  );
+  const setTimeSlotNotificationIds = useNotificationStore(
+    (state) => state.setTimeSlotNotificationIds
+  );
 
   return {
     ...settings,
@@ -214,6 +379,10 @@ export function useNotificationSettings() {
     setEnabled,
     setScheduledNotificationId,
     recordDelivery,
+    addTimeSlot,
+    removeTimeSlot,
+    setTimeSlotNotificationId,
+    setTimeSlotNotificationIds,
   };
 }
 

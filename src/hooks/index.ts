@@ -56,6 +56,7 @@ export {
   type CategoryBreakdownItem,
   type TrendDataPoint,
   type TrendPeriod,
+  type ChartFilterOption,
 } from './useDashboardData';
 
 // Review count hooks
@@ -84,3 +85,21 @@ export {
   type ImportPreferencesState,
   type ImportMode,
 } from './useImportPreferences';
+
+// Category transactions hooks (lazy-loading)
+export {
+  useCategoryTransactions,
+  type UseCategoryTransactionsReturn,
+  type TransactionItem,
+} from './useCategoryTransactions';
+
+// Theme hooks
+export { useThemeColors } from './useThemeColors';
+export { useThemeStyles, type ThemeStylesResult } from './useThemeStyles';
+
+// Unified statement hooks
+export {
+  useUnifiedStatementItems,
+  buildUnifiedStatementItems,
+  type UseUnifiedStatementItemsParams,
+} from './useUnifiedStatementItems';

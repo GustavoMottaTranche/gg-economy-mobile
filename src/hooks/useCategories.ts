@@ -17,6 +17,7 @@ import {
   activateCategory,
   deleteCategory,
   getCategoryById,
+  deleteCategoryWithReplacement,
 } from '../db/queries/categories';
 import type { Category, CategoryType, CreateCategoryDTO, UpdateCategoryDTO } from '../types';
 
@@ -49,6 +50,10 @@ export interface UseCategoriesReturn {
   incomeCategories: Category[];
   /** Expense categories only */
   expenseCategories: Category[];
+  /** Fixed expense categories (active, expenseGroup 'fixed') */
+  fixedExpenseCategories: Category[];
+  /** Variable expense categories (active, expenseGroup 'variable') */
+  variableExpenseCategories: Category[];
   /** Whether data is loading */
   isLoading: boolean;
   /** Error message if any */
@@ -57,6 +62,8 @@ export interface UseCategoriesReturn {
   totalCount: number;
   /** Count of active categories */
   activeCount: number;
+  /** Counts by expense group */
+  countsByGroup: { fixed: number; variable: number; uncategorized: number };
   /** Get a category by ID */
   getById: (id: string) => Promise<Category | null>;
   /** Create a new category */
@@ -69,6 +76,8 @@ export interface UseCategoriesReturn {
   activate: (id: string) => Promise<Category | null>;
   /** Delete a category (hard delete) */
   remove: (id: string) => Promise<void>;
+  /** Delete a category with replacement (reassign transactions, then deactivate) */
+  deleteWithReplacement: (id: string, replacementId: string) => Promise<void>;
   /** Refresh the data */
   refresh: () => void;
 }
@@ -84,6 +93,7 @@ function toCategory(record: typeof categories.$inferSelect): Category {
     icon: record.icon,
     color: record.color,
     isActive: record.isActive,
+    expenseGroup: (record.expenseGroup as Category['expenseGroup']) ?? null,
     createdAt: new Date(record.createdAt),
   };
 }
@@ -163,6 +173,48 @@ export function useCategories(filters: CategoryFilters = {}): UseCategoriesRetur
       .orderBy(categories.name)
   );
 
+  // Live query for fixed expense categories
+  const { data: fixedExpenseCategoryData } = useLiveQuery(
+    db
+      .select()
+      .from(categories)
+      .where(
+        and(
+          eq(categories.type, 'expense'),
+          eq(categories.isActive, true),
+          eq(categories.expenseGroup, 'fixed')
+        )
+      )
+      .orderBy(categories.name)
+  );
+
+  // Live query for variable expense categories
+  const { data: variableExpenseCategoryData } = useLiveQuery(
+    db
+      .select()
+      .from(categories)
+      .where(
+        and(
+          eq(categories.type, 'expense'),
+          eq(categories.isActive, true),
+          eq(categories.expenseGroup, 'variable')
+        )
+      )
+      .orderBy(categories.name)
+  );
+
+  // Live query for counts by expense group
+  const { data: countsByGroupData } = useLiveQuery(
+    db
+      .select({
+        fixed: sql<number>`sum(case when ${categories.expenseGroup} = 'fixed' then 1 else 0 end)`,
+        variable: sql<number>`sum(case when ${categories.expenseGroup} = 'variable' then 1 else 0 end)`,
+        uncategorized: sql<number>`sum(case when ${categories.expenseGroup} IS NULL AND ${categories.type} = 'expense' then 1 else 0 end)`,
+      })
+      .from(categories)
+      .where(and(eq(categories.isActive, true), eq(categories.type, 'expense')))
+  );
+
   // Live query for counts
   const { data: countData } = useLiveQuery(
     db
@@ -197,6 +249,26 @@ export function useCategories(filters: CategoryFilters = {}): UseCategoriesRetur
     return expenseCategoryData.map(toCategory);
   }, [expenseCategoryData]);
 
+  const transformedFixedExpenseCategories = useMemo(() => {
+    if (!fixedExpenseCategoryData) return [];
+    return fixedExpenseCategoryData.map(toCategory);
+  }, [fixedExpenseCategoryData]);
+
+  const transformedVariableExpenseCategories = useMemo(() => {
+    if (!variableExpenseCategoryData) return [];
+    return variableExpenseCategoryData.map(toCategory);
+  }, [variableExpenseCategoryData]);
+
+  // Calculate counts by group
+  const countsByGroup = useMemo(
+    () => ({
+      fixed: countsByGroupData?.[0]?.fixed ?? 0,
+      variable: countsByGroupData?.[0]?.variable ?? 0,
+      uncategorized: countsByGroupData?.[0]?.uncategorized ?? 0,
+    }),
+    [countsByGroupData]
+  );
+
   // Calculate counts
   const totalCount = countData?.[0]?.total ?? 0;
   const activeCount = countData?.[0]?.active ?? 0;
@@ -229,6 +301,13 @@ export function useCategories(filters: CategoryFilters = {}): UseCategoriesRetur
     return deleteCategory(id);
   }, []);
 
+  const deleteWithReplacementFn = useCallback(
+    async (id: string, replacementId: string): Promise<void> => {
+      return deleteCategoryWithReplacement(id, replacementId);
+    },
+    []
+  );
+
   // Refresh function (triggers re-render)
   const [, setRefreshKey] = useState(0);
   const refresh = useCallback(() => {
@@ -240,16 +319,20 @@ export function useCategories(filters: CategoryFilters = {}): UseCategoriesRetur
     categoriesWithCounts: transformedCategoriesWithCounts,
     incomeCategories: transformedIncomeCategories,
     expenseCategories: transformedExpenseCategories,
+    fixedExpenseCategories: transformedFixedExpenseCategories,
+    variableExpenseCategories: transformedVariableExpenseCategories,
     isLoading: !categoryData,
     error: queryError ? String(queryError) : null,
     totalCount,
     activeCount,
+    countsByGroup,
     getById,
     create,
     update,
     deactivate,
     activate,
     remove,
+    deleteWithReplacement: deleteWithReplacementFn,
     refresh,
   };
 }

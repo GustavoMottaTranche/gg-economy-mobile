@@ -24,6 +24,7 @@ describe('CategoryPicker', () => {
       icon: '🍔',
       color: '#ef4444',
       isActive: true,
+      expenseGroup: null,
       createdAt: new Date('2024-01-01'),
     },
     {
@@ -33,6 +34,7 @@ describe('CategoryPicker', () => {
       icon: '🚗',
       color: '#3b82f6',
       isActive: true,
+      expenseGroup: null,
       createdAt: new Date('2024-01-01'),
     },
     {
@@ -42,6 +44,7 @@ describe('CategoryPicker', () => {
       icon: '💰',
       color: '#10b981',
       isActive: true,
+      expenseGroup: null,
       createdAt: new Date('2024-01-01'),
     },
     {
@@ -51,6 +54,7 @@ describe('CategoryPicker', () => {
       icon: '❌',
       color: '#6b7280',
       isActive: false,
+      expenseGroup: null,
       createdAt: new Date('2024-01-01'),
     },
   ];

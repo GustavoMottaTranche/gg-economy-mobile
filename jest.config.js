@@ -6,9 +6,11 @@ const config = {
     '^.+\\.(js|jsx|ts|tsx)$': 'babel-jest',
   },
   transformIgnorePatterns: [
-    'node_modules/(?!(react-native|@react-native|@react-native-community|expo|@expo|expo-modules-core|expo-sqlite|expo-secure-store|expo-localization|expo-crypto|expo-file-system|expo-document-picker|expo-auth-session|expo-web-browser|expo-router|expo-status-bar|@react-navigation|react-native-screens|react-native-safe-area-context|drizzle-orm)/)',
+    'node_modules/(?!(react-native|@react-native|@react-native-community|expo|@expo|expo-modules-core|expo-sqlite|expo-secure-store|expo-localization|expo-crypto|expo-file-system|expo-document-picker|expo-auth-session|expo-web-browser|expo-router|expo-status-bar|@react-navigation|react-native-screens|react-native-safe-area-context|react-native-gesture-handler|drizzle-orm)/)',
   ],
   moduleNameMapper: {
+    '^expo-file-system/legacy$': '<rootDir>/__mocks__/expo-file-system.js',
+    '^expo-file-system$': '<rootDir>/__mocks__/expo-file-system.js',
     '^@/(.*)$': '<rootDir>/src/$1',
     '^@components/(.*)$': '<rootDir>/src/components/$1',
     '^@db/(.*)$': '<rootDir>/src/db/$1',

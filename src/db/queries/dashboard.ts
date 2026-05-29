@@ -8,7 +8,7 @@
  */
 import { eq, and, desc, sql, inArray } from 'drizzle-orm';
 import { getDb } from '../client';
-import { transactions, categories } from '../schema';
+import { transactions, categories, weeklyOccurrences, weeklyRecurringGroups } from '../schema';
 
 // ============================================================================
 // Types
@@ -40,6 +40,8 @@ export interface CategoryBreakdownResult {
   categoryColor: string | null;
   /** Category icon */
   categoryIcon: string | null;
+  /** Expense group (fixed/variable, null for uncategorized or income) */
+  expenseGroup: string | null;
   /** Total amount for this category */
   total: number;
   /** Number of transactions */
@@ -127,6 +129,7 @@ export function getCategoryBreakdownQuery(referenceMonth: string) {
       categoryType: categories.type,
       categoryColor: categories.color,
       categoryIcon: categories.icon,
+      expenseGroup: categories.expenseGroup,
       total: sql<number>`SUM(ABS(${transactions.amount}))`,
       count: sql<number>`COUNT(*)`,
       isExpense: sql<number>`CASE WHEN ${transactions.amount} < 0 THEN 1 ELSE 0 END`,
@@ -140,6 +143,37 @@ export function getCategoryBreakdownQuery(referenceMonth: string) {
       )
     )
     .groupBy(transactions.categoryId, sql`CASE WHEN ${transactions.amount} < 0 THEN 1 ELSE 0 END`);
+}
+
+/**
+ * Get weekly occurrences category breakdown for a specific reference month.
+ * Only includes occurrences marked as paid (isPaid = true).
+ * Returns data in the same shape as getCategoryBreakdownQuery for easy merging.
+ */
+export function getWeeklyOccurrenceBreakdownQuery(referenceMonth: string) {
+  const db = getDb();
+  return db
+    .select({
+      categoryId: weeklyRecurringGroups.categoryId,
+      categoryName: categories.name,
+      categoryType: categories.type,
+      categoryColor: categories.color,
+      categoryIcon: categories.icon,
+      expenseGroup: categories.expenseGroup,
+      total: sql<number>`SUM(ABS(${weeklyOccurrences.amount}))`,
+      count: sql<number>`COUNT(*)`,
+      isExpense: sql<number>`1`,
+    })
+    .from(weeklyOccurrences)
+    .innerJoin(weeklyRecurringGroups, eq(weeklyOccurrences.weeklyGroupId, weeklyRecurringGroups.id))
+    .leftJoin(categories, eq(weeklyRecurringGroups.categoryId, categories.id))
+    .where(
+      and(
+        eq(weeklyOccurrences.referenceMonth, referenceMonth),
+        eq(weeklyOccurrences.isPaid, true)
+      )
+    )
+    .groupBy(weeklyRecurringGroups.categoryId);
 }
 
 /**
@@ -199,4 +233,64 @@ export function getAvailableMonthsQuery() {
     .selectDistinct({ referenceMonth: transactions.referenceMonth })
     .from(transactions)
     .orderBy(desc(transactions.referenceMonth));
+}
+
+// ============================================================================
+// Category Transactions Query
+// ============================================================================
+
+/**
+ * Result type for category transactions query
+ */
+export interface CategoryTransactionResult {
+  /** Transaction ID */
+  id: string;
+  /** Transaction description (from title field) */
+  description: string;
+  /** Transaction amount */
+  amount: number;
+  /** Transaction date */
+  date: string;
+}
+
+/**
+ * Get transactions for a specific category in a given reference month.
+ *
+ * Returns a query that fetches all non-excluded transactions belonging to
+ * the specified category for the given month, ordered by date descending.
+ * The `title` field is mapped to `description` in the result.
+ *
+ * @param categoryId - The category ID to filter by
+ * @param referenceMonth - The month in YYYY-MM format
+ * @returns Drizzle query builder for category transactions
+ *
+ * **Validates: Requirements 2.3, 2.5**
+ *
+ * @example
+ * ```typescript
+ * const result = await getCategoryTransactionsQuery('cat-food', '2024-01');
+ * // result = [
+ * //   { id: 'tx1', description: 'Grocery Store', amount: -150.00, date: '2024-01-28' },
+ * //   { id: 'tx2', description: 'Restaurant', amount: -45.00, date: '2024-01-15' },
+ * // ]
+ * ```
+ */
+export function getCategoryTransactionsQuery(categoryId: string, referenceMonth: string) {
+  const db = getDb();
+  return db
+    .select({
+      id: transactions.id,
+      description: transactions.title,
+      amount: transactions.amount,
+      date: transactions.date,
+    })
+    .from(transactions)
+    .where(
+      and(
+        eq(transactions.categoryId, categoryId),
+        eq(transactions.referenceMonth, referenceMonth),
+        eq(transactions.isExcludedFromTotals, false)
+      )
+    )
+    .orderBy(desc(transactions.date));
 }

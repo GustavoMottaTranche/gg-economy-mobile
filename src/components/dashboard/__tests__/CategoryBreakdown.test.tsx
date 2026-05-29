@@ -58,6 +58,7 @@ describe('CategoryBreakdown', () => {
       categoryType: 'expense',
       categoryColor: '#FF5733',
       categoryIcon: 'utensils',
+      expenseGroup: 'variable',
       total: 150000, // $1,500.00
       count: 25,
       percentage: 42.86,
@@ -68,6 +69,7 @@ describe('CategoryBreakdown', () => {
       categoryType: 'expense',
       categoryColor: '#33FF57',
       categoryIcon: 'car',
+      expenseGroup: 'fixed',
       total: 100000, // $1,000.00
       count: 15,
       percentage: 28.57,
@@ -78,6 +80,7 @@ describe('CategoryBreakdown', () => {
       categoryType: 'expense',
       categoryColor: '#3357FF',
       categoryIcon: 'film',
+      expenseGroup: 'variable',
       total: 100000, // $1,000.00
       count: 10,
       percentage: 28.57,
@@ -134,6 +137,7 @@ describe('CategoryBreakdown', () => {
         categoryType: null,
         categoryColor: '#808080',
         categoryIcon: 'help-circle',
+        expenseGroup: null,
         total: 50000,
         count: 5,
         percentage: 14.29,
@@ -164,6 +168,7 @@ describe('CategoryBreakdown', () => {
       categoryType: 'expense' as const,
       categoryColor: '#FF5733',
       categoryIcon: 'tag',
+      expenseGroup: 'variable' as const,
       total: 50000,
       count: 5,
       percentage: 14.29,

@@ -10,28 +10,12 @@
  * @module services/notifications/NotificationScheduler
  */
 
-import Constants from 'expo-constants';
-import type { NotificationSettings, NotificationFrequency } from '../../stores/notificationStore';
-import { useNotificationStore } from '../../stores/notificationStore';
+import type { NotificationSettings, NotificationFrequency, TimeSlot } from '../../stores/notificationStore';
+import { useNotificationStore, timeSlotKey } from '../../stores/notificationStore';
 import { getCurrentLocale } from '../../i18n';
 import { getNotificationContent } from './NotificationContent';
 import { logger } from '../logging';
-
-// Check if running in Expo Go (notifications not supported since SDK 53)
-const isExpoGo = Constants.appOwnership === 'expo';
-
-// Lazy import of expo-notifications to avoid crash in Expo Go
-let Notifications: typeof import('expo-notifications') | null = null;
-
-async function getNotifications() {
-  if (isExpoGo) {
-    return null;
-  }
-  if (!Notifications) {
-    Notifications = await import('expo-notifications');
-  }
-  return Notifications;
-}
+import { getNotifications } from './NotificationsModuleLoader';
 
 /**
  * Mapping of notification frequency to number of days between notifications
@@ -42,6 +26,7 @@ export const FREQUENCY_DAYS: Record<NotificationFrequency, number> = {
   every3days: 3,
   weekly: 7,
   disabled: 0,
+  multipleDaily: 1,
 };
 
 /**
@@ -85,6 +70,50 @@ export interface INotificationScheduler {
    * Handle notification received (for auto-rescheduling)
    */
   handleNotificationReceived: () => Promise<void>;
+
+  /**
+   * Schedule notifications for all time slots in multipleDaily mode
+   * @param timeSlots - Array of time slots to schedule
+   * @param settings - Current notification settings
+   * @returns Mapping of slot keys to notification IDs
+   */
+  scheduleAllSlots: (
+    timeSlots: TimeSlot[],
+    settings: NotificationSettings
+  ) => Promise<Record<string, string>>;
+
+  /**
+   * Calculate the next notification time across all time slots
+   * @param timeSlots - Array of time slots to consider
+   * @param fromTime - Base time for calculation (defaults to now)
+   * @returns Next notification Date or null if timeSlots is empty
+   */
+  calculateNextTimeMultiSlot: (timeSlots: TimeSlot[], fromTime?: Date) => Date | null;
+
+  /**
+   * Restore all time slot notifications after app restart
+   * Verifies each stored ID and reschedules missing ones
+   * @param timeSlots - Array of time slots to restore
+   * @param storedIds - Previously stored mapping of slot keys to notification IDs
+   * @param settings - Current notification settings
+   * @returns Updated mapping of slot keys to notification IDs
+   */
+  restoreMultipleSlots: (
+    timeSlots: TimeSlot[],
+    storedIds: Record<string, string>,
+    settings: NotificationSettings
+  ) => Promise<Record<string, string>>;
+
+  /**
+   * Handle notification received for a specific time slot
+   * Reschedules only the delivered slot for the next day
+   * @param slotHour - The hour of the delivered time slot
+   * @param slotMinute - The minute of the delivered time slot
+   */
+  handleSlotNotificationReceived: (
+    slotHour: number,
+    slotMinute: number
+  ) => Promise<void>;
 }
 
 /**
@@ -160,7 +189,6 @@ export class NotificationScheduler implements INotificationScheduler {
   async scheduleNext(settings: NotificationSettings): Promise<string> {
     const NotificationsModule = await getNotifications();
     if (!NotificationsModule) {
-      logger.debug('Running in Expo Go - notifications disabled');
       return 'expo-go-disabled';
     }
 
@@ -180,12 +208,6 @@ export class NotificationScheduler implements INotificationScheduler {
       Math.floor((nextTime.getTime() - now.getTime()) / 1000)
     );
 
-    logger.debug('Scheduling notification', {
-      nextTime: nextTime.toISOString(),
-      secondsUntilTrigger,
-      frequency: settings.frequency,
-    });
-
     const notificationId = await NotificationsModule.scheduleNotificationAsync({
       content: {
         title: content.title,
@@ -202,7 +224,6 @@ export class NotificationScheduler implements INotificationScheduler {
       },
     });
 
-    logger.debug('Notification scheduled successfully', { notificationId });
     return notificationId;
   }
 
@@ -257,20 +278,24 @@ export class NotificationScheduler implements INotificationScheduler {
   async restore(settings: NotificationSettings): Promise<void> {
     const NotificationsModule = await getNotifications();
     if (!NotificationsModule) {
-      logger.debug('Running in Expo Go - restore skipped');
       return;
     }
-
-    logger.debug('Restoring notification schedule', {
-      isEnabled: settings.isEnabled,
-      frequency: settings.frequency,
-    });
 
     // If notifications are disabled, ensure all are canceled
     if (!settings.isEnabled || settings.frequency === 'disabled') {
       await this.cancelAll();
       useNotificationStore.getState().setScheduledNotificationId(null);
-      logger.debug('Notifications disabled - all schedules cleared');
+      return;
+    }
+
+    // Handle multipleDaily frequency — restore all time slot notifications
+    if (settings.frequency === 'multipleDaily') {
+      const newMapping = await this.restoreMultipleSlots(
+        settings.timeSlots,
+        settings.timeSlotNotificationIds,
+        settings
+      );
+      useNotificationStore.getState().setTimeSlotNotificationIds(newMapping);
       return;
     }
 
@@ -284,12 +309,8 @@ export class NotificationScheduler implements INotificationScheduler {
 
       if (exists) {
         // Notification still scheduled, nothing to do
-        logger.debug('Existing notification schedule still valid', { scheduledNotificationId });
         return;
       }
-      logger.debug('Scheduled notification no longer exists, rescheduling', {
-        scheduledNotificationId,
-      });
     }
 
     // No valid scheduled notification, schedule a new one
@@ -302,6 +323,84 @@ export class NotificationScheduler implements INotificationScheduler {
         context: 'notifications',
       });
     }
+  }
+
+  /**
+   * Schedule notifications for all time slots in multipleDaily mode
+   *
+   * Cancels all existing notifications, then schedules one notification
+   * for each time slot using TIME_INTERVAL triggers. Each notification
+   * includes the slot's hour and minute in its data payload.
+   *
+   * On per-slot failure, logs a warning and continues with remaining slots.
+   *
+   * @param timeSlots - Array of time slots to schedule
+   * @param settings - Current notification settings
+   * @returns Mapping of slot keys to notification IDs
+   */
+  async scheduleAllSlots(
+    timeSlots: TimeSlot[],
+    settings: NotificationSettings
+  ): Promise<Record<string, string>> {
+    const NotificationsModule = await getNotifications();
+    if (!NotificationsModule) {
+      return {};
+    }
+
+    // Cancel all existing notifications before scheduling
+    await NotificationsModule.cancelAllScheduledNotificationsAsync();
+
+    const locale = getCurrentLocale();
+    const content = getNotificationContent(locale);
+    const result: Record<string, string> = {};
+    const now = new Date();
+
+    for (const slot of timeSlots) {
+      try {
+        // Calculate target time (today if in future, tomorrow if already passed)
+        const targetTime = new Date(now);
+        targetTime.setHours(slot.hour, slot.minute, 0, 0);
+
+        if (targetTime.getTime() <= now.getTime()) {
+          // Already passed today, schedule for tomorrow
+          targetTime.setDate(targetTime.getDate() + 1);
+        }
+
+        // Calculate seconds until target, minimum 1
+        const seconds = Math.max(
+          1,
+          Math.floor((targetTime.getTime() - now.getTime()) / 1000)
+        );
+
+        const notificationId = await NotificationsModule.scheduleNotificationAsync({
+          content: {
+            title: content.title,
+            body: content.body,
+            data: {
+              type: 'reminder',
+              navigateTo: '/(tabs)/manual',
+              slotHour: slot.hour,
+              slotMinute: slot.minute,
+            },
+            sound: true,
+          },
+          trigger: {
+            type: NotificationsModule.SchedulableTriggerInputTypes.TIME_INTERVAL,
+            seconds,
+          },
+        });
+
+        result[timeSlotKey(slot)] = notificationId;
+      } catch (error) {
+        console.warn(
+          `Failed to schedule notification for slot ${timeSlotKey(slot)}:`,
+          error instanceof Error ? error.message : String(error)
+        );
+        // Continue with remaining slots — do not store an ID for this slot
+      }
+    }
+
+    return result;
   }
 
   /**
@@ -334,6 +433,214 @@ export class NotificationScheduler implements INotificationScheduler {
           context: 'notifications',
         });
       }
+    }
+  }
+
+  /**
+   * Calculate the next notification time across all time slots
+   *
+   * For a given set of time slots, finds the earliest slot whose target
+   * time is strictly after `fromTime`. If all slots are at or before
+   * the current time today, returns the earliest slot's time on the next day.
+   *
+   * @param timeSlots - Array of time slots to consider
+   * @param fromTime - Base time for calculation (defaults to now)
+   * @returns Next notification Date or null if timeSlots is empty
+   *
+   * **Validates: Requirements 6.1, 6.2, 6.3**
+   */
+  calculateNextTimeMultiSlot(timeSlots: TimeSlot[], fromTime?: Date): Date | null {
+    if (timeSlots.length === 0) {
+      return null;
+    }
+
+    const now = fromTime || new Date();
+
+    // Sort slots in chronological order
+    const sortedSlots = [...timeSlots].sort((a, b) => {
+      if (a.hour !== b.hour) return a.hour - b.hour;
+      return a.minute - b.minute;
+    });
+
+    // Find the earliest slot whose target time is strictly after fromTime
+    for (const slot of sortedSlots) {
+      const targetTime = new Date(now);
+      targetTime.setHours(slot.hour, slot.minute, 0, 0);
+
+      if (targetTime.getTime() > now.getTime()) {
+        return targetTime;
+      }
+    }
+
+    // All slots are at or before current time today — return earliest slot's time tomorrow
+    const earliestSlot = sortedSlots[0];
+    const tomorrowTime = new Date(now);
+    tomorrowTime.setDate(tomorrowTime.getDate() + 1);
+    tomorrowTime.setHours(earliestSlot.hour, earliestSlot.minute, 0, 0);
+
+    return tomorrowTime;
+  }
+
+  /**
+   * Restore all time slot notifications after app restart
+   *
+   * Queries all currently scheduled notifications and verifies each stored
+   * notification ID still exists. For any missing slots, reschedules the
+   * notification and updates the mapping. On per-slot failure, logs a warning
+   * and continues with remaining slots.
+   *
+   * @param timeSlots - Array of time slots to restore
+   * @param storedIds - Previously stored mapping of slot keys to notification IDs
+   * @param settings - Current notification settings
+   * @returns Updated mapping of slot keys to notification IDs
+   *
+   * **Validates: Requirements 4.3, 4.4, 4.5**
+   */
+  async restoreMultipleSlots(
+    timeSlots: TimeSlot[],
+    storedIds: Record<string, string>,
+    _settings: NotificationSettings
+  ): Promise<Record<string, string>> {
+    const NotificationsModule = await getNotifications();
+    if (!NotificationsModule) {
+      return {};
+    }
+
+    // Query all currently scheduled notifications
+    const scheduledNotifications = await NotificationsModule.getAllScheduledNotificationsAsync();
+    const scheduledIds = new Set(scheduledNotifications.map((n) => n.identifier));
+
+    const locale = getCurrentLocale();
+    const content = getNotificationContent(locale);
+    const result: Record<string, string> = {};
+    const now = new Date();
+
+    for (const slot of timeSlots) {
+      const key = timeSlotKey(slot);
+      const storedId = storedIds[key];
+
+      // Check if the stored notification ID still exists in the scheduled list
+      if (storedId && scheduledIds.has(storedId)) {
+        // Notification still exists, keep it
+        result[key] = storedId;
+        continue;
+      }
+
+      // Notification is missing — reschedule
+      try {
+        const targetTime = new Date(now);
+        targetTime.setHours(slot.hour, slot.minute, 0, 0);
+
+        if (targetTime.getTime() <= now.getTime()) {
+          // Already passed today, schedule for tomorrow
+          targetTime.setDate(targetTime.getDate() + 1);
+        }
+
+        const seconds = Math.max(
+          1,
+          Math.floor((targetTime.getTime() - now.getTime()) / 1000)
+        );
+
+        const notificationId = await NotificationsModule.scheduleNotificationAsync({
+          content: {
+            title: content.title,
+            body: content.body,
+            data: {
+              type: 'reminder',
+              navigateTo: '/(tabs)/manual',
+              slotHour: slot.hour,
+              slotMinute: slot.minute,
+            },
+            sound: true,
+          },
+          trigger: {
+            type: NotificationsModule.SchedulableTriggerInputTypes.TIME_INTERVAL,
+            seconds,
+          },
+        });
+
+        result[key] = notificationId;
+      } catch (error) {
+        logger.warn(`Failed to restore notification for slot ${key}`, {
+          error: error instanceof Error ? error.message : String(error),
+          context: 'notifications',
+        });
+        // Continue with remaining slots
+      }
+    }
+
+    return result;
+  }
+
+  /**
+   * Handle notification received for a specific time slot
+   *
+   * When a notification is delivered for a specific time slot, reschedules
+   * only that slot for the same hour and minute on the next calendar day.
+   * Updates the store's notification ID mapping with the new ID.
+   *
+   * On failure, logs a warning without throwing.
+   *
+   * @param slotHour - The hour of the delivered time slot (0-23)
+   * @param slotMinute - The minute of the delivered time slot (0, 15, 30, 45)
+   *
+   * **Validates: Requirements 3.2, 3.4**
+   */
+  async handleSlotNotificationReceived(
+    slotHour: number,
+    slotMinute: number
+  ): Promise<void> {
+    try {
+      const NotificationsModule = await getNotifications();
+      if (!NotificationsModule) {
+        return;
+      }
+
+      const now = new Date();
+
+      // Calculate target time for the same hour/minute on the NEXT calendar day
+      const targetTime = new Date(now);
+      targetTime.setDate(targetTime.getDate() + 1);
+      targetTime.setHours(slotHour, slotMinute, 0, 0);
+
+      // Calculate seconds until target, minimum 1
+      const seconds = Math.max(
+        1,
+        Math.floor((targetTime.getTime() - now.getTime()) / 1000)
+      );
+
+      const locale = getCurrentLocale();
+      const content = getNotificationContent(locale);
+
+      // Schedule new notification for this slot only
+      const newId = await NotificationsModule.scheduleNotificationAsync({
+        content: {
+          title: content.title,
+          body: content.body,
+          data: {
+            type: 'reminder',
+            navigateTo: '/(tabs)/manual',
+            slotHour,
+            slotMinute,
+          },
+          sound: true,
+        },
+        trigger: {
+          type: NotificationsModule.SchedulableTriggerInputTypes.TIME_INTERVAL,
+          seconds,
+        },
+      });
+
+      // Update the notification ID mapping in the store
+      const key = timeSlotKey({ hour: slotHour, minute: slotMinute });
+      useNotificationStore.getState().setTimeSlotNotificationId(key, newId);
+    } catch (error) {
+      logger.warn('Failed to reschedule slot notification after delivery', {
+        slotHour,
+        slotMinute,
+        error: error instanceof Error ? error.message : String(error),
+        context: 'notifications',
+      });
     }
   }
 }

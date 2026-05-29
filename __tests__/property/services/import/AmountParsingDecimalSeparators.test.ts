@@ -66,7 +66,7 @@ describe('Property 11: Amount Parsing with Decimal Separators', () => {
 
     if (includeThousandSeparator && absAmount >= 1000) {
       const parts = absAmount.toFixed(2).split('.');
-      parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+      parts[0] = parts[0]!.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
       return sign + parts.join('.');
     }
 
@@ -82,7 +82,7 @@ describe('Property 11: Amount Parsing with Decimal Separators', () => {
 
     if (includeThousandSeparator && absAmount >= 1000) {
       const parts = absAmount.toFixed(2).split('.');
-      parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+      parts[0] = parts[0]!.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
       return sign + parts.join(',');
     }
 
@@ -419,7 +419,7 @@ describe('Property 11: Amount Parsing with Decimal Separators', () => {
           expect(result.transactions.length).toBe(amounts.length);
 
           for (let i = 0; i < amounts.length; i++) {
-            expect(amountsEqual(result.transactions[i].amount, amounts[i])).toBe(true);
+            expect(amountsEqual(result.transactions[i]!.amount, amounts[i]!)).toBe(true);
           }
         }),
         { numRuns: 100 }
@@ -441,7 +441,7 @@ describe('Property 11: Amount Parsing with Decimal Separators', () => {
           expect(result.transactions.length).toBe(amounts.length);
 
           for (let i = 0; i < amounts.length; i++) {
-            expect(amountsEqual(result.transactions[i].amount, amounts[i])).toBe(true);
+            expect(amountsEqual(result.transactions[i]!.amount, amounts[i]!)).toBe(true);
           }
         }),
         { numRuns: 100 }

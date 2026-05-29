@@ -140,7 +140,7 @@ OFXHEADER:100
 
       const result = parser.parse(ofx);
       expect(result.transactions).toHaveLength(1);
-      expect(result.transactions[0].description).toBe('Closed Tags Transaction');
+      expect(result.transactions[0]!.description).toBe('Closed Tags Transaction');
     });
 
     it('should return empty array when no STMTTRN elements found', () => {
@@ -174,7 +174,7 @@ OFXHEADER:100
 </OFX>`;
 
       const result = parser.parse(ofx);
-      expect(result.transactions[0].date).toEqual(new Date(2024, 0, 15));
+      expect(result.transactions[0]!.date).toEqual(new Date(2024, 0, 15));
     });
 
     it('should map TRNAMT to transaction amount', () => {
@@ -191,7 +191,7 @@ OFXHEADER:100
 </OFX>`;
 
       const result = parser.parse(ofx);
-      expect(result.transactions[0].amount).toBe(-123.45);
+      expect(result.transactions[0]!.amount).toBe(-123.45);
     });
 
     it('should map NAME to transaction description', () => {
@@ -208,7 +208,7 @@ OFXHEADER:100
 </OFX>`;
 
       const result = parser.parse(ofx);
-      expect(result.transactions[0].description).toBe('Transaction Name');
+      expect(result.transactions[0]!.description).toBe('Transaction Name');
     });
 
     it('should map MEMO to transaction description when NAME is absent', () => {
@@ -225,7 +225,7 @@ OFXHEADER:100
 </OFX>`;
 
       const result = parser.parse(ofx);
-      expect(result.transactions[0].description).toBe('Transaction Memo');
+      expect(result.transactions[0]!.description).toBe('Transaction Memo');
     });
 
     it('should combine NAME and MEMO when both present and different', () => {
@@ -243,7 +243,7 @@ OFXHEADER:100
 </OFX>`;
 
       const result = parser.parse(ofx);
-      expect(result.transactions[0].description).toBe('Payee Name - Additional Details');
+      expect(result.transactions[0]!.description).toBe('Payee Name - Additional Details');
     });
 
     it('should use NAME only when NAME and MEMO are identical', () => {
@@ -261,7 +261,7 @@ OFXHEADER:100
 </OFX>`;
 
       const result = parser.parse(ofx);
-      expect(result.transactions[0].description).toBe('Same Text');
+      expect(result.transactions[0]!.description).toBe('Same Text');
     });
 
     it('should map FITID to transaction fitId', () => {
@@ -278,7 +278,7 @@ OFXHEADER:100
 </OFX>`;
 
       const result = parser.parse(ofx);
-      expect(result.transactions[0].fitId).toBe('UNIQUE123456');
+      expect(result.transactions[0]!.fitId).toBe('UNIQUE123456');
     });
 
     it('should handle transaction without FITID', () => {
@@ -295,7 +295,7 @@ OFXHEADER:100
 
       const result = parser.parse(ofx);
       expect(result.transactions).toHaveLength(1);
-      expect(result.transactions[0].fitId).toBeUndefined();
+      expect(result.transactions[0]!.fitId).toBeUndefined();
     });
   });
 
@@ -389,14 +389,14 @@ OFXHEADER:100
       const result = parser.parse('');
       expect(result.transactions).toHaveLength(0);
       expect(result.errors).toHaveLength(1);
-      expect(result.errors[0].message).toContain('Empty or invalid OFX content');
+      expect(result.errors[0]!.message).toContain('Empty or invalid OFX content');
     });
 
     it('should return error for non-OFX content', () => {
       const result = parser.parse('This is not an OFX file');
       expect(result.transactions).toHaveLength(0);
       expect(result.errors).toHaveLength(1);
-      expect(result.errors[0].message).toContain('not appear to be a valid OFX file');
+      expect(result.errors[0]!.message).toContain('not appear to be a valid OFX file');
     });
 
     it('should return error for missing DTPOSTED', () => {
@@ -414,7 +414,7 @@ OFXHEADER:100
       const result = parser.parse(ofx);
       expect(result.transactions).toHaveLength(0);
       expect(result.errors).toHaveLength(1);
-      expect(result.errors[0].message).toContain('DTPOSTED');
+      expect(result.errors[0]!.message).toContain('DTPOSTED');
     });
 
     it('should return error for missing TRNAMT', () => {
@@ -432,7 +432,7 @@ OFXHEADER:100
       const result = parser.parse(ofx);
       expect(result.transactions).toHaveLength(0);
       expect(result.errors).toHaveLength(1);
-      expect(result.errors[0].message).toContain('TRNAMT');
+      expect(result.errors[0]!.message).toContain('TRNAMT');
     });
 
     it('should return error for missing description (no NAME or MEMO)', () => {
@@ -450,7 +450,7 @@ OFXHEADER:100
       const result = parser.parse(ofx);
       expect(result.transactions).toHaveLength(0);
       expect(result.errors).toHaveLength(1);
-      expect(result.errors[0].message).toContain('description');
+      expect(result.errors[0]!.message).toContain('description');
     });
 
     it('should return error for invalid date format', () => {
@@ -469,7 +469,7 @@ OFXHEADER:100
       const result = parser.parse(ofx);
       expect(result.transactions).toHaveLength(0);
       expect(result.errors).toHaveLength(1);
-      expect(result.errors[0].message).toContain('Invalid date');
+      expect(result.errors[0]!.message).toContain('Invalid date');
     });
 
     it('should return error for invalid amount', () => {
@@ -488,7 +488,7 @@ OFXHEADER:100
       const result = parser.parse(ofx);
       expect(result.transactions).toHaveLength(0);
       expect(result.errors).toHaveLength(1);
-      expect(result.errors[0].message).toContain('Invalid amount');
+      expect(result.errors[0]!.message).toContain('Invalid amount');
     });
 
     it('should continue parsing after encountering errors', () => {
@@ -513,7 +513,7 @@ OFXHEADER:100
       const result = parser.parse(ofx);
       expect(result.transactions).toHaveLength(1);
       expect(result.errors).toHaveLength(1);
-      expect(result.transactions[0].description).toBe('Valid Transaction');
+      expect(result.transactions[0]!.description).toBe('Valid Transaction');
     });
 
     it('should include transaction index in error', () => {
@@ -536,7 +536,7 @@ OFXHEADER:100
 </OFX>`;
 
       const result = parser.parse(ofx);
-      expect(result.errors[0].transactionIndex).toBe(1);
+      expect(result.errors[0]!.transactionIndex).toBe(1);
     });
 
     it('should handle BOM character at start of file', () => {
@@ -631,7 +631,7 @@ OFXHEADER:100
 
       const result = parser.parse(ofx);
       expect(result.transactions).toHaveLength(1);
-      expect(result.transactions[0].amount).toBe(-50.0);
+      expect(result.transactions[0]!.amount).toBe(-50.0);
     });
   });
 
@@ -704,10 +704,10 @@ NEWFILEUID:NONE
 
       const result = parser.parse(ofx);
       expect(result.transactions).toHaveLength(2);
-      expect(result.transactions[0].amount).toBe(-150.0);
-      expect(result.transactions[0].description).toBe('PIX ENVIADO - JOAO DA SILVA');
-      expect(result.transactions[1].amount).toBe(3500.0);
-      expect(result.transactions[1].description).toBe('SALARIO - EMPRESA XYZ LTDA');
+      expect(result.transactions[0]!.amount).toBe(-150.0);
+      expect(result.transactions[0]!.description).toBe('PIX ENVIADO - JOAO DA SILVA');
+      expect(result.transactions[1]!.amount).toBe(3500.0);
+      expect(result.transactions[1]!.description).toBe('SALARIO - EMPRESA XYZ LTDA');
       expect(result.accountInfo?.bankId).toBe('001');
       expect(result.accountInfo?.accountId).toBe('12345-6');
     });

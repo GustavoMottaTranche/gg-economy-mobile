@@ -414,11 +414,11 @@ describe('validateTransactionForm', () => {
       referenceMonth: '2024-01',
     });
 
-    expect(result.date.isValid).toBe(true);
-    expect(result.amount.isValid).toBe(true);
-    expect(result.description.isValid).toBe(true);
-    expect(result.categoryId.isValid).toBe(true);
-    expect(result.referenceMonth.isValid).toBe(true);
+    expect(result.date!.isValid).toBe(true);
+    expect(result.amount!.isValid).toBe(true);
+    expect(result.description!.isValid).toBe(true);
+    expect(result.categoryId!.isValid).toBe(true);
+    expect(result.referenceMonth!.isValid).toBe(true);
   });
 
   it('returns errors for invalid fields', () => {
@@ -430,10 +430,10 @@ describe('validateTransactionForm', () => {
       referenceMonth: 'invalid',
     });
 
-    expect(result.date.isValid).toBe(false);
-    expect(result.amount.isValid).toBe(false); // Zero not allowed
-    expect(result.description.isValid).toBe(false);
-    expect(result.referenceMonth.isValid).toBe(false);
+    expect(result.date!.isValid).toBe(false);
+    expect(result.amount!.isValid).toBe(false); // Zero not allowed
+    expect(result.description!.isValid).toBe(false);
+    expect(result.referenceMonth!.isValid).toBe(false);
   });
 });
 

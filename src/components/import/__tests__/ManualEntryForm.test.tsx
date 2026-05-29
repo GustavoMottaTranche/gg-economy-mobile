@@ -148,7 +148,7 @@ describe('ManualEntryForm - Validation Error Display', () => {
     });
 
     it('should display error next to amount field when amount is invalid (non-parseable)', async () => {
-      const { getByTestId, queryByTestId } = render(<ManualEntryForm {...defaultProps} />);
+      const { getByTestId } = render(<ManualEntryForm {...defaultProps} />);
 
       // Enter an amount that passes the format filter but is still invalid
       // The formatAmountDisplay function removes non-numeric chars, so "abc" becomes ""
@@ -380,7 +380,6 @@ describe('ManualEntryForm - Validation Error Display', () => {
    */
   describe('Duplicate Detection Warning', () => {
     const mockDuplicateWarning = {
-      isDuplicate: true,
       confidence: 0.85,
       existingTransaction: {
         id: 'existing-tx-1',
@@ -393,6 +392,12 @@ describe('ManualEntryForm - Validation Error Display', () => {
         createdAt: new Date('2024-01-15'),
         updatedAt: new Date('2024-01-15'),
       },
+      newTransaction: {
+        date: new Date('2024-01-15'),
+        amount: 5000,
+        description: 'Test transaction',
+      },
+      matchReason: 'date_amount_description' as const,
     };
 
     it('should display duplicate warning modal when duplicateWarning is provided', () => {
@@ -576,7 +581,7 @@ describe('ManualEntryForm - Validation Error Display', () => {
     });
 
     it('should open date picker when date field is pressed', () => {
-      const { getByTestId, queryByTestId } = render(<ManualEntryForm {...defaultProps} />);
+      const { getByTestId } = render(<ManualEntryForm {...defaultProps} />);
 
       // Press date picker button
       const dateButton = getByTestId('date-picker-button');

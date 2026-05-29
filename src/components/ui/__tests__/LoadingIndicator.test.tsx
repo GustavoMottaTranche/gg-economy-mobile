@@ -81,7 +81,8 @@ describe('LoadingIndicator', () => {
     const { UNSAFE_getByType } = render(<LoadingIndicator />);
     const ActivityIndicator = require('react-native').ActivityIndicator;
     const indicator = UNSAFE_getByType(ActivityIndicator);
-    expect(indicator.props.color).toBe('#3b82f6');
+    // Default color comes from theme's interactive.primary (light mode)
+    expect(indicator.props.color).toBe('#3B82F6');
   });
 
   describe('inline mode', () => {
@@ -170,7 +171,8 @@ describe('LoadingIndicator', () => {
       const ActivityIndicator = require('react-native').ActivityIndicator;
       const indicator = UNSAFE_getByType(ActivityIndicator);
       expect(indicator.props.size).toBe('small');
-      expect(indicator.props.color).toBe('#ffffff');
+      // Without explicit color, ButtonLoader uses theme's interactive.primary
+      expect(indicator.props.color).toBe('#3B82F6');
     });
 
     it('ButtonLoader accepts custom color', () => {

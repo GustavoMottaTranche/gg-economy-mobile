@@ -14,8 +14,6 @@ import {
   calculateCategoryBreakdown,
   calculateFinancialSummary,
   validateFinancialInvariant,
-  FinancialTotals,
-  FinancialSummary,
 } from '../../../src/utils/calculateTotals';
 import { Transaction, Category } from '../../../src/types';
 
@@ -67,6 +65,7 @@ describe('Property 5: Financial Calculation Invariant', () => {
       date: new Date(2024, 0, 15),
       amount,
       description: 'Test transaction',
+      title: '',
       categoryId,
       originId: null,
       batchId: null,
@@ -74,6 +73,8 @@ describe('Property 5: Financial Calculation Invariant', () => {
       needsReview: false,
       isExcludedFromTotals: isExcluded,
       duplicateOf: null,
+      installmentGroupId: null,
+      recurringId: null,
       createdAt: new Date(),
       updatedAt: new Date(),
     };
@@ -90,6 +91,7 @@ describe('Property 5: Financial Calculation Invariant', () => {
       icon: 'food',
       color: '#FF0000',
       isActive: true,
+      expenseGroup: null,
       createdAt: new Date(),
     },
     {
@@ -99,6 +101,7 @@ describe('Property 5: Financial Calculation Invariant', () => {
       icon: 'car',
       color: '#00FF00',
       isActive: true,
+      expenseGroup: null,
       createdAt: new Date(),
     },
     {
@@ -108,6 +111,7 @@ describe('Property 5: Financial Calculation Invariant', () => {
       icon: 'money',
       color: '#0000FF',
       isActive: true,
+      expenseGroup: null,
       createdAt: new Date(),
     },
     {
@@ -117,6 +121,7 @@ describe('Property 5: Financial Calculation Invariant', () => {
       icon: 'gift',
       color: '#FFFF00',
       isActive: true,
+      expenseGroup: null,
       createdAt: new Date(),
     },
     {
@@ -126,6 +131,7 @@ describe('Property 5: Financial Calculation Invariant', () => {
       icon: 'bill',
       color: '#FF00FF',
       isActive: true,
+      expenseGroup: null,
       createdAt: new Date(),
     },
   ];

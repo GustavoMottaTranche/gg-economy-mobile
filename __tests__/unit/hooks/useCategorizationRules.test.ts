@@ -3,7 +3,7 @@
  *
  * Tests the custom hook for managing categorization rules with reactive updates.
  */
-import { renderHook, act, waitFor } from '@testing-library/react-native';
+import { renderHook, act } from '@testing-library/react-native';
 import { useCategorizationRules } from '../../../src/hooks/useCategorizationRules';
 import * as categorizationRuleQueries from '../../../src/db/queries/categorizationRules';
 
@@ -18,7 +18,7 @@ jest.mock('../../../src/db/client', () => ({
       })),
     })),
   })),
-  useLiveQuery: jest.fn((query) => {
+  useLiveQuery: jest.fn((_query) => {
     // Return mock data based on the query
     return {
       data: [],
@@ -160,7 +160,7 @@ describe('useCategorizationRules', () => {
 
       const { result } = renderHook(() => useCategorizationRules());
 
-      let created;
+      let created: { priority: number } | undefined;
       await act(async () => {
         created = await result.current.createWithAutoPriority(newRuleData);
       });
@@ -168,7 +168,7 @@ describe('useCategorizationRules', () => {
       expect(
         categorizationRuleQueries.createCategorizationRuleWithAutoPriority
       ).toHaveBeenCalledWith(newRuleData);
-      expect(created.priority).toBe(100);
+      expect(created!.priority).toBe(100);
     });
   });
 

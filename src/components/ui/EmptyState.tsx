@@ -9,6 +9,8 @@
 
 import React, { memo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ViewStyle, TextStyle } from 'react-native';
+import { useThemeColors } from '../../hooks/useThemeColors';
+import { spacing, borderRadius, typography } from '../../constants/theme';
 
 /**
  * Props for the EmptyState component
@@ -83,8 +85,9 @@ function EmptyStateComponent({
   titleStyle,
   descriptionStyle,
   testID,
-}: EmptyStateProps): JSX.Element {
+}: EmptyStateProps): React.JSX.Element {
   const accessibilityLabel = [title, description].filter(Boolean).join('. ');
+  const colors = useThemeColors();
 
   return (
     <View
@@ -102,14 +105,14 @@ function EmptyStateComponent({
       </Text>
 
       {/* Title */}
-      <Text style={[styles.title, compact && styles.titleCompact, titleStyle]} numberOfLines={2}>
+      <Text style={[styles.title, { color: colors.text.primary }, compact && styles.titleCompact, titleStyle]} numberOfLines={2}>
         {title}
       </Text>
 
       {/* Description */}
       {description && (
         <Text
-          style={[styles.description, compact && styles.descriptionCompact, descriptionStyle]}
+          style={[styles.description, { color: colors.text.secondary }, compact && styles.descriptionCompact, descriptionStyle]}
           numberOfLines={3}
         >
           {description}
@@ -119,14 +122,14 @@ function EmptyStateComponent({
       {/* Action Button */}
       {action && (
         <TouchableOpacity
-          style={[styles.actionButton, compact && styles.actionButtonCompact]}
+          style={[styles.actionButton, { backgroundColor: colors.interactive.primary }, compact && styles.actionButtonCompact]}
           onPress={action.onPress}
           activeOpacity={0.7}
           accessibilityRole="button"
           accessibilityLabel={action.label}
           testID={testID ? `${testID}-action` : undefined}
         >
-          <Text style={styles.actionButtonText}>{action.label}</Text>
+          <Text style={[styles.actionButtonText, { color: colors.text.inverse }]}>{action.label}</Text>
         </TouchableOpacity>
       )}
     </View>
@@ -141,59 +144,55 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 32,
+    padding: spacing['2xl'],
   },
   containerCompact: {
-    padding: 16,
+    padding: spacing.base,
   },
   icon: {
     fontSize: 64,
-    marginBottom: 16,
+    marginBottom: spacing.base,
   },
   iconCompact: {
     fontSize: 40,
-    marginBottom: 12,
+    marginBottom: spacing.md,
   },
   title: {
-    fontSize: 20,
+    fontSize: typography.title.fontSize - 2,
     fontWeight: '600',
-    color: '#111827',
     textAlign: 'center',
-    marginBottom: 8,
+    marginBottom: spacing.sm,
   },
   titleCompact: {
-    fontSize: 16,
-    marginBottom: 4,
+    fontSize: typography.body.fontSize,
+    marginBottom: spacing.xs,
   },
   description: {
-    fontSize: 14,
-    color: '#6b7280',
+    fontSize: typography.caption.fontSize + 1,
     textAlign: 'center',
     lineHeight: 20,
     maxWidth: 280,
   },
   descriptionCompact: {
-    fontSize: 13,
+    fontSize: typography.caption.fontSize,
     lineHeight: 18,
     maxWidth: 240,
   },
   actionButton: {
-    marginTop: 24,
-    backgroundColor: '#3b82f6',
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    borderRadius: 8,
+    marginTop: spacing.xl,
+    paddingHorizontal: spacing.xl,
+    paddingVertical: spacing.md,
+    borderRadius: borderRadius.sm,
     minWidth: 120,
   },
   actionButtonCompact: {
-    marginTop: 16,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
+    marginTop: spacing.base,
+    paddingHorizontal: spacing.base,
+    paddingVertical: spacing.sm,
     minWidth: 100,
   },
   actionButtonText: {
-    color: '#ffffff',
-    fontSize: 16,
+    fontSize: typography.body.fontSize,
     fontWeight: '600',
     textAlign: 'center',
   },
@@ -213,7 +212,7 @@ export const EmptyTransactions = memo(function EmptyTransactions({
 }: {
   onImport?: () => void;
   onAddManual?: () => void;
-}): JSX.Element {
+}): React.JSX.Element {
   return (
     <EmptyState
       icon="📊"
@@ -238,7 +237,7 @@ export const EmptyReview = memo(function EmptyReview({
   onImport,
 }: {
   onImport?: () => void;
-}): JSX.Element {
+}): React.JSX.Element {
   return (
     <EmptyState
       icon="✅"
@@ -257,7 +256,7 @@ export const EmptyCategories = memo(function EmptyCategories({
   onAdd,
 }: {
   onAdd?: () => void;
-}): JSX.Element {
+}): React.JSX.Element {
   return (
     <EmptyState
       icon="🏷️"
@@ -276,7 +275,7 @@ export const EmptyBackups = memo(function EmptyBackups({
   onConnect,
 }: {
   onConnect?: () => void;
-}): JSX.Element {
+}): React.JSX.Element {
   return (
     <EmptyState
       icon="☁️"
@@ -295,7 +294,7 @@ export const EmptySearchResults = memo(function EmptySearchResults({
   onClear,
 }: {
   onClear?: () => void;
-}): JSX.Element {
+}): React.JSX.Element {
   return (
     <EmptyState
       icon="🔍"

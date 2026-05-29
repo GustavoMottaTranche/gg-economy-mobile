@@ -26,6 +26,7 @@ describe('TypeScript Types', () => {
         date: new Date('2024-01-15'),
         amount: -5000, // -50.00 in cents
         description: 'Grocery Store',
+        title: '',
         categoryId: 'cat-123',
         originId: 'origin-456',
         batchId: 'batch-789',
@@ -33,6 +34,8 @@ describe('TypeScript Types', () => {
         needsReview: false,
         isExcludedFromTotals: false,
         duplicateOf: null,
+        installmentGroupId: null,
+        recurringId: null,
         createdAt: new Date(),
         updatedAt: new Date(),
       };
@@ -48,6 +51,7 @@ describe('TypeScript Types', () => {
         date: new Date(),
         amount: 1000,
         description: 'Test',
+        title: '',
         categoryId: null,
         originId: null,
         batchId: null,
@@ -55,6 +59,8 @@ describe('TypeScript Types', () => {
         needsReview: true,
         isExcludedFromTotals: false,
         duplicateOf: null,
+        installmentGroupId: null,
+        recurringId: null,
         createdAt: new Date(),
         updatedAt: new Date(),
       };
@@ -71,6 +77,7 @@ describe('TypeScript Types', () => {
         date: new Date(),
         amount: 1000,
         description: 'Test transaction',
+        title: '',
         referenceMonth: '2024-01',
       };
 
@@ -83,6 +90,7 @@ describe('TypeScript Types', () => {
         date: new Date(),
         amount: 1000,
         description: 'Test transaction',
+        title: '',
         referenceMonth: '2024-01',
         categoryId: 'cat-123',
         originId: 'origin-456',
@@ -104,6 +112,7 @@ describe('TypeScript Types', () => {
         icon: 'cash',
         color: '#4CAF50',
         isActive: true,
+        expenseGroup: null,
         createdAt: new Date(),
       };
 
@@ -114,6 +123,7 @@ describe('TypeScript Types', () => {
         icon: 'restaurant',
         color: '#F44336',
         isActive: true,
+        expenseGroup: null,
         createdAt: new Date(),
       };
 

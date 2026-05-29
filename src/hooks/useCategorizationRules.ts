@@ -86,6 +86,7 @@ function toCategory(record: typeof categories.$inferSelect): Category {
     icon: record.icon,
     color: record.color,
     isActive: record.isActive,
+    expenseGroup: (record.expenseGroup as Category['expenseGroup']) ?? null,
     createdAt: new Date(record.createdAt),
   };
 }

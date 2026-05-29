@@ -10,7 +10,7 @@
  */
 
 import { AppError } from './AppError';
-import type { ErrorCode, ErrorContext, ErrorLogEntry, SENSITIVE_KEYS } from './types';
+import type { ErrorCode, ErrorContext, ErrorLogEntry } from './types';
 
 /**
  * Maximum number of error log entries to keep in memory

@@ -218,7 +218,7 @@ describe('ExcelParser Unit Tests', () => {
 
       expect(result.transactions.length).toBe(0);
       expect(result.errors.length).toBeGreaterThan(0);
-      expect(result.errors[0].message).toContain('empty');
+      expect(result.errors[0]!.message).toContain('empty');
     });
 
     it('should return error for sheet with only headers', () => {
@@ -295,9 +295,9 @@ describe('ExcelParser Unit Tests', () => {
       const sheetList = parser.listSheets(excelData);
 
       expect(sheetList.length).toBe(3);
-      expect(sheetList[0].name).toBe('Transactions');
-      expect(sheetList[1].name).toBe('Summary');
-      expect(sheetList[2].name).toBe('Empty');
+      expect(sheetList[0]!.name).toBe('Transactions');
+      expect(sheetList[1]!.name).toBe('Summary');
+      expect(sheetList[2]!.name).toBe('Empty');
     });
 
     it('should include row count for each sheet', () => {
@@ -316,8 +316,8 @@ describe('ExcelParser Unit Tests', () => {
       const excelData = createMultiSheetExcel(sheets);
       const sheetList = parser.listSheets(excelData);
 
-      expect(sheetList[0].rowCount).toBe(3);
-      expect(sheetList[1].rowCount).toBe(1);
+      expect(sheetList[0]!.rowCount).toBe(3);
+      expect(sheetList[1]!.rowCount).toBe(1);
     });
 
     it('should include preview rows for each sheet', () => {
@@ -335,8 +335,8 @@ describe('ExcelParser Unit Tests', () => {
       const excelData = createMultiSheetExcel(sheets);
       const sheetList = parser.listSheets(excelData);
 
-      expect(sheetList[0].preview.length).toBeGreaterThan(0);
-      expect(sheetList[0].preview[0]).toEqual(['header1', 'header2']);
+      expect(sheetList[0]!.preview.length).toBeGreaterThan(0);
+      expect(sheetList[0]!.preview[0]).toEqual(['header1', 'header2']);
     });
   });
 
@@ -450,6 +450,135 @@ describe('ExcelParser Unit Tests', () => {
 
       expect(result.transactions.length).toBe(1);
     });
+
+    /**
+     * Task 3.3: Fatura-style file with columns [data, descrição, valor]
+     * Verifies correct mapping when using fatura-specific headers
+     *
+     * **Validates: Requirements 2.1**
+     */
+    it('should correctly map fatura-style file with columns [data, descrição, valor]', () => {
+      const data = [
+        ['data', 'estabelecimento', 'valor'],
+        ['15/01/2024', 'Supermercado Extra', '89,90'],
+        ['16/01/2024', 'Farmácia Drogasil', '45,50'],
+        ['17/01/2024', 'Posto Shell', '150,00'],
+      ];
+
+      const excelData = createTestExcel(data);
+      const result = parser.parse(excelData);
+
+      expect(result.columnMapping.dateColumn).toBe(0);
+      expect(result.columnMapping.descriptionColumn).toBe(1);
+      expect(result.columnMapping.amountColumn).toBe(2);
+      expect(result.transactions.length).toBe(3);
+      // Verify description is textual (not a numeric value)
+      expect(result.transactions[0]!.description).toBe('Supermercado Extra');
+      expect(result.transactions[1]!.description).toBe('Farmácia Drogasil');
+      expect(result.transactions[2]!.description).toBe('Posto Shell');
+      // Verify amounts are parsed correctly
+      expect(result.transactions[0]!.amount).toBeCloseTo(89.9, 2);
+      expect(result.transactions[1]!.amount).toBeCloseTo(45.5, 2);
+      expect(result.transactions[2]!.amount).toBeCloseTo(150.0, 2);
+    });
+
+    it('should detect fatura-specific header "compra" as description column', () => {
+      const data = [
+        ['data', 'compra', 'valor'],
+        ['15/01/2024', 'Loja Renner', '120,00'],
+        ['16/01/2024', 'Restaurante Outback', '85,50'],
+      ];
+
+      const excelData = createTestExcel(data);
+      const result = parser.parse(excelData);
+
+      expect(result.columnMapping.descriptionColumn).toBe(1);
+      expect(result.transactions[0]!.description).toBe('Loja Renner');
+      expect(result.transactions[1]!.description).toBe('Restaurante Outback');
+    });
+
+    it('should detect fatura-specific header "loja" as description column', () => {
+      const data = [
+        ['data', 'valor', 'loja'],
+        ['15/01/2024', '55,00', 'Padaria Pão Quente'],
+        ['16/01/2024', '32,90', 'Mercado Livre'],
+      ];
+
+      const excelData = createTestExcel(data);
+      const result = parser.parse(excelData);
+
+      expect(result.columnMapping.descriptionColumn).toBe(2);
+      expect(result.columnMapping.amountColumn).toBe(1);
+      expect(result.transactions[0]!.description).toBe('Padaria Pão Quente');
+    });
+
+    /**
+     * Task 3.4: File with no recognizable headers — inference logic based on data patterns
+     * Verifies the multi-row scanning inference assigns columns correctly
+     *
+     * **Validates: Requirements 2.1**
+     */
+    it('should infer columns correctly from data patterns when no headers are present', () => {
+      // No recognizable headers — columns are: date, description, amount
+      const data = [
+        ['15/01/2024', 'Supermercado Extra', '89,90'],
+        ['16/01/2024', 'Farmácia Drogasil', '45,50'],
+        ['17/01/2024', 'Posto Shell', '150,00'],
+        ['18/01/2024', 'Restaurante Outback', '75,00'],
+      ];
+
+      const excelData = createTestExcel(data);
+      const result = parser.parse(excelData);
+
+      // Should infer: col 0 = date, col 1 = description (text), col 2 = amount (numeric)
+      expect(result.columnMapping.dateColumn).toBe(0);
+      expect(result.columnMapping.descriptionColumn).toBe(1);
+      expect(result.columnMapping.amountColumn).toBe(2);
+      // Verify transactions are parsed correctly
+      expect(result.transactions.length).toBeGreaterThanOrEqual(3);
+      expect(result.transactions[0]!.description).toBe('Supermercado Extra');
+      expect(result.transactions[0]!.amount).toBeCloseTo(89.9, 2);
+    });
+
+    it('should infer columns correctly when amount column comes before description', () => {
+      // No recognizable headers — columns are: date, amount, description
+      const data = [
+        ['15/01/2024', '89,90', 'Supermercado Extra'],
+        ['16/01/2024', '45,50', 'Farmácia Drogasil'],
+        ['17/01/2024', '150,00', 'Posto Shell'],
+        ['18/01/2024', '75,00', 'Restaurante Outback'],
+      ];
+
+      const excelData = createTestExcel(data);
+      const result = parser.parse(excelData);
+
+      // Should infer: col 0 = date, col 1 = amount (numeric), col 2 = description (text)
+      expect(result.columnMapping.dateColumn).toBe(0);
+      expect(result.columnMapping.amountColumn).toBe(1);
+      expect(result.columnMapping.descriptionColumn).toBe(2);
+      expect(result.transactions.length).toBeGreaterThanOrEqual(3);
+      expect(result.transactions[0]!.description).toBe('Supermercado Extra');
+      expect(result.transactions[0]!.amount).toBeCloseTo(89.9, 2);
+    });
+
+    it('should handle inference with mixed data patterns using majority voting', () => {
+      // No recognizable headers — columns are: date, description, amount
+      // One row has an ambiguous value but majority should win
+      const data = [
+        ['15/01/2024', 'Supermercado Extra', '89,90'],
+        ['16/01/2024', 'Farmácia Drogasil', '45,50'],
+        ['17/01/2024', 'Posto Shell', '150,00'],
+        ['18/01/2024', 'Loja 123', '75,00'],
+        ['19/01/2024', 'Mercado Livre', '200,00'],
+      ];
+
+      const excelData = createTestExcel(data);
+      const result = parser.parse(excelData);
+
+      expect(result.columnMapping.dateColumn).toBe(0);
+      expect(result.columnMapping.descriptionColumn).toBe(1);
+      expect(result.columnMapping.amountColumn).toBe(2);
+    });
   });
 
   /**
@@ -476,9 +605,9 @@ describe('ExcelParser Unit Tests', () => {
       const excelData = createTestExcel(data);
       const result = parser.parse(excelData);
 
-      expect(result.transactions[0].date.getFullYear()).toBe(2024);
-      expect(result.transactions[0].date.getMonth()).toBe(0);
-      expect(result.transactions[0].date.getDate()).toBe(15);
+      expect(result.transactions[0]!.date.getFullYear()).toBe(2024);
+      expect(result.transactions[0]!.date.getMonth()).toBe(0);
+      expect(result.transactions[0]!.date.getDate()).toBe(15);
     });
 
     it('should parse dates in DD/MM/YYYY format', () => {
@@ -507,7 +636,7 @@ describe('ExcelParser Unit Tests', () => {
       const excelData = createTestExcel(data);
       const result = parser.parse(excelData);
 
-      expect(result.transactions[0].amount).toBeCloseTo(100.5, 2);
+      expect(result.transactions[0]!.amount).toBeCloseTo(100.5, 2);
     });
 
     it('should parse negative amounts', () => {
@@ -519,7 +648,7 @@ describe('ExcelParser Unit Tests', () => {
       const excelData = createTestExcel(data);
       const result = parser.parse(excelData);
 
-      expect(result.transactions[0].amount).toBeCloseTo(-50.25, 2);
+      expect(result.transactions[0]!.amount).toBeCloseTo(-50.25, 2);
     });
 
     it('should parse zero amount', () => {
@@ -531,7 +660,7 @@ describe('ExcelParser Unit Tests', () => {
       const excelData = createTestExcel(data);
       const result = parser.parse(excelData);
 
-      expect(result.transactions[0].amount).toBe(0);
+      expect(result.transactions[0]!.amount).toBe(0);
     });
   });
 
@@ -565,7 +694,7 @@ describe('ExcelParser Unit Tests', () => {
       const result = parser.parse(excelData);
 
       expect(result.transactions.length).toBe(1);
-      expect(result.transactions[0].amount).toBeCloseTo(100.5, 2);
+      expect(result.transactions[0]!.amount).toBeCloseTo(100.5, 2);
     });
   });
 

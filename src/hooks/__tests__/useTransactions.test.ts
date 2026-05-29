@@ -5,7 +5,7 @@
  *
  * **Validates: Requirements 19, 29**
  */
-import { renderHook, act, waitFor } from '@testing-library/react-native';
+import { renderHook, act } from '@testing-library/react-native';
 
 // Mock data
 const mockTransactionRecord = {
@@ -36,17 +36,10 @@ const mockCategoryRecord = {
 
 // Mock the database client
 const mockGetDb = jest.fn();
-const mockSelect = jest.fn();
-const mockFrom = jest.fn();
-const mockLeftJoin = jest.fn();
-const mockWhere = jest.fn();
-const mockOrderBy = jest.fn();
-const mockLimit = jest.fn();
-const mockOffset = jest.fn();
 
 jest.mock('../../db/client', () => ({
   getDb: () => mockGetDb(),
-  useLiveQuery: jest.fn((query, deps) => ({
+  useLiveQuery: jest.fn((_query, _deps) => ({
     data: [{ transaction: mockTransactionRecord, category: mockCategoryRecord }],
     error: null,
   })),
@@ -159,8 +152,8 @@ describe('useTransactions', () => {
       const { result } = renderHook(() => useTransactions());
 
       expect(result.current.transactions).toHaveLength(1);
-      expect(result.current.transactions[0].id).toBe('tx-1');
-      expect(result.current.transactions[0].category?.name).toBe('Food');
+      expect(result.current.transactions[0]!.id).toBe('tx-1');
+      expect(result.current.transactions[0]!.category?.name).toBe('Food');
     });
 
     it('returns loading state initially', () => {
@@ -262,6 +255,7 @@ describe('useTransactions', () => {
         date: new Date('2024-01-20'),
         amount: -25.0,
         description: 'New transaction',
+        title: '',
         referenceMonth: '2024-01',
       });
 

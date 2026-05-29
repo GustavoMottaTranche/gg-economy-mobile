@@ -585,7 +585,7 @@ describe('persistence between reinitializations', () => {
         useImportPreferencesStore.getState().setHydrated(true);
       });
 
-      rerender();
+      rerender(undefined);
 
       // After hydration, isReady should be true
       expect(result.current.isReady).toBe(true);

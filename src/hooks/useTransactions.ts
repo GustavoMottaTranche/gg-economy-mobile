@@ -120,6 +120,7 @@ function toTransactionWithCategory(
 ): TransactionWithCategory {
   return {
     id: txRecord.id,
+    title: txRecord.title,
     date: new Date(txRecord.date),
     amount: txRecord.amount,
     description: txRecord.description,
@@ -130,6 +131,8 @@ function toTransactionWithCategory(
     needsReview: txRecord.needsReview,
     isExcludedFromTotals: txRecord.isExcludedFromTotals,
     duplicateOf: txRecord.duplicateOf,
+    installmentGroupId: txRecord.installmentGroupId ?? null,
+    recurringId: txRecord.recurringId ?? null,
     createdAt: new Date(txRecord.createdAt),
     updatedAt: new Date(txRecord.updatedAt),
     category: catRecord
@@ -140,6 +143,7 @@ function toTransactionWithCategory(
           icon: catRecord.icon,
           color: catRecord.color,
           isActive: catRecord.isActive,
+          expenseGroup: (catRecord.expenseGroup as Category['expenseGroup']) ?? null,
           createdAt: new Date(catRecord.createdAt),
         }
       : null,

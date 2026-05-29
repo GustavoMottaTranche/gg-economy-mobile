@@ -142,7 +142,10 @@ describe('ManualEntryForm Property Tests', () => {
         const leapYears = [1992, 1996, 2000, 2004, 2008, 2012, 2016, 2020, 2024, 2028];
         const leapYearDateArbitrary = fc
           .integer({ min: 0, max: leapYears.length - 1 })
-          .map((index) => new Date(leapYears[index], 1, 29)); // Feb 29
+          .map((index) => {
+            const year = leapYears[index] ?? 2000;
+            return new Date(year, 1, 29);
+          }); // Feb 29
 
         fc.assert(
           fc.property(leapYearDateArbitrary, (date) => {

@@ -22,26 +22,6 @@ describe('Property 10: CSV Delimiter Auto-Detection', () => {
   const delimiterArb: fc.Arbitrary<CsvDelimiter> = fc.constantFrom(',', ';', '\t');
 
   /**
-   * Arbitrary for generating valid field values
-   * Excludes characters that would interfere with delimiter detection
-   */
-  const fieldArb = (delimiter: CsvDelimiter): fc.Arbitrary<string> =>
-    fc
-      .string({ minLength: 1, maxLength: 50 })
-      .filter((s) => {
-        // Exclude the delimiter character
-        if (s.includes(delimiter)) return false;
-        // Exclude newlines
-        if (s.includes('\n') || s.includes('\r')) return false;
-        // Exclude quotes (they complicate CSV parsing)
-        if (s.includes('"')) return false;
-        // Exclude empty strings
-        if (s.trim() === '') return false;
-        return true;
-      })
-      .map((s) => s.trim());
-
-  /**
    * Arbitrary for generating a valid date string
    */
   const dateStringArb = fc
@@ -226,8 +206,8 @@ describe('Property 10: CSV Delimiter Auto-Detection', () => {
 
           // Each transaction should have correct data
           for (let i = 0; i < rows.length; i++) {
-            expect(result.transactions[i].description).toBe(rows[i].description);
-            expect(result.transactions[i].amount).toBeCloseTo(parseFloat(rows[i].amount), 2);
+            expect(result.transactions[i]!.description).toBe(rows[i]!.description);
+            expect(result.transactions[i]!.amount).toBeCloseTo(parseFloat(rows[i]!.amount), 2);
           }
         }
       ),
@@ -271,7 +251,7 @@ describe('Property 10: CSV Delimiter Auto-Detection', () => {
 
         expect(result.delimiter).toBe(delimiter);
         expect(result.transactions.length).toBe(1);
-        expect(result.transactions[0].description).toBe(descriptionWithDelimiter);
+        expect(result.transactions[0]!.description).toBe(descriptionWithDelimiter);
       }),
       { numRuns: 50 }
     );

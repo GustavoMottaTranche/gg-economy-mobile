@@ -6,7 +6,7 @@
 #
 # This test covers:
 # - Tab Navigation: Dashboard, Transactions, Review, Manual Entry, Settings
-# - Settings Stack: Main Settings, Backup, Language, Categories, Rules
+# - Settings Stack: Main Settings, Backup, Language, Categories, Rules, Notifications
 # - Modal Screens: Import, Transaction Detail
 # - Back navigation and gesture navigation
 # - Navigation state maintenance
@@ -186,7 +186,25 @@ appId: com.ggeconomy.mobile
     visible: "Settings"
     timeout: 5000
 - assertVisible: "Settings"
-- takeScreenshot: "11_navigation_settings_after_stack"
+
+# Navigate to Notifications Settings
+- tapOn:
+    id: "settings-item-notifications"
+    optional: true
+- extendedWaitUntil:
+    visible:
+      id: "notifications-settings-screen"
+    timeout: 5000
+    optional: true
+- takeScreenshot: "11_navigation_notifications_settings"
+
+# Go back to Settings main
+- back
+- extendedWaitUntil:
+    visible: "Settings"
+    timeout: 5000
+- assertVisible: "Settings"
+- takeScreenshot: "12_navigation_settings_after_stack"
 
 # ============================================================================
 # PART E: Settings Stack - Deep Navigation
@@ -211,7 +229,7 @@ appId: com.ggeconomy.mobile
       id: "frequency-modal"
     timeout: 3000
     optional: true
-- takeScreenshot: "12_navigation_frequency_modal"
+- takeScreenshot: "13_navigation_frequency_modal"
 
 # Close the modal by tapping outside or back
 - back:
@@ -247,7 +265,7 @@ appId: com.ggeconomy.mobile
       id: "import-screen"
     timeout: 5000
     optional: true
-- takeScreenshot: "13_navigation_import_modal"
+- takeScreenshot: "14_navigation_import_modal"
 
 # Close import modal
 - tapOn:
@@ -258,7 +276,7 @@ appId: com.ggeconomy.mobile
 - extendedWaitUntil:
     visible: "Dashboard"
     timeout: 5000
-- takeScreenshot: "14_navigation_after_import_close"
+- takeScreenshot: "15_navigation_after_import_close"
 
 # ============================================================================
 # PART G: Navigation State Persistence
@@ -300,7 +318,7 @@ appId: com.ggeconomy.mobile
           id: "backup-settings-screen"
       - visible: "Settings"
     timeout: 5000
-- takeScreenshot: "15_navigation_state_persistence"
+- takeScreenshot: "16_navigation_state_persistence"
 
 # Go back to Settings main if needed
 - back:
@@ -326,7 +344,7 @@ appId: com.ggeconomy.mobile
     visible: "Dashboard"
     timeout: 5000
 - assertVisible: "Dashboard"
-- takeScreenshot: "16_navigation_rapid_switching"
+- takeScreenshot: "17_navigation_rapid_switching"
 
 # ============================================================================
 # PART I: Categories Modal Navigation
@@ -356,7 +374,7 @@ appId: com.ggeconomy.mobile
       id: "category-form-modal"
     timeout: 3000
     optional: true
-- takeScreenshot: "17_navigation_category_modal"
+- takeScreenshot: "18_navigation_category_modal"
 
 # Close the modal
 - tapOn:
@@ -399,7 +417,7 @@ appId: com.ggeconomy.mobile
       id: "rule-form-modal"
     timeout: 3000
     optional: true
-- takeScreenshot: "18_navigation_rule_modal"
+- takeScreenshot: "19_navigation_rule_modal"
 
 # Close the modal
 - tapOn:
@@ -460,7 +478,7 @@ appId: com.ggeconomy.mobile
     visible: "Dashboard"
     timeout: 5000
 - assertVisible: "Dashboard"
-- takeScreenshot: "19_navigation_final_state"
+- takeScreenshot: "20_navigation_final_state"
 
 # ============================================================================
 # Test Complete
@@ -471,7 +489,7 @@ appId: com.ggeconomy.mobile
       console.log('Navigation E2E test completed successfully!');
       console.log('Verified:');
       console.log('  - Tab navigation (Dashboard, Transactions, Review, Manual, Settings)');
-      console.log('  - Settings stack navigation (Backup, Language, Categories, Rules)');
+      console.log('  - Settings stack navigation (Backup, Language, Categories, Rules, Notifications)');
       console.log('  - Modal screens (Import, Category Form, Rule Form, Frequency)');
       console.log('  - Back navigation');
       console.log('  - Navigation state persistence');

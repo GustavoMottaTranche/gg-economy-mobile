@@ -5,7 +5,7 @@
  * - Portuguese (pt-BR)
  * - English (en)
  *
- * **Validates: Requirements 25, 27, 30**
+ * **Validates: Requirements 25, 27, 30, 5.5, 6.1, 10.1, 10.2, 10.3, 10.4**
  */
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 import { useTranslation } from 'react-i18next';
@@ -17,6 +17,8 @@ import {
   changeLanguage,
   SupportedLocale,
 } from '../../../src/i18n';
+import { useThemeColors } from '../../../src/hooks/useThemeColors';
+import { spacing, typography, borderRadius } from '../../../src/constants/theme';
 
 interface LanguageItemProps {
   locale: SupportedLocale;
@@ -26,25 +28,36 @@ interface LanguageItemProps {
 }
 
 function LanguageItem({ locale, displayName, isSelected, onSelect }: LanguageItemProps) {
+  const colors = useThemeColors();
+
   return (
     <TouchableOpacity
-      style={styles.languageItem}
+      style={[
+        styles.languageItem,
+        {
+          backgroundColor: colors.surface.card,
+          borderBottomColor: colors.border.subtle,
+        },
+      ]}
       onPress={onSelect}
       accessibilityRole="radio"
       accessibilityState={{ checked: isSelected }}
       accessibilityLabel={displayName}
     >
       <View style={styles.languageInfo}>
-        <Text style={styles.languageName}>{displayName}</Text>
-        <Text style={styles.languageCode}>{locale}</Text>
+        <Text style={[styles.languageName, { color: colors.text.primary }]}>{displayName}</Text>
+        <Text style={[styles.languageCode, { color: colors.text.tertiary }]}>{locale}</Text>
       </View>
-      {isSelected && <Text style={styles.checkmark}>✓</Text>}
+      {isSelected && (
+        <Text style={[styles.checkmark, { color: colors.interactive.primary }]}>✓</Text>
+      )}
     </TouchableOpacity>
   );
 }
 
 export default function LanguageSettingsScreen() {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
+  const colors = useThemeColors();
   const currentLocale = getCurrentLocale();
 
   const handleLanguageChange = async (locale: SupportedLocale) => {
@@ -58,10 +71,23 @@ export default function LanguageSettingsScreen() {
   };
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
+    <ScrollView
+      style={[styles.container, { backgroundColor: colors.background.secondary }]}
+      contentContainerStyle={styles.contentContainer}
+    >
       <View style={styles.section}>
-        <Text style={styles.sectionDescription}>{t('settings.languageDescription')}</Text>
-        <View style={styles.sectionContent}>
+        <Text style={[styles.sectionDescription, { color: colors.text.secondary }]}>
+          {t('settings.languageDescription')}
+        </Text>
+        <View
+          style={[
+            styles.sectionContent,
+            {
+              backgroundColor: colors.surface.card,
+              borderColor: colors.border.default,
+            },
+          ]}
+        >
           {SUPPORTED_LOCALES.map((locale) => (
             <LanguageItem
               key={locale}
@@ -80,51 +106,46 @@ export default function LanguageSettingsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F2F2F7',
   },
   contentContainer: {
-    paddingVertical: 20,
+    paddingVertical: spacing.lg,
   },
   section: {
-    marginBottom: 24,
+    marginBottom: spacing.xl,
   },
   sectionDescription: {
-    fontSize: 13,
-    color: '#6D6D72',
-    marginHorizontal: 16,
-    marginBottom: 12,
+    fontSize: typography.caption.fontSize,
+    marginHorizontal: spacing.base,
+    marginBottom: spacing.md,
   },
   sectionContent: {
-    backgroundColor: '#FFFFFF',
     borderTopWidth: 1,
     borderBottomWidth: 1,
-    borderColor: '#E5E5EA',
+    borderRadius: borderRadius.md,
+    marginHorizontal: spacing.base,
+    overflow: 'hidden',
   },
   languageItem: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.base,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#E5E5EA',
   },
   languageInfo: {
     flex: 1,
   },
   languageName: {
-    fontSize: 16,
+    fontSize: typography.body.fontSize,
     fontWeight: '500',
-    color: '#000000',
     marginBottom: 2,
   },
   languageCode: {
-    fontSize: 13,
-    color: '#8E8E93',
+    fontSize: typography.caption.fontSize,
   },
   checkmark: {
     fontSize: 18,
-    color: '#007AFF',
     fontWeight: '600',
   },
 });

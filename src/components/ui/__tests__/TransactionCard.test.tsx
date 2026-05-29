@@ -18,14 +18,27 @@ import type { Category } from '../../../types/category';
 
 // Mock i18n
 jest.mock('../../../i18n', () => ({
-  formatCurrencyLocale: jest.fn((amount: number) => `$${amount.toFixed(2)}`),
-  formatDateLocale: jest.fn(() => '01/15/2024'),
+  formatCurrencyLocale: jest.fn(
+    (amount: number, _locale: string, options?: { showPositiveSign?: boolean }) => {
+      const formatted = `$${amount.toFixed(2)}`;
+      if (options?.showPositiveSign && amount > 0) {
+        return `+${formatted}`;
+      }
+      return formatted;
+    }
+  ),
   getCurrentLocale: jest.fn(() => 'en'),
+}));
+
+// Mock DateTimePicker's formatDateTimeForLocale
+jest.mock('../DateTimePicker', () => ({
+  formatDateTimeForLocale: jest.fn(() => '01/15/2024 12:00 AM'),
 }));
 
 describe('TransactionCard', () => {
   const mockTransaction: Transaction = {
     id: 'txn-1',
+    title: 'Grocery Store',
     date: new Date('2024-01-15'),
     amount: -5000, // -$50.00 in cents
     description: 'Grocery Store Purchase',
@@ -36,6 +49,8 @@ describe('TransactionCard', () => {
     needsReview: false,
     isExcludedFromTotals: false,
     duplicateOf: null,
+    installmentGroupId: null,
+    recurringId: null,
     createdAt: new Date('2024-01-15'),
     updatedAt: new Date('2024-01-15'),
   };
@@ -47,6 +62,7 @@ describe('TransactionCard', () => {
     icon: '🍔',
     color: '#ef4444',
     isActive: true,
+    expenseGroup: null,
     createdAt: new Date('2024-01-01'),
   };
 
@@ -56,12 +72,29 @@ describe('TransactionCard', () => {
 
   it('renders transaction description', () => {
     const { getByText } = render(<TransactionCard {...defaultProps} />);
+    // Title is shown as primary text
+    expect(getByText('Grocery Store')).toBeTruthy();
+    // Description is shown as secondary text when non-empty
     expect(getByText('Grocery Store Purchase')).toBeTruthy();
+  });
+
+  it('hides description area when description is empty', () => {
+    const transactionNoDesc: Transaction = {
+      ...mockTransaction,
+      description: '',
+    };
+    const { getByText, queryByText } = render(
+      <TransactionCard transaction={transactionNoDesc} />
+    );
+    // Title should still be visible
+    expect(getByText('Grocery Store')).toBeTruthy();
+    // Description text should not be rendered
+    expect(queryByText('Grocery Store Purchase')).toBeNull();
   });
 
   it('renders formatted date', () => {
     const { getByText } = render(<TransactionCard {...defaultProps} />);
-    expect(getByText('01/15/2024')).toBeTruthy();
+    expect(getByText('01/15/2024 12:00 AM')).toBeTruthy();
   });
 
   it('renders formatted amount for expense', () => {
@@ -152,6 +185,20 @@ describe('TransactionCard', () => {
     expect(queryByText('🚫')).toBeNull();
   });
 
+  it('renders recurring indicator (∞) when transaction has recurringId', () => {
+    const recurringTransaction: Transaction = {
+      ...mockTransaction,
+      recurringId: 'recurring-1',
+    };
+    const { getByText } = render(<TransactionCard transaction={recurringTransaction} />);
+    expect(getByText('∞')).toBeTruthy();
+  });
+
+  it('does not render recurring indicator when recurringId is null', () => {
+    const { queryByText } = render(<TransactionCard {...defaultProps} />);
+    expect(queryByText('∞')).toBeNull();
+  });
+
   it('applies selected styling when selected is true', () => {
     const { getByTestId } = render(
       <TransactionCard {...defaultProps} selected testID="transaction-card" />
@@ -164,8 +211,8 @@ describe('TransactionCard', () => {
     const { getByLabelText } = render(
       <TransactionCard {...defaultProps} category={mockCategory} onPress={() => {}} />
     );
-    // Should include date, description, type, amount, and category
-    const accessibleElement = getByLabelText(/01\/15\/2024.*Grocery Store Purchase.*Food/);
+    // Should include title, description, date, type, amount, and category
+    const accessibleElement = getByLabelText(/Grocery Store.*Grocery Store Purchase.*01\/15\/2024.*Food/);
     expect(accessibleElement).toBeTruthy();
   });
 
@@ -178,5 +225,33 @@ describe('TransactionCard', () => {
     expect(card.props.style).toEqual(
       expect.arrayContaining([expect.objectContaining(customStyle)])
     );
+  });
+
+  it('renders only one "+" sign for positive (income) amounts', () => {
+    const incomeTransaction: Transaction = {
+      ...mockTransaction,
+      amount: 1889, // +$18.89 in cents (income)
+    };
+    const { getByText } = render(<TransactionCard transaction={incomeTransaction} testID="card" />);
+    // Should show "+$18.89" with exactly one "+" sign, not "++$18.89"
+    const amountElement = getByText(/\+\$18\.89/);
+    expect(amountElement).toBeTruthy();
+    // Verify no double sign
+    expect(amountElement.props.children.join('')).not.toContain('++');
+  });
+
+  it('renders only one "-" sign for negative (expense) amounts', () => {
+    const expenseTransaction: Transaction = {
+      ...mockTransaction,
+      amount: -5000, // -$50.00 in cents (expense)
+    };
+    const { getByText } = render(
+      <TransactionCard transaction={expenseTransaction} testID="card" />
+    );
+    // Should show "-$50.00" with exactly one "-" sign, not "--$50.00"
+    const amountElement = getByText(/-\$50\.00/);
+    expect(amountElement).toBeTruthy();
+    // Verify no double sign
+    expect(amountElement.props.children.join('')).not.toContain('--');
   });
 });

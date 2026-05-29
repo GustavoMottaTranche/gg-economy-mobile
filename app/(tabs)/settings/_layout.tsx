@@ -8,27 +8,32 @@
  * - categories: Category management
  * - rules: Categorization rules
  *
- * **Validates: Requirements 27, 28, 30**
+ * **Validates: Requirements 27, 28, 30, 10.1, 10.2, 10.3, 10.4**
  */
 import { Stack } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 
+import { useThemeColors } from '../../../src/hooks/useThemeColors';
+import { typography } from '../../../src/constants/theme';
+
 export default function SettingsLayout() {
   const { t } = useTranslation();
+  const colors = useThemeColors();
 
   return (
     <Stack
       screenOptions={{
         headerStyle: {
-          backgroundColor: '#FFFFFF',
+          backgroundColor: colors.surface.card,
         },
         headerTitleStyle: {
-          fontSize: 17,
+          fontSize: typography.body.fontSize + 1,
           fontWeight: '600',
-          color: '#000000',
+          color: colors.text.primary,
         },
         headerShadowVisible: false,
         headerBackTitle: t('common.back'),
+        headerTintColor: colors.interactive.primary,
       }}
     >
       <Stack.Screen

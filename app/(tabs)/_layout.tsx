@@ -1,61 +1,64 @@
 /**
  * Tab Layout for GG-Economy Mobile
  *
- * Configures the bottom tab navigation with 5 main sections:
+ * Configures the bottom tab navigation with 4 main sections:
  * - Dashboard (index) - Financial overview
  * - Transactions - View transactions by month
- * - Review - Review imported transactions (with badge)
- * - Manual - Manual entry
+ * - Manual - Manual entry (with installment/batch modes)
  * - Settings - App settings
  *
- * **Validates: Requirements 28, 30**
+ * Uses theme tokens for all colors, SVG icons via TabBarIcon component,
+ * and supports light/dark mode with proper accessibility labels.
+ *
+ * **Validates: Requirements 7.1, 7.2, 7.3, 7.4, 7.5, 7.6**
  */
 import { Tabs } from 'expo-router';
 import { useTranslation } from 'react-i18next';
-import { View, Text, StyleSheet, Platform } from 'react-native';
-
-import { useReviewCount } from '../../src/hooks/useReviewCount';
-
-/**
- * Tab bar icon component
- */
-function TabBarIcon({ icon, focused }: { icon: string; focused: boolean }) {
-  return <Text style={[styles.tabIcon, { opacity: focused ? 1 : 0.6 }]}>{icon}</Text>;
-}
+import { StyleSheet } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useThemeColors } from '../../src/hooks/useThemeColors';
+import { useThemeStore } from '../../src/stores/themeStore';
+import { TabBarIcon } from '../../src/components/ui/TabBarIcon';
+import { typography } from '../../src/constants/theme';
 
 /**
- * Badge component for review tab
- */
-function ReviewBadge({ count }: { count: number }) {
-  if (count === 0) {
-    return null;
-  }
-
-  const displayCount = count > 99 ? '99+' : count.toString();
-
-  return (
-    <View style={styles.badge} accessibilityLabel={`${count} pending reviews`}>
-      <Text style={styles.badgeText}>{displayCount}</Text>
-    </View>
-  );
-}
-
-/**
- * Tab layout component
+ * Tab layout component with theme-aware styling and SVG icons.
  */
 export default function TabLayout() {
   const { t } = useTranslation();
-  const reviewCount = useReviewCount();
+  const insets = useSafeAreaInsets();
+  const colors = useThemeColors();
+  const resolvedScheme = useThemeStore((s) => s.resolvedScheme);
+  const isDark = resolvedScheme === 'dark';
 
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: '#007AFF',
-        tabBarInactiveTintColor: '#8E8E93',
-        tabBarStyle: styles.tabBar,
-        tabBarLabelStyle: styles.tabBarLabel,
-        headerStyle: styles.header,
-        headerTitleStyle: styles.headerTitle,
+        tabBarActiveTintColor: colors.interactive.primary,
+        tabBarInactiveTintColor: colors.text.tertiary,
+        tabBarStyle: StyleSheet.flatten([
+          styles.tabBar,
+          {
+            backgroundColor: colors.background.secondary,
+            borderTopColor: isDark
+              ? 'rgba(255, 255, 255, 0.15)'
+              : colors.border.default,
+            borderTopWidth: isDark ? 0.5 : 1,
+            paddingBottom: insets.bottom,
+          },
+        ]),
+        tabBarLabelStyle: StyleSheet.flatten([
+          styles.tabBarLabel,
+          { color: colors.text.tertiary },
+        ]),
+        tabBarItemStyle: styles.tabBarItem,
+        headerStyle: {
+          backgroundColor: colors.background.primary,
+        },
+        headerTitleStyle: StyleSheet.flatten([
+          styles.headerTitle,
+          { color: colors.text.primary },
+        ]),
         headerShadowVisible: false,
       }}
     >
@@ -64,7 +67,9 @@ export default function TabLayout() {
         options={{
           title: t('navigation.dashboard'),
           tabBarLabel: t('navigation.dashboard'),
-          tabBarIcon: ({ focused }) => <TabBarIcon icon="📊" focused={focused} />,
+          tabBarIcon: ({ focused, color }) => (
+            <TabBarIcon name="dashboard" focused={focused} color={color} size={24} />
+          ),
           tabBarAccessibilityLabel: t('navigation.dashboard'),
         }}
       />
@@ -73,22 +78,10 @@ export default function TabLayout() {
         options={{
           title: t('navigation.transactions'),
           tabBarLabel: t('navigation.transactions'),
-          tabBarIcon: ({ focused }) => <TabBarIcon icon="💳" focused={focused} />,
-          tabBarAccessibilityLabel: t('navigation.transactions'),
-        }}
-      />
-      <Tabs.Screen
-        name="review"
-        options={{
-          title: t('navigation.review'),
-          tabBarLabel: t('navigation.review'),
-          tabBarIcon: ({ focused }) => (
-            <View>
-              <TabBarIcon icon="✅" focused={focused} />
-              <ReviewBadge count={reviewCount} />
-            </View>
+          tabBarIcon: ({ focused, color }) => (
+            <TabBarIcon name="transactions" focused={focused} color={color} size={24} />
           ),
-          tabBarAccessibilityLabel: `${t('navigation.review')}${reviewCount > 0 ? `, ${reviewCount} pending` : ''}`,
+          tabBarAccessibilityLabel: t('navigation.transactions'),
         }}
       />
       <Tabs.Screen
@@ -96,7 +89,9 @@ export default function TabLayout() {
         options={{
           title: t('navigation.manual'),
           tabBarLabel: t('navigation.manual'),
-          tabBarIcon: ({ focused }) => <TabBarIcon icon="✏️" focused={focused} />,
+          tabBarIcon: ({ focused, color }) => (
+            <TabBarIcon name="manual" focused={focused} color={color} size={24} />
+          ),
           tabBarAccessibilityLabel: t('navigation.manual'),
         }}
       />
@@ -105,9 +100,18 @@ export default function TabLayout() {
         options={{
           title: t('navigation.settings'),
           tabBarLabel: t('navigation.settings'),
-          tabBarIcon: ({ focused }) => <TabBarIcon icon="⚙️" focused={focused} />,
+          tabBarIcon: ({ focused, color }) => (
+            <TabBarIcon name="settings" focused={focused} color={color} size={24} />
+          ),
           headerShown: false, // Settings has its own stack navigation
           tabBarAccessibilityLabel: t('navigation.settings'),
+        }}
+      />
+      {/* Hidden route: review tab redirects to manual entry */}
+      <Tabs.Screen
+        name="review"
+        options={{
+          href: null, // Hide from tab bar
         }}
       />
     </Tabs>
@@ -116,44 +120,19 @@ export default function TabLayout() {
 
 const styles = StyleSheet.create({
   tabBar: {
-    backgroundColor: '#FFFFFF',
-    borderTopWidth: 1,
-    borderTopColor: '#E5E5EA',
+    minHeight: 49,
     paddingTop: 4,
-    paddingBottom: Platform.OS === 'ios' ? 20 : 8,
-    height: Platform.OS === 'ios' ? 84 : 60,
   },
   tabBarLabel: {
-    fontSize: 10,
-    fontWeight: '500',
+    fontSize: typography.overline.fontSize,
+    fontWeight: typography.overline.fontWeight,
   },
-  tabIcon: {
-    fontSize: 24,
-    textAlign: 'center',
-  },
-  header: {
-    backgroundColor: '#FFFFFF',
+  tabBarItem: {
+    minHeight: 44,
+    minWidth: 44,
   },
   headerTitle: {
     fontSize: 17,
-    fontWeight: '600',
-    color: '#000000',
-  },
-  badge: {
-    position: 'absolute',
-    top: -4,
-    right: -12,
-    backgroundColor: '#FF3B30',
-    borderRadius: 10,
-    minWidth: 20,
-    height: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 4,
-  },
-  badgeText: {
-    color: '#FFFFFF',
-    fontSize: 11,
     fontWeight: '600',
   },
 });

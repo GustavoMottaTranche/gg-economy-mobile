@@ -27,7 +27,7 @@ jest.mock('expo-router', () => {
 // Mock i18n
 jest.mock('react-i18next', () => ({
   useTranslation: () => ({
-    t: (key: string, params?: Record<string, unknown>) => {
+    t: (key: string, _params?: Record<string, unknown>) => {
       const translations: Record<string, string> = {
         'manual.title': 'Manual Entry',
         'manual.newTransaction': 'New Transaction',
@@ -38,6 +38,10 @@ jest.mock('react-i18next', () => ({
         'manual.enterDescription': 'Enter description',
         'manual.selectCategory': 'Select category',
         'manual.selectDate': 'Select date',
+        'manual.purchaseDate': 'Purchase Date',
+        'manual.referenceMonth': 'Reference Month',
+        'manual.referenceMonthHint': 'Month this entry belongs to for budgeting purposes',
+        'manual.referenceMonthManual': 'manually changed',
         'manual.selectMonth': 'Select reference month',
         'manual.saveTransaction': 'Save transaction',
         'manual.clearForm': 'Clear form',
@@ -59,6 +63,7 @@ jest.mock('react-i18next', () => ({
         'common.close': 'Close',
         'validation.required': 'This field is required',
         'validation.invalidAmount': 'Invalid amount',
+        'validation.maxLength': 'Maximum 500 characters',
         'errors.database': 'Unable to save data. Please try again.',
       };
       return translations[key] ?? key;
@@ -171,7 +176,7 @@ jest.mock('../../src/db/queries/transactions', () => ({
   createTransaction: (...args: unknown[]) => mockCreateTransaction(...args),
 }));
 
-// Mock DatePicker
+// Mock DatePicker (legacy - kept for backward compatibility)
 jest.mock('../../src/components/ui/DatePicker', () => ({
   DatePicker: ({
     value,
@@ -199,11 +204,40 @@ jest.mock('../../src/components/ui/DatePicker', () => ({
   },
 }));
 
-// Mock CategoryPicker
+// Mock DateTimePicker
+jest.mock('../../src/components/ui/DateTimePicker', () => ({
+  DateTimePicker: ({
+    value,
+    onChange,
+    label,
+    testID,
+  }: {
+    value: Date;
+    onChange: (date: Date) => void;
+    locale?: string;
+    label?: string;
+    maximumDate?: Date;
+    testID?: string;
+  }) => {
+    const { View, Text, TouchableOpacity } = require('react-native');
+    return (
+      <View testID={testID}>
+        {label && <Text>{label}</Text>}
+        <TouchableOpacity
+          testID={`${testID}-button`}
+          onPress={() => onChange(new Date('2024-01-15T14:30:00'))}
+        >
+          <Text>{value.toLocaleString()}</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  },
+}));
+
+// Mock CategoryPicker (legacy - kept for other tests that may reference it)
 jest.mock('../../src/components/ui/CategoryPicker', () => ({
   CategoryPicker: ({
     categories,
-    selectedCategoryId,
     onSelect,
     visible,
     onClose,
@@ -250,6 +284,34 @@ jest.mock('../../src/components/ui/CategoryPicker', () => ({
     }
 
     return content;
+  },
+}));
+
+// Mock CategorySelector
+jest.mock('../../src/components/CategorySelector', () => ({
+  CategorySelector: ({
+    onSelect,
+    testID,
+  }: {
+    selectedCategoryId?: string | null;
+    onSelect: (category: { id: string; name: string; type: string }) => void;
+    includeIncome?: boolean;
+    testID?: string;
+  }) => {
+    const { View, Text, TouchableOpacity } = require('react-native');
+    return (
+      <View testID={testID}>
+        {mockCategories.map((cat: { id: string; name: string; type: string }) => (
+          <TouchableOpacity
+            key={cat.id}
+            testID={`${testID}-item-${cat.id}`}
+            onPress={() => onSelect(cat)}
+          >
+            <Text>{cat.name}</Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+    );
   },
 }));
 
@@ -330,7 +392,7 @@ describe('ManualEntryScreen', () => {
     it('renders date picker', () => {
       render(<ManualEntryScreen />);
 
-      expect(screen.getByTestId('date-picker')).toBeTruthy();
+      expect(screen.getByTestId('date-time-picker')).toBeTruthy();
     });
 
     it('renders category selector', () => {
@@ -521,17 +583,27 @@ describe('ManualEntryScreen', () => {
       });
     });
 
-    it('shows error when description is empty', async () => {
+    it('allows submission when description is empty (optional field)', async () => {
       render(<ManualEntryScreen />);
 
       const amountInput = screen.getByTestId('amount-input');
       fireEvent.changeText(amountInput, '50.00');
 
+      // Fill in title (required)
+      const titleInput = screen.getByTestId('title-input');
+      fireEvent.changeText(titleInput, 'Test title');
+
+      // Don't fill description - it's optional now
+
       const submitButton = screen.getByTestId('submit-button');
       fireEvent.press(submitButton);
 
       await waitFor(() => {
-        expect(Alert.alert).toHaveBeenCalledWith('Error', 'Please fill in all required fields');
+        expect(mockCreateTransaction).toHaveBeenCalledWith(
+          expect.objectContaining({
+            description: '',
+          })
+        );
       });
     });
 
@@ -551,6 +623,18 @@ describe('ManualEntryScreen', () => {
         expect(Alert.alert).toHaveBeenCalledWith('Error', 'Please fill in all required fields');
       });
     });
+
+    it('shows error when description exceeds 500 characters', async () => {
+      render(<ManualEntryScreen />);
+
+      const descriptionInput = screen.getByTestId('description-input');
+      const longDescription = 'a'.repeat(501);
+      fireEvent.changeText(descriptionInput, longDescription);
+
+      await waitFor(() => {
+        expect(screen.getByTestId('description-error')).toBeTruthy();
+      });
+    });
   });
 
   describe('Form Submission', () => {
@@ -558,6 +642,9 @@ describe('ManualEntryScreen', () => {
       render(<ManualEntryScreen />);
 
       // Fill in the form
+      const titleInput = screen.getByTestId('title-input');
+      fireEvent.changeText(titleInput, 'Test title');
+
       const amountInput = screen.getByTestId('amount-input');
       fireEvent.changeText(amountInput, '50.00');
 
@@ -577,6 +664,9 @@ describe('ManualEntryScreen', () => {
       render(<ManualEntryScreen />);
 
       // Fill in the form
+      const titleInput = screen.getByTestId('title-input');
+      fireEvent.changeText(titleInput, 'Test title');
+
       const amountInput = screen.getByTestId('amount-input');
       fireEvent.changeText(amountInput, '50.00');
 
@@ -596,6 +686,9 @@ describe('ManualEntryScreen', () => {
       render(<ManualEntryScreen />);
 
       // Fill in the form
+      const titleInput = screen.getByTestId('title-input');
+      fireEvent.changeText(titleInput, 'Test title');
+
       const amountInput = screen.getByTestId('amount-input');
       fireEvent.changeText(amountInput, '50.00');
 
@@ -619,6 +712,9 @@ describe('ManualEntryScreen', () => {
       fireEvent.press(expenseButton);
 
       // Fill in the form
+      const titleInput = screen.getByTestId('title-input');
+      fireEvent.changeText(titleInput, 'Test expense');
+
       const amountInput = screen.getByTestId('amount-input');
       fireEvent.changeText(amountInput, '50.00');
 
@@ -648,6 +744,9 @@ describe('ManualEntryScreen', () => {
       fireEvent.press(incomeButton);
 
       // Fill in the form
+      const titleInput = screen.getByTestId('title-input');
+      fireEvent.changeText(titleInput, 'Test income');
+
       const amountInput = screen.getByTestId('amount-input');
       fireEvent.changeText(amountInput, '100.00');
 
@@ -785,6 +884,9 @@ describe('ManualEntryScreen', () => {
       render(<ManualEntryScreen />);
 
       // Fill in the form
+      const titleInput = screen.getByTestId('title-input');
+      fireEvent.changeText(titleInput, 'Test title');
+
       const amountInput = screen.getByTestId('amount-input');
       fireEvent.changeText(amountInput, '50.00');
 
@@ -850,6 +952,9 @@ describe('ManualEntryScreen - Form Reset', () => {
     render(<ManualEntryScreen />);
 
     // Fill in the form
+    const titleInput = screen.getByTestId('title-input');
+    fireEvent.changeText(titleInput, 'Test title');
+
     const amountInput = screen.getByTestId('amount-input');
     fireEvent.changeText(amountInput, '50.00');
 

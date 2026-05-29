@@ -179,7 +179,7 @@ describe('DatePicker', () => {
 
     const button = getByTestId('date-picker-button');
     // Style is flattened, check for the property directly
-    expect(button.props.style.borderColor).toBe('#ef4444');
+    expect(button.props.style.borderColor).toBe('#DC2626');
   });
 
   it('applies disabled styling when disabled', () => {
@@ -187,7 +187,7 @@ describe('DatePicker', () => {
 
     const button = getByTestId('date-picker-button');
     // Style is flattened, check for the property directly
-    expect(button.props.style.backgroundColor).toBe('#f3f4f6');
+    expect(button.props.style.backgroundColor).toBe('#EBEBF0');
   });
 
   it('has correct accessibility state when disabled', () => {

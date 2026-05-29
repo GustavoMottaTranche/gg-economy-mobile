@@ -15,7 +15,6 @@
 import fc from 'fast-check';
 import * as XLSX from 'xlsx';
 import { ExcelParser } from '../../../services/import/ExcelParser';
-import type { RawTransaction } from '../../../types/transaction';
 
 describe('Property 11: Sheet Selection', () => {
   const parser = new ExcelParser();
@@ -262,8 +261,8 @@ describe('Property 11: Sheet Selection', () => {
 
           // Verify each transaction matches the target sheet's data
           for (let i = 0; i < targetSheet.transactions.length; i++) {
-            const expected = targetSheet.transactions[i];
-            const actual = result.transactions[i];
+            const expected = targetSheet.transactions[i]!;
+            const actual = result.transactions[i]!;
 
             expect(actual.date.toDateString()).toBe(expected.date.toDateString());
             expect(actual.amount).toBeCloseTo(expected.amount, 2);
@@ -286,7 +285,7 @@ describe('Property 11: Sheet Selection', () => {
 
         // Test selecting each sheet by index
         for (let index = 0; index < sheetsData.length; index++) {
-          const targetSheet = sheetsData[index];
+          const targetSheet = sheetsData[index]!;
           const result = parser.parse(excelData, { sheetIndex: index });
 
           // Verify the correct sheet was used
@@ -297,8 +296,8 @@ describe('Property 11: Sheet Selection', () => {
 
           // Verify each transaction matches the target sheet's data
           for (let i = 0; i < targetSheet.transactions.length; i++) {
-            const expected = targetSheet.transactions[i];
-            const actual = result.transactions[i];
+            const expected = targetSheet.transactions[i]!;
+            const actual = result.transactions[i]!;
 
             expect(actual.date.toDateString()).toBe(expected.date.toDateString());
             expect(actual.amount).toBeCloseTo(expected.amount, 2);
@@ -322,7 +321,7 @@ describe('Property 11: Sheet Selection', () => {
         const excelData = createMultiSheetExcel(sheetsData);
 
         // Select second sheet by name but first sheet by index
-        const targetSheet = sheetsData[1];
+        const targetSheet = sheetsData[1]!;
         const result = parser.parse(excelData, {
           sheetName: targetSheet.name,
           sheetIndex: 0, // This should be ignored
@@ -348,7 +347,7 @@ describe('Property 11: Sheet Selection', () => {
         const result = parser.parse(excelData);
 
         // Should use first sheet
-        const firstSheet = sheetsData[0];
+        const firstSheet = sheetsData[0]!;
         expect(result.usedSheet).toBe(firstSheet.name);
         expect(result.transactions.length).toBe(firstSheet.transactions.length);
       }),
@@ -371,10 +370,10 @@ describe('Property 11: Sheet Selection', () => {
 
         // Each sheet should have correct name and index
         for (let i = 0; i < sheetsData.length; i++) {
-          expect(sheets[i].name).toBe(sheetsData[i].name);
-          expect(sheets[i].index).toBe(i);
+          expect(sheets[i]!.name).toBe(sheetsData[i]!.name);
+          expect(sheets[i]!.index).toBe(i);
           // Row count should match transactions + header
-          expect(sheets[i].rowCount).toBe(sheetsData[i].transactions.length + 1);
+          expect(sheets[i]!.rowCount).toBe(sheetsData[i]!.transactions.length + 1);
         }
       }),
       { numRuns: 100 }
@@ -425,10 +424,10 @@ describe('Property 11: Sheet Selection', () => {
         expect(result2.usedSheet).toBe('Sheet2');
 
         // Data should be different
-        expect(result1.transactions[0].description).toBe('Transaction A');
-        expect(result2.transactions[0].description).toBe('Transaction B');
-        expect(result1.transactions[0].amount).toBe(100);
-        expect(result2.transactions[0].amount).toBe(-200);
+        expect(result1.transactions[0]!.description).toBe('Transaction A');
+        expect(result2.transactions[0]!.description).toBe('Transaction B');
+        expect(result1.transactions[0]!.amount).toBe(100);
+        expect(result2.transactions[0]!.amount).toBe(-200);
       }),
       { numRuns: 100 }
     );
@@ -443,7 +442,7 @@ describe('Property 11: Sheet Selection', () => {
         const excelData = createMultiSheetExcel(sheetsData);
 
         // Pick a random sheet to test
-        const targetSheet = sheetsData[Math.floor(Math.random() * sheetsData.length)];
+        const targetSheet = sheetsData[Math.floor(Math.random() * sheetsData.length)]!;
 
         // Parse the same sheet multiple times
         const result1 = parser.parse(excelData, { sheetName: targetSheet.name });
@@ -455,16 +454,16 @@ describe('Property 11: Sheet Selection', () => {
         expect(result2.transactions.length).toBe(result3.transactions.length);
 
         for (let i = 0; i < result1.transactions.length; i++) {
-          expect(result1.transactions[i].date.getTime()).toBe(
-            result2.transactions[i].date.getTime()
+          expect(result1.transactions[i]!.date.getTime()).toBe(
+            result2.transactions[i]!.date.getTime()
           );
-          expect(result2.transactions[i].date.getTime()).toBe(
-            result3.transactions[i].date.getTime()
+          expect(result2.transactions[i]!.date.getTime()).toBe(
+            result3.transactions[i]!.date.getTime()
           );
-          expect(result1.transactions[i].amount).toBe(result2.transactions[i].amount);
-          expect(result2.transactions[i].amount).toBe(result3.transactions[i].amount);
-          expect(result1.transactions[i].description).toBe(result2.transactions[i].description);
-          expect(result2.transactions[i].description).toBe(result3.transactions[i].description);
+          expect(result1.transactions[i]!.amount).toBe(result2.transactions[i]!.amount);
+          expect(result2.transactions[i]!.amount).toBe(result3.transactions[i]!.amount);
+          expect(result1.transactions[i]!.description).toBe(result2.transactions[i]!.description);
+          expect(result2.transactions[i]!.description).toBe(result3.transactions[i]!.description);
         }
       }),
       { numRuns: 100 }

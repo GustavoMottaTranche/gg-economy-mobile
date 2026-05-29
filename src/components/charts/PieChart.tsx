@@ -19,6 +19,8 @@ import {
 import Svg, { G, Path, Circle } from 'react-native-svg';
 import { useTranslation } from 'react-i18next';
 import { formatCurrencyLocale, formatPercentLocale, getCurrentLocale } from '../../i18n';
+import { useThemeColors } from '../../hooks/useThemeColors';
+import { spacing } from '../../constants/theme';
 
 /**
  * Data point for the pie chart
@@ -89,11 +91,19 @@ function describePieSlice(
   startAngle: number,
   endAngle: number
 ): string {
+  // Handle full circle case (360°) - SVG arcs can't draw a full circle
+  const angleDiff = endAngle - startAngle;
+  if (angleDiff >= 359.99) {
+    const path1 = describePieSlice(x, y, outerRadius, innerRadius, startAngle, startAngle + 180);
+    const path2 = describePieSlice(x, y, outerRadius, innerRadius, startAngle + 180, startAngle + 359.99);
+    return path1 + ' ' + path2;
+  }
+
   const outerStart = polarToCartesian(x, y, outerRadius, endAngle);
   const outerEnd = polarToCartesian(x, y, outerRadius, startAngle);
   const innerStart = polarToCartesian(x, y, innerRadius, endAngle);
   const innerEnd = polarToCartesian(x, y, innerRadius, startAngle);
-  const largeArcFlag = endAngle - startAngle <= 180 ? '0' : '1';
+  const largeArcFlag = angleDiff <= 180 ? '0' : '1';
 
   if (innerRadius === 0) {
     // Pie slice (no hole)
@@ -161,12 +171,16 @@ const LegendItem = memo(function LegendItem({
   isSelected,
 }: LegendItemProps): React.ReactElement {
   const locale = getCurrentLocale();
+  const colors = useThemeColors();
   const formattedValue = formatCurrencyLocale(item.value / 100, locale);
   const formattedPercent = formatPercentLocale(percentage / 100, locale, 1);
 
   return (
     <TouchableOpacity
-      style={[styles.legendItem, isSelected && styles.legendItemSelected]}
+      style={[
+        styles.legendItem,
+        isSelected && { backgroundColor: colors.background.tertiary },
+      ]}
       onPress={onPress}
       accessibilityRole="button"
       accessibilityLabel={`${item.label}: ${formattedValue}, ${formattedPercent}`}
@@ -174,10 +188,10 @@ const LegendItem = memo(function LegendItem({
     >
       <View style={[styles.legendColor, { backgroundColor: item.color }]} />
       <View style={styles.legendTextContainer}>
-        <Text style={styles.legendLabel} numberOfLines={1}>
+        <Text style={[styles.legendLabel, { color: colors.text.primary }]} numberOfLines={1}>
           {item.label}
         </Text>
-        <Text style={styles.legendValue}>
+        <Text style={[styles.legendValue, { color: colors.text.secondary }]}>
           {formattedValue} ({formattedPercent})
         </Text>
       </View>
@@ -202,6 +216,7 @@ function PieChartComponent({
   testID,
 }: PieChartProps): React.ReactElement {
   const { t } = useTranslation();
+  const colors = useThemeColors();
   const [selectedSegment, setSelectedSegment] = useState<string | null>(null);
   const [containerWidth, setContainerWidth] = useState(size);
 
@@ -267,8 +282,8 @@ function PieChartComponent({
         accessibilityRole="none"
         accessibilityLabel={t('charts.noData')}
       >
-        <View style={[styles.emptyChart, { width: chartSize, height: chartSize }]}>
-          <Text style={styles.emptyText}>{t('charts.noData')}</Text>
+        <View style={[styles.emptyChart, { width: chartSize, height: chartSize, backgroundColor: colors.background.secondary }]}>
+          <Text style={[styles.emptyText, { color: colors.text.tertiary }]}>{t('charts.noData')}</Text>
         </View>
       </View>
     );
@@ -291,7 +306,7 @@ function PieChartComponent({
               onPress={() => handleSegmentPress(segment)}
             />
           ))}
-          {donut && <Circle cx={center} cy={center} r={innerRadius - 2} fill="white" />}
+          {donut && <Circle cx={center} cy={center} r={innerRadius - 2} fill={colors.surface.card} />}
         </G>
       </Svg>
       {donut && (centerLabel || centerSublabel) && (
@@ -302,12 +317,12 @@ function PieChartComponent({
           ]}
         >
           {centerLabel && (
-            <Text style={styles.centerLabel} numberOfLines={1}>
+            <Text style={[styles.centerLabel, { color: colors.text.primary }]} numberOfLines={1}>
               {centerLabel}
             </Text>
           )}
           {centerSublabel && (
-            <Text style={styles.centerSublabel} numberOfLines={1}>
+            <Text style={[styles.centerSublabel, { color: colors.text.secondary }]} numberOfLines={1}>
               {centerSublabel}
             </Text>
           )}
@@ -367,12 +382,10 @@ const styles = StyleSheet.create({
   centerLabel: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#1f2937',
     textAlign: 'center',
   },
   centerSublabel: {
     fontSize: 12,
-    color: '#6b7280',
     textAlign: 'center',
     marginTop: 2,
   },
@@ -382,31 +395,28 @@ const styles = StyleSheet.create({
   legendBottom: {
     flexDirection: 'row',
     justifyContent: 'center',
-    marginTop: 16,
-    paddingHorizontal: 8,
+    marginTop: spacing.base,
+    paddingHorizontal: spacing.sm,
   },
   legendRight: {
     flexDirection: 'column',
-    marginLeft: 16,
+    marginLeft: spacing.base,
     flex: 1,
   },
   legendItem: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: 6,
-    paddingHorizontal: 8,
+    paddingHorizontal: spacing.sm,
     borderRadius: 6,
-    marginRight: 8,
-    marginBottom: 4,
-  },
-  legendItemSelected: {
-    backgroundColor: '#f3f4f6',
+    marginRight: spacing.sm,
+    marginBottom: spacing.xs,
   },
   legendColor: {
     width: 12,
     height: 12,
     borderRadius: 6,
-    marginRight: 8,
+    marginRight: spacing.sm,
   },
   legendTextContainer: {
     flex: 1,
@@ -414,22 +424,18 @@ const styles = StyleSheet.create({
   legendLabel: {
     fontSize: 14,
     fontWeight: '500',
-    color: '#374151',
   },
   legendValue: {
     fontSize: 12,
-    color: '#6b7280',
     marginTop: 1,
   },
   emptyChart: {
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#f9fafb',
     borderRadius: 100,
   },
   emptyText: {
     fontSize: 14,
-    color: '#9ca3af',
   },
 });
 

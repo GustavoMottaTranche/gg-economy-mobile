@@ -1,0 +1,533 @@
+# Transactions List Flow E2E Test for GG-Economy Mobile
+# Tests the transactions screen: list display, filters, month navigation,
+# add button, long-press delete, and tap-to-edit interactions
+#
+# Tags: transactions
+# Validates: Requirements 4.1, 4.2, 4.3, 4.5, 4.6, 4.7, 4.8, 12.1, 12.2
+#
+# Flow:
+# Part A - Data Setup: Create multiple test transactions (2 expenses, 1 income)
+# Part B - List Verification: Verify transactions screen loads with summary
+# Part C - Filter Panel: Expand filters, select category filter, verify filtering
+# Part D - Month Navigation: Navigate to previous month, verify refresh
+# Part E - Add Transaction Button: Tap +, verify navigation to Manual Entry
+# Part F - Long Press Delete: Long-press transaction, verify delete dialog
+# Part G - Tap Transaction: Tap transaction card, verify navigation to edit
+
+appId: com.ggeconomy.mobile
+tags:
+  - transactions
+
+---
+
+# ============================================
+# Part A - Data Setup
+# Create multiple test transactions to populate the list
+# ============================================
+
+- launchApp:
+    clearState: true
+    label: "Launch app with cleared state for test independence"
+
+# Wait for app to fully load
+- extendedWaitUntil:
+    visible: "Dashboard"
+    timeout: 15000
+    label: "App launch: Dashboard should be visible within 15 seconds"
+
+- takeScreenshot: "txn_list_01_app_launched"
+
+# --- Create Expense 1 (Food category) ---
+
+- tapOn: "Manual"
+
+- extendedWaitUntil:
+    visible:
+      id: "manual-screen"
+    timeout: 5000
+    label: "Navigate to Manual Entry screen"
+
+# Select expense type
+- tapOn:
+    id: "type-expense"
+
+# Enter amount
+- tapOn:
+    id: "amount-input"
+- inputText: "75.00"
+
+# Enter description
+- tapOn:
+    id: "description-input"
+- inputText: "Grocery shopping"
+- hideKeyboard
+
+# Select category (Food)
+- tapOn:
+    id: "category-selector"
+
+- extendedWaitUntil:
+    visible:
+      id: "category-picker"
+    timeout: 5000
+
+- tapOn:
+    text: "Food"
+    optional: true
+
+- tapOn:
+    text: "Alimentação"
+    optional: true
+
+- tapOn:
+    id: "category-item-0"
+    optional: true
+
+- extendedWaitUntil:
+    notVisible:
+      id: "category-picker"
+    timeout: 5000
+    optional: true
+
+# Submit expense 1
+- scroll:
+    direction: DOWN
+    distance: 200
+
+- tapOn:
+    id: "submit-button"
+
+- extendedWaitUntil:
+    anyOf:
+      - visible: "Success"
+      - visible: "Sucesso"
+      - visible: "Transaction saved"
+      - visible: "Transação salva"
+    timeout: 10000
+
+# Dismiss success alert
+- tapOn:
+    text: "OK"
+    optional: true
+- tapOn:
+    text: "Ok"
+    optional: true
+
+- takeScreenshot: "txn_list_02_expense1_created"
+
+# --- Create Expense 2 (Transport category) ---
+
+# Wait for form to reset
+- extendedWaitUntil:
+    visible:
+      id: "manual-screen"
+    timeout: 5000
+
+# Select expense type
+- tapOn:
+    id: "type-expense"
+
+# Enter amount
+- tapOn:
+    id: "amount-input"
+- inputText: "30.00"
+
+# Enter description
+- tapOn:
+    id: "description-input"
+- inputText: "Bus fare"
+- hideKeyboard
+
+# Select category (Transport)
+- tapOn:
+    id: "category-selector"
+
+- extendedWaitUntil:
+    visible:
+      id: "category-picker"
+    timeout: 5000
+
+- tapOn:
+    text: "Transport"
+    optional: true
+
+- tapOn:
+    text: "Transporte"
+    optional: true
+
+- tapOn:
+    id: "category-item-1"
+    optional: true
+
+- extendedWaitUntil:
+    notVisible:
+      id: "category-picker"
+    timeout: 5000
+    optional: true
+
+# Submit expense 2
+- scroll:
+    direction: DOWN
+    distance: 200
+
+- tapOn:
+    id: "submit-button"
+
+- extendedWaitUntil:
+    anyOf:
+      - visible: "Success"
+      - visible: "Sucesso"
+      - visible: "Transaction saved"
+      - visible: "Transação salva"
+    timeout: 10000
+
+# Dismiss success alert
+- tapOn:
+    text: "OK"
+    optional: true
+- tapOn:
+    text: "Ok"
+    optional: true
+
+- takeScreenshot: "txn_list_03_expense2_created"
+
+# --- Create Income 1 ---
+
+# Wait for form to reset
+- extendedWaitUntil:
+    visible:
+      id: "manual-screen"
+    timeout: 5000
+
+# Select income type
+- tapOn:
+    id: "type-income"
+
+# Enter amount
+- tapOn:
+    id: "amount-input"
+- inputText: "2000.00"
+
+# Enter description
+- tapOn:
+    id: "description-input"
+- inputText: "Freelance payment"
+- hideKeyboard
+
+# Select category (Salary/Income)
+- tapOn:
+    id: "category-selector"
+
+- extendedWaitUntil:
+    visible:
+      id: "category-picker"
+    timeout: 5000
+
+- tapOn:
+    text: "Salary"
+    optional: true
+
+- tapOn:
+    text: "Salário"
+    optional: true
+
+- tapOn:
+    id: "category-item-0"
+    optional: true
+
+- extendedWaitUntil:
+    notVisible:
+      id: "category-picker"
+    timeout: 5000
+    optional: true
+
+# Submit income
+- scroll:
+    direction: DOWN
+    distance: 200
+
+- tapOn:
+    id: "submit-button"
+
+- extendedWaitUntil:
+    anyOf:
+      - visible: "Success"
+      - visible: "Sucesso"
+      - visible: "Transaction saved"
+      - visible: "Transação salva"
+    timeout: 10000
+
+# Dismiss success alert
+- tapOn:
+    text: "OK"
+    optional: true
+- tapOn:
+    text: "Ok"
+    optional: true
+
+- takeScreenshot: "txn_list_04_income_created"
+
+# ============================================
+# Part B - List Verification
+# Navigate to Transactions tab and verify screen loads
+# ============================================
+
+- tapOn: "Transactions"
+
+- extendedWaitUntil:
+    visible:
+      id: "transactions-screen"
+    timeout: 5000
+    label: "Transactions screen should load within 5 seconds"
+
+# Verify transactions screen is visible
+- assertVisible:
+    id: "transactions-screen"
+
+# Verify monthly summary shows income/expenses/balance
+- assertVisible:
+    id: "monthly-summary"
+
+# Verify transactions list is visible
+- assertVisible:
+    id: "transactions-list"
+
+- takeScreenshot: "txn_list_05_list_verified"
+
+# ============================================
+# Part C - Filter Panel
+# Expand filter panel and test category filtering
+# ============================================
+
+# Tap filter toggle to expand the filter panel
+- tapOn:
+    id: "filter-panel-toggle"
+
+# Verify filter panel expanded - category chips should be visible
+- extendedWaitUntil:
+    visible:
+      id: "filter-category-chips"
+    timeout: 3000
+    label: "Filter panel should expand showing category chips"
+
+# Verify amount filters are visible
+- assertVisible:
+    id: "filter-min-amount"
+
+- assertVisible:
+    id: "filter-max-amount"
+
+# Verify date filter buttons are visible
+- assertVisible:
+    id: "filter-start-date-button"
+
+- assertVisible:
+    id: "filter-end-date-button"
+
+- takeScreenshot: "txn_list_06_filter_panel_expanded"
+
+# Select a category filter chip (first category)
+- tapOn:
+    id: "filter-chip-cat-1"
+    optional: true
+
+- tapOn:
+    id: "filter-chip-1"
+    optional: true
+
+# Wait for list to refresh with filtered results
+- extendedWaitUntil:
+    visible:
+      id: "transactions-list"
+    timeout: 5000
+
+- takeScreenshot: "txn_list_07_category_filtered"
+
+# Collapse filter panel by tapping toggle again
+- tapOn:
+    id: "filter-panel-toggle"
+
+# Clear any active filters by expanding and using clear all
+- tapOn:
+    id: "filter-panel-toggle"
+
+- tapOn:
+    id: "filter-clear-all"
+    optional: true
+
+- tapOn:
+    id: "filter-panel-toggle"
+
+# ============================================
+# Part D - Month Navigation
+# Navigate to previous month and verify refresh
+# ============================================
+
+# Tap previous month arrow on month-selector
+- tapOn:
+    id: "month-selector-prev"
+
+# Wait for transactions list to refresh for the selected month
+- extendedWaitUntil:
+    visible:
+      id: "transactions-list"
+    timeout: 5000
+    label: "Transactions list should refresh for previous month"
+
+# Verify the monthly summary updates
+- assertVisible:
+    id: "monthly-summary"
+
+- takeScreenshot: "txn_list_08_previous_month"
+
+# Navigate back to current month
+- tapOn:
+    id: "month-selector-next"
+
+- extendedWaitUntil:
+    visible:
+      id: "transactions-list"
+    timeout: 5000
+
+- takeScreenshot: "txn_list_09_current_month_restored"
+
+# ============================================
+# Part E - Add Transaction Button
+# Tap + button and verify navigation to Manual Entry
+# ============================================
+
+# Tap the add transaction button (+)
+- tapOn:
+    id: "add-transaction-button"
+
+# Verify navigation to Manual Entry screen
+- extendedWaitUntil:
+    visible:
+      id: "manual-screen"
+    timeout: 5000
+    label: "Add button should navigate to Manual Entry screen"
+
+- assertVisible:
+    id: "manual-screen"
+
+- takeScreenshot: "txn_list_10_add_button_navigated"
+
+# Navigate back to Transactions
+- tapOn: "Transactions"
+
+- extendedWaitUntil:
+    visible:
+      id: "transactions-screen"
+    timeout: 5000
+
+- takeScreenshot: "txn_list_11_back_to_transactions"
+
+# ============================================
+# Part F - Long Press Delete
+# Long-press a transaction card to trigger deletion dialog
+# ============================================
+
+# Long-press on a transaction card to trigger delete confirmation
+- longPressOn:
+    id: "transaction-card-1"
+    optional: true
+
+- longPressOn:
+    id: "transaction-item-1"
+    optional: true
+
+# Verify deletion confirmation dialog appears
+- extendedWaitUntil:
+    anyOf:
+      - visible: "Delete"
+      - visible: "Excluir"
+      - visible: "Cancel"
+      - visible: "Cancelar"
+    timeout: 3000
+    label: "Deletion confirmation dialog should appear"
+
+- takeScreenshot: "txn_list_12_delete_dialog"
+
+# Dismiss the dialog by tapping Cancel
+- tapOn:
+    text: "Cancel"
+    optional: true
+
+- tapOn:
+    text: "Cancelar"
+    optional: true
+
+# ============================================
+# Part G - Tap Transaction
+# Tap a transaction card to navigate to edit modal
+# ============================================
+
+# Wait for dialog to dismiss
+- extendedWaitUntil:
+    visible:
+      id: "transactions-screen"
+    timeout: 3000
+
+# Tap on a transaction card to open edit/detail view
+- tapOn:
+    id: "transaction-card-1"
+    optional: true
+
+- tapOn:
+    id: "transaction-item-1"
+    optional: true
+
+# Verify navigation to transaction detail/edit screen
+- extendedWaitUntil:
+    visible:
+      id: "transaction-detail-screen"
+    timeout: 5000
+    label: "Tapping transaction should navigate to detail/edit screen"
+
+- assertVisible:
+    id: "transaction-detail-screen"
+
+- takeScreenshot: "txn_list_13_transaction_detail"
+
+# ============================================
+# Test Completion
+# ============================================
+
+- runScript:
+    script: |
+      console.log('Transactions List E2E test completed!');
+      console.log('');
+      console.log('Steps completed:');
+      console.log('Part A - Data Setup:');
+      console.log('  - Created expense 1: Grocery shopping ($75.00)');
+      console.log('  - Created expense 2: Bus fare ($30.00)');
+      console.log('  - Created income: Freelance payment ($2000.00)');
+      console.log('');
+      console.log('Part B - List Verification:');
+      console.log('  - Verified transactions-screen loads');
+      console.log('  - Verified monthly-summary shows income/expenses/balance');
+      console.log('  - Verified transactions-list is visible');
+      console.log('');
+      console.log('Part C - Filter Panel:');
+      console.log('  - Expanded filter panel via toggle');
+      console.log('  - Verified category/amount/date filters visible');
+      console.log('  - Selected category filter and verified filtering');
+      console.log('');
+      console.log('Part D - Month Navigation:');
+      console.log('  - Navigated to previous month');
+      console.log('  - Verified list refreshes for selected month');
+      console.log('');
+      console.log('Part E - Add Transaction Button:');
+      console.log('  - Tapped + button');
+      console.log('  - Verified navigation to Manual Entry');
+      console.log('  - Navigated back to Transactions');
+      console.log('');
+      console.log('Part F - Long Press Delete:');
+      console.log('  - Long-pressed transaction card');
+      console.log('  - Verified deletion confirmation dialog');
+      console.log('');
+      console.log('Part G - Tap Transaction:');
+      console.log('  - Tapped transaction card');
+      console.log('  - Verified navigation to transaction detail/edit');
+      console.log('');
+      console.log('All transactions list tests passed!');

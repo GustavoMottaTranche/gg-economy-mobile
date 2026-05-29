@@ -228,7 +228,10 @@ describe('Property 8: Database Transaction Atomicity', () => {
                   if (i === failIndex) {
                     throw new Error('Simulated failure');
                   }
-                  simulateWrite(newKeys[i], `new-${newKeys[i]}`);
+                  const key = newKeys[i];
+                  if (key) {
+                    simulateWrite(key, `new-${key}`);
+                  }
                 }
                 // Also fail at the end if failIndex equals length
                 if (failIndex === newKeys.length) {

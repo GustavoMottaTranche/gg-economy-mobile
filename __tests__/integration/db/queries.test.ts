@@ -4,7 +4,6 @@
  * Tests CRUD operations for all entity types using mocked database.
  */
 import { openDatabaseSync } from 'expo-sqlite';
-import { randomUUID } from 'expo-crypto';
 import { resetDbClient } from '../../../src/db/client';
 
 // Import query functions
@@ -20,6 +19,18 @@ jest.mock('expo-sqlite', () => ({
   openDatabaseSync: jest.fn(),
 }));
 
+// Type for query builder used in mock
+type MockQueryBuilder = {
+  select: jest.Mock;
+  from: jest.Mock;
+  where: jest.Mock;
+  orderBy: jest.Mock;
+  limit: jest.Mock;
+  leftJoin: jest.Mock;
+  groupBy: jest.Mock;
+  then: jest.Mock;
+};
+
 // Mock drizzle-orm with in-memory data store
 jest.mock('drizzle-orm/expo-sqlite', () => {
   // In-memory data stores
@@ -32,29 +43,19 @@ jest.mock('drizzle-orm/expo-sqlite', () => {
     categorization_rules: new Map(),
   };
 
-  const createQueryBuilder = (tableName: string) => {
-    const store = stores[tableName];
-    let whereConditions: Array<(item: Record<string, unknown>) => boolean> = [];
-    let orderByField: string | null = null;
-    let orderByDesc = false;
+  const createQueryBuilder = (tableName: string): MockQueryBuilder => {
+    const store = stores[tableName]!;
     let limitCount: number | null = null;
-    let selectFields: string[] | null = null;
-    let joinData: Record<string, unknown> | null = null;
 
-    const builder = {
-      select: jest.fn((fields?: Record<string, unknown>) => {
-        if (fields) {
-          selectFields = Object.keys(fields);
-        }
+    const builder: MockQueryBuilder = {
+      select: jest.fn((_fields?: Record<string, unknown>) => {
         return builder;
       }),
       from: jest.fn(() => builder),
-      where: jest.fn((condition: unknown) => {
-        // Simple condition handling
-        whereConditions.push(() => true);
+      where: jest.fn((_condition: unknown) => {
         return builder;
       }),
-      orderBy: jest.fn((field: unknown) => {
+      orderBy: jest.fn((_field: unknown) => {
         return builder;
       }),
       limit: jest.fn((count: number) => {
@@ -89,32 +90,29 @@ jest.mock('drizzle-orm/expo-sqlite', () => {
 
   return {
     drizzle: jest.fn(() => ({
-      select: jest.fn((fields?: Record<string, unknown>) => ({
-        from: jest.fn((table: { _: { name: string } }) => {
-          const tableName = table?._?.name || 'transactions';
-          return createQueryBuilder(tableName);
+      select: jest.fn((_fields?: Record<string, unknown>) => ({
+        from: jest.fn((_table: { _: { name: string } }) => {
+          return createQueryBuilder('transactions');
         }),
       })),
       selectDistinct: jest.fn(() => ({
         from: jest.fn(() => createQueryBuilder('transactions')),
       })),
-      insert: jest.fn((table: { _: { name: string } }) => ({
+      insert: jest.fn((_table: { _: { name: string } }) => ({
         values: jest.fn((data: Record<string, unknown>) => {
-          const tableName = table?._?.name || 'transactions';
-          const store = stores[tableName];
+          const store = stores['transactions']!;
           const id = (data.id as string) || (data.key as string);
           store.set(id, { ...data });
           return Promise.resolve();
         }),
       })),
-      update: jest.fn((table: { _: { name: string } }) => ({
-        set: jest.fn((data: Record<string, unknown>) => ({
+      update: jest.fn((_table: { _: { name: string } }) => ({
+        set: jest.fn((_data: Record<string, unknown>) => ({
           where: jest.fn(() => Promise.resolve()),
         })),
       })),
-      delete: jest.fn((table: { _: { name: string } }) => ({
+      delete: jest.fn((_table: { _: { name: string } }) => ({
         where: jest.fn(() => {
-          const tableName = table?._?.name || 'transactions';
           // For simplicity, we don't actually delete in mock
           return Promise.resolve();
         }),
@@ -157,6 +155,7 @@ describe('Database Query Integration Tests', () => {
     describe('createTransaction', () => {
       it('should create a transaction with required fields', async () => {
         const data = {
+          title: 'Test transaction',
           date: new Date('2024-01-15'),
           amount: -50.0,
           description: 'Test transaction',
@@ -167,6 +166,7 @@ describe('Database Query Integration Tests', () => {
 
         expect(result).toBeDefined();
         expect(result.id).toBeDefined();
+        expect(result.title).toBe('Test transaction');
         expect(result.description).toBe('Test transaction');
         expect(result.amount).toBe(-50.0);
         expect(result.referenceMonth).toBe('2024-01');
@@ -176,6 +176,7 @@ describe('Database Query Integration Tests', () => {
 
       it('should create a transaction with optional fields', async () => {
         const data = {
+          title: 'Salary',
           date: new Date('2024-01-15'),
           amount: 1000.0,
           description: 'Salary',
@@ -188,6 +189,7 @@ describe('Database Query Integration Tests', () => {
 
         const result = await transactionQueries.createTransaction(data);
 
+        expect(result.title).toBe('Salary');
         expect(result.categoryId).toBe('cat-123');
         expect(result.originId).toBe('origin-123');
         expect(result.needsReview).toBe(false);
@@ -241,28 +243,24 @@ describe('Database Query Integration Tests', () => {
 
         expect(DEFAULT_CATEGORIES).toBeDefined();
         expect(Array.isArray(DEFAULT_CATEGORIES)).toBe(true);
-        expect(DEFAULT_CATEGORIES.length).toBe(8);
+        expect(DEFAULT_CATEGORIES.length).toBe(61);
 
-        const categoryNames = DEFAULT_CATEGORIES.map((c) => c.name);
-        expect(categoryNames).toContain('Food');
-        expect(categoryNames).toContain('Transport');
-        expect(categoryNames).toContain('Salary');
-        expect(categoryNames).toContain('Bills');
-        expect(categoryNames).toContain('Entertainment');
-        expect(categoryNames).toContain('Health');
-        expect(categoryNames).toContain('Shopping');
-        expect(categoryNames).toContain('Other');
+        const fixedCategories = DEFAULT_CATEGORIES.filter((c) => c.expenseGroup === 'fixed');
+        const variableCategories = DEFAULT_CATEGORIES.filter((c) => c.expenseGroup === 'variable');
+        expect(fixedCategories.length).toBe(30);
+        expect(variableCategories.length).toBe(31);
       });
 
-      it('should have Salary as income type', () => {
+      it('should have all categories as expense type', () => {
         const { DEFAULT_CATEGORIES } = categoryQueries;
-        const salary = DEFAULT_CATEGORIES.find((c) => c.name === 'Salary');
-        expect(salary?.type).toBe('income');
+        DEFAULT_CATEGORIES.forEach((cat) => {
+          expect(cat.type).toBe('expense');
+        });
       });
 
       it('should have expense categories as expense type', () => {
         const { DEFAULT_CATEGORIES } = categoryQueries;
-        const expenseCategories = DEFAULT_CATEGORIES.filter((c) => c.name !== 'Salary');
+        const expenseCategories = DEFAULT_CATEGORIES.filter((c) => c.type === 'expense');
         expenseCategories.forEach((cat) => {
           expect(cat.type).toBe('expense');
         });
@@ -481,14 +479,20 @@ describe('Query Function Type Safety', () => {
 
   it('should have proper return types for transaction queries', async () => {
     // These tests verify TypeScript compilation and function signatures
-    const _getAllTransactions: () => Promise<unknown[]> = transactionQueries.getAllTransactions;
-    const _getTransactionById: (id: string) => Promise<unknown | null> =
-      transactionQueries.getTransactionById;
-    const _createTransaction: (data: unknown) => Promise<unknown> =
-      transactionQueries.createTransaction;
-    const _updateTransaction: (id: string, data: unknown) => Promise<unknown | null> =
-      transactionQueries.updateTransaction;
-    const _deleteTransaction: (id: string) => Promise<void> = transactionQueries.deleteTransaction;
+    const _getAllTransactions = transactionQueries.getAllTransactions as () => Promise<unknown[]>;
+    const _getTransactionById = transactionQueries.getTransactionById as (
+      id: string
+    ) => Promise<unknown | null>;
+    const _createTransaction = transactionQueries.createTransaction as (
+      data: unknown
+    ) => Promise<unknown>;
+    const _updateTransaction = transactionQueries.updateTransaction as (
+      id: string,
+      data: unknown
+    ) => Promise<unknown | null>;
+    const _deleteTransaction = transactionQueries.deleteTransaction as (
+      id: string
+    ) => Promise<void>;
 
     expect(typeof _getAllTransactions).toBe('function');
     expect(typeof _getTransactionById).toBe('function');
@@ -498,11 +502,12 @@ describe('Query Function Type Safety', () => {
   });
 
   it('should have proper return types for category queries', async () => {
-    const _getAllCategories: () => Promise<unknown[]> = categoryQueries.getAllCategories;
-    const _getCategoryById: (id: string) => Promise<unknown | null> =
-      categoryQueries.getCategoryById;
-    const _createCategory: (data: unknown) => Promise<unknown> = categoryQueries.createCategory;
-    const _seedDefaultCategories: () => Promise<boolean> = categoryQueries.seedDefaultCategories;
+    const _getAllCategories = categoryQueries.getAllCategories as () => Promise<unknown[]>;
+    const _getCategoryById = categoryQueries.getCategoryById as (
+      id: string
+    ) => Promise<unknown | null>;
+    const _createCategory = categoryQueries.createCategory as (data: unknown) => Promise<unknown>;
+    const _seedDefaultCategories = categoryQueries.seedDefaultCategories as () => Promise<boolean>;
 
     expect(typeof _getAllCategories).toBe('function');
     expect(typeof _getCategoryById).toBe('function');
@@ -511,11 +516,13 @@ describe('Query Function Type Safety', () => {
   });
 
   it('should have proper return types for import batch queries', async () => {
-    const _getAllImportBatches: () => Promise<unknown[]> = importBatchQueries.getAllImportBatches;
-    const _getImportBatchById: (id: string) => Promise<unknown | null> =
-      importBatchQueries.getImportBatchById;
-    const _createImportBatch: (data: unknown) => Promise<unknown> =
-      importBatchQueries.createImportBatch;
+    const _getAllImportBatches = importBatchQueries.getAllImportBatches as () => Promise<unknown[]>;
+    const _getImportBatchById = importBatchQueries.getImportBatchById as (
+      id: string
+    ) => Promise<unknown | null>;
+    const _createImportBatch = importBatchQueries.createImportBatch as (
+      data: unknown
+    ) => Promise<unknown>;
 
     expect(typeof _getAllImportBatches).toBe('function');
     expect(typeof _getImportBatchById).toBe('function');
@@ -523,9 +530,9 @@ describe('Query Function Type Safety', () => {
   });
 
   it('should have proper return types for origin queries', async () => {
-    const _getAllOrigins: () => Promise<unknown[]> = originQueries.getAllOrigins;
-    const _getOriginById: (id: string) => Promise<unknown | null> = originQueries.getOriginById;
-    const _createOrigin: (data: unknown) => Promise<unknown> = originQueries.createOrigin;
+    const _getAllOrigins = originQueries.getAllOrigins as () => Promise<unknown[]>;
+    const _getOriginById = originQueries.getOriginById as (id: string) => Promise<unknown | null>;
+    const _createOrigin = originQueries.createOrigin as (data: unknown) => Promise<unknown>;
 
     expect(typeof _getAllOrigins).toBe('function');
     expect(typeof _getOriginById).toBe('function');
@@ -533,11 +540,14 @@ describe('Query Function Type Safety', () => {
   });
 
   it('should have proper return types for preference queries', async () => {
-    const _getPreference: (key: string) => Promise<string | null> =
-      preferenceQueries.getPreference as (key: string) => Promise<string | null>;
-    const _setPreference: (key: string, value: string) => Promise<unknown> =
-      preferenceQueries.setPreference as (key: string, value: string) => Promise<unknown>;
-    const _getLanguage: () => Promise<string> = preferenceQueries.getLanguage;
+    const _getPreference = preferenceQueries.getPreference as (
+      key: string
+    ) => Promise<string | null>;
+    const _setPreference = preferenceQueries.setPreference as (
+      key: string,
+      value: string
+    ) => Promise<unknown>;
+    const _getLanguage = preferenceQueries.getLanguage as () => Promise<string>;
 
     expect(typeof _getPreference).toBe('function');
     expect(typeof _setPreference).toBe('function');
@@ -545,14 +555,17 @@ describe('Query Function Type Safety', () => {
   });
 
   it('should have proper return types for categorization rule queries', async () => {
-    const _getAllCategorizationRules: () => Promise<unknown[]> =
-      categorizationRuleQueries.getAllCategorizationRules;
-    const _getCategorizationRuleById: (id: string) => Promise<unknown | null> =
-      categorizationRuleQueries.getCategorizationRuleById;
-    const _createCategorizationRule: (data: unknown) => Promise<unknown> =
-      categorizationRuleQueries.createCategorizationRule;
-    const _findMatchingRule: (description: string) => Promise<unknown | null> =
-      categorizationRuleQueries.findMatchingRule;
+    const _getAllCategorizationRules =
+      categorizationRuleQueries.getAllCategorizationRules as () => Promise<unknown[]>;
+    const _getCategorizationRuleById = categorizationRuleQueries.getCategorizationRuleById as (
+      id: string
+    ) => Promise<unknown | null>;
+    const _createCategorizationRule = categorizationRuleQueries.createCategorizationRule as (
+      data: unknown
+    ) => Promise<unknown>;
+    const _findMatchingRule = categorizationRuleQueries.findMatchingRule as (
+      description: string
+    ) => Promise<unknown | null>;
 
     expect(typeof _getAllCategorizationRules).toBe('function');
     expect(typeof _getCategorizationRuleById).toBe('function');
