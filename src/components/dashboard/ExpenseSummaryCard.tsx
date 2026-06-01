@@ -27,9 +27,9 @@ function ExpenseSummaryCardComponent({
   const colors = useThemeColors();
   const locale = getCurrentLocale();
 
-  const total = paid + pending;
+  const total = paid + Math.abs(pending);
   const formattedPaid = formatCurrencyLocale(paid / 100, locale);
-  const formattedPending = formatCurrencyLocale(pending / 100, locale);
+  const formattedPending = formatCurrencyLocale(Math.abs(pending) / 100, locale);
   const formattedTotal = formatCurrencyLocale(total / 100, locale);
 
   if (total === 0) return null;

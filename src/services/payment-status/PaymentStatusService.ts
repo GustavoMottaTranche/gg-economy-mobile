@@ -17,6 +17,7 @@ import {
   transactions,
   weeklyRecurringGroups,
   recurringTransactions,
+  categories,
   type WeeklyOccurrenceRecord,
   type TransactionRecord,
 } from '../../db/schema';
@@ -285,7 +286,7 @@ export class PaymentStatusService implements IPaymentStatusService {
   async getPendingItemsForMonth(month: string): Promise<PendingItem[]> {
     const db = getDb();
 
-    // Query pending weekly occurrences with group name
+    // Query pending weekly occurrences with group name and expense group
     const weeklyPending = await db
       .select({
         id: weeklyOccurrences.id,
@@ -294,12 +295,14 @@ export class PaymentStatusService implements IPaymentStatusService {
         amount: weeklyOccurrences.amount,
         date: weeklyOccurrences.date,
         referenceMonth: weeklyOccurrences.referenceMonth,
+        expenseGroup: categories.expenseGroup,
       })
       .from(weeklyOccurrences)
       .innerJoin(
         weeklyRecurringGroups,
         eq(weeklyOccurrences.weeklyGroupId, weeklyRecurringGroups.id)
       )
+      .leftJoin(categories, eq(weeklyRecurringGroups.categoryId, categories.id))
       .where(
         and(
           eq(weeklyOccurrences.referenceMonth, month),
@@ -307,7 +310,7 @@ export class PaymentStatusService implements IPaymentStatusService {
         )
       );
 
-    // Query pending monthly transactions (recurring only) with recurring name
+    // Query pending monthly transactions (recurring only) with recurring name and expense group
     const monthlyPending = await db
       .select({
         id: transactions.id,
@@ -316,12 +319,14 @@ export class PaymentStatusService implements IPaymentStatusService {
         amount: transactions.amount,
         date: transactions.date,
         referenceMonth: transactions.referenceMonth,
+        expenseGroup: categories.expenseGroup,
       })
       .from(transactions)
       .innerJoin(
         recurringTransactions,
         eq(transactions.recurringId, recurringTransactions.id)
       )
+      .leftJoin(categories, eq(transactions.categoryId, categories.id))
       .where(
         and(
           eq(transactions.referenceMonth, month),
@@ -340,6 +345,7 @@ export class PaymentStatusService implements IPaymentStatusService {
         amount: item.amount,
         date: item.date,
         referenceMonth: item.referenceMonth,
+        expenseGroup: (item.expenseGroup as 'fixed' | 'variable' | null) ?? null,
       })),
       ...monthlyPending.map((item) => ({
         id: item.id,
@@ -349,6 +355,7 @@ export class PaymentStatusService implements IPaymentStatusService {
         amount: item.amount,
         date: typeof item.date === 'string' ? item.date : item.date,
         referenceMonth: item.referenceMonth,
+        expenseGroup: (item.expenseGroup as 'fixed' | 'variable' | null) ?? null,
       })),
     ];
 

@@ -12,14 +12,12 @@ const getAppName = () => {
 
 const getAndroidPackage = () => {
   if (IS_PREVIEW) return 'com.ggeconomy.mobile.preview';
-  if (IS_PRODUCTION) return 'com.ggeconomy.mobile';
-  return 'com.ggeconomy.mobile.dev';
+  return 'com.ggeconomy.mobile';
 };
 
 const getIosBundleId = () => {
   if (IS_PREVIEW) return 'com.ggeconomy.mobile.preview';
-  if (IS_PRODUCTION) return 'com.ggeconomy.mobile';
-  return 'com.ggeconomy.mobile.dev';
+  return 'com.ggeconomy.mobile';
 };
 
 module.exports = ({ config }) => {

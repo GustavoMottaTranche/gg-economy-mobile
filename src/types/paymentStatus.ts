@@ -7,6 +7,7 @@ export interface PendingItem {
   amount: number;
   date: string; // YYYY-MM-DD
   referenceMonth: string; // YYYY-MM
+  expenseGroup: 'fixed' | 'variable' | null;
 }
 
 /** Payment totals for a given month */

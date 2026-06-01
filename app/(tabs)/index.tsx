@@ -253,11 +253,25 @@ export default function DashboardScreen() {
       {hasData || pendingItems.length > 0 ? (
         <>
           {/* Expense Summary - Paid vs Pending (uses same filter as chart) */}
-          <ExpenseSummaryCard
-            paid={chartFilter === 'fixed' ? fixedTotal : chartFilter === 'variable' ? (variableTotal + weeklyTotal) : (summary.totalExpenses + weeklyTotal)}
-            pending={pendingItems.reduce((sum, item) => sum + item.amount, 0)}
-            testID="dashboard-expense-summary"
-          />
+          {(() => {
+            const filteredPending = pendingItems
+              .filter((item) => {
+                if (chartFilter === 'all') return true;
+                if (chartFilter === 'fixed') return item.expenseGroup === 'fixed';
+                if (chartFilter === 'variable') return item.expenseGroup === 'variable' || item.expenseGroup === null;
+                return true;
+              })
+              .reduce((sum, item) => sum + item.amount, 0);
+            const totalForFilter = chartFilter === 'fixed' ? fixedTotal : chartFilter === 'variable' ? variableTotal : (fixedTotal + variableTotal);
+            const paidForFilter = totalForFilter - Math.abs(filteredPending);
+            return (
+              <ExpenseSummaryCard
+                paid={Math.max(0, paidForFilter)}
+                pending={filteredPending}
+                testID="dashboard-expense-summary"
+              />
+            );
+          })()}
 
           <View style={dynamicStyles.chartSection}>
             <ChartFilter
