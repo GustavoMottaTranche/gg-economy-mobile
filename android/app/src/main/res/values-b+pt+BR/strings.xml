@@ -1,0 +1,20 @@
+<resources>
+  <string name="common">"[object Object]"</string>
+  <string name="navigation">"[object Object]"</string>
+  <string name="dashboard">"[object Object]"</string>
+  <string name="transactions">"[object Object]"</string>
+  <string name="review">"[object Object]"</string>
+  <string name="fileImport">"[object Object]"</string>
+  <string name="manual">"[object Object]"</string>
+  <string name="settings">"[object Object]"</string>
+  <string name="backup">"[object Object]"</string>
+  <string name="categories">"[object Object]"</string>
+  <string name="rules">"[object Object]"</string>
+  <string name="errors">"[object Object]"</string>
+  <string name="validation">"[object Object]"</string>
+  <string name="empty">"[object Object]"</string>
+  <string name="time">"[object Object]"</string>
+  <string name="months">"[object Object]"</string>
+  <string name="charts">"[object Object]"</string>
+  <string name="notifications">"[object Object]"</string>
+</resources>
