@@ -27,13 +27,10 @@
         "distribution": "internal"
       },
       "env": {
-        "APP_ENV": "preview"
+        "APP_ENV": "preview",
+        "EAS_BUILD_RUNNER": "eas-build"
       },
-      "channel": "preview",
-      "node": "20.18.0",
-      "installDependencies": {
-        "command": "npm install --legacy-peer-deps"
-      }
+      "channel": "preview"
     },
     "production": {
       "distribution": "store",
