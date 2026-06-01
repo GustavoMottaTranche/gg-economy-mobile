@@ -29,7 +29,11 @@
       "env": {
         "APP_ENV": "preview"
       },
-      "channel": "preview"
+      "channel": "preview",
+      "node": "20.18.0",
+      "installDependencies": {
+        "command": "npm install --legacy-peer-deps"
+      }
     },
     "production": {
       "distribution": "store",
