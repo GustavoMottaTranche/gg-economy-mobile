@@ -574,10 +574,13 @@
     "changeCategory": "Change category",
     "applyToThisParcel": "Apply to this parcel",
     "applyToAllParcels": "Apply to all parcels",
+    "applyToThisOnly": "This one only",
+    "applyToAllFuture": "This and all future",
     "selectNewCategory": "Select new category",
     "updateSuccess": "Category updated successfully",
     "updateError": "Could not update category. Please try again.",
-    "installmentPrompt": "This transaction is part of an installment group. How would you like to apply the change?"
+    "installmentPrompt": "This transaction is part of an installment group. How would you like to apply the change?",
+    "recurringPrompt": "This is a recurring transaction. Would you like to change the category for this one only or for all future occurrences?"
   },
   "charts": {
     "noData": "No data available",

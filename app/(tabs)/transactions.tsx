@@ -63,7 +63,7 @@ import {
 import { usePaymentStatusStore } from '../../src/stores/paymentStatusStore';
 import { useUnifiedStatementItems } from '../../src/hooks/useUnifiedStatementItems';
 import { WeeklyGroupItem } from '../../src/components/WeeklyGroupItem';
-import { WeeklyParcelRow } from '../../src/components/WeeklyParcelRow';
+
 import { PaymentStatusToggle } from '../../src/components/PaymentStatusToggle';
 import type { UnifiedStatementItem } from '../../src/types/unifiedStatementItem';
 import type { WeeklyOccurrence } from '../../src/types/weeklyRecurring';
@@ -260,7 +260,7 @@ function MonthlySummary({ summary, weeklyTotal }: MonthlySummaryProps): React.Re
 export default function TransactionsScreen(): React.ReactElement {
   const { t } = useTranslation();
   const [selectedMonth, setSelectedMonth] = useState(getCurrentMonth);
-  const currentMonth = getCurrentMonth();
+
   const colors = useThemeColors();
   const locale = getCurrentLocale();
 
@@ -268,14 +268,13 @@ export default function TransactionsScreen(): React.ReactElement {
   const filters = useFilterStore((s) => s.filters);
   const isExpanded = useFilterStore((s) => s.isExpanded);
   const setExpanded = useFilterStore((s) => s.setExpanded);
-  const resetFilters = useFilterStore((s) => s.resetFilters);
   const resetDateRange = useFilterStore((s) => s.resetDateRange);
 
   // Categories for FilterPanel
   const { categories } = useCategories();
 
   // Paginated transactions with filter support (includes pendingOnly)
-  const { transactions, isLoading, isLoadingMore, error, hasMore, summary, loadMore, refresh } =
+  const { transactions, isLoading, isLoadingMore, error, hasMore, summary, loadMore } =
     usePaginatedTransactions({
       referenceMonth: selectedMonth,
       categoryIds: filters.categoryIds.length > 0 ? filters.categoryIds : undefined,
@@ -452,7 +451,7 @@ export default function TransactionsScreen(): React.ReactElement {
               onPress: async () => {
                 try {
                   await deleteSingleParcel(transaction.id, transaction.installmentGroupId!);
-                } catch (err) {
+                } catch (_err) {
                   Alert.alert(
                     t('transactions.installmentDelete.errorTitle'),
                     t('transactions.installmentDelete.errorMessage')
@@ -466,7 +465,7 @@ export default function TransactionsScreen(): React.ReactElement {
               onPress: async () => {
                 try {
                   await deleteAllInGroup(transaction.installmentGroupId!);
-                } catch (err) {
+                } catch (_err) {
                   Alert.alert(
                     t('transactions.installmentDelete.errorTitle'),
                     t('transactions.installmentDelete.errorMessage')
@@ -489,7 +488,7 @@ export default function TransactionsScreen(): React.ReactElement {
             onPress: async () => {
               try {
                 await deleteTransaction(transaction.id);
-              } catch (err) {
+              } catch (_err) {
                 Alert.alert(t('common.error'), t('errors.generic'));
               }
             },
@@ -555,7 +554,7 @@ export default function TransactionsScreen(): React.ReactElement {
                 await useWeeklyRecurringStore.getState().deleteGroup(groupId);
                 await useWeeklyRecurringStore.getState().loadGroups();
                 await useWeeklyRecurringStore.getState().loadOccurrencesForMonth(selectedMonth);
-              } catch (err) {
+              } catch (_err) {
                 Alert.alert('Erro', 'Não foi possível excluir o grupo.');
               }
             },

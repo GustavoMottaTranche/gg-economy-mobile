@@ -259,7 +259,7 @@ function MultiFileSelectorComponent({
       } else {
         setSelectedFiles((prev) => [...prev, ...newFiles]);
       }
-    } catch (error) {
+    } catch (_error) {
       Alert.alert(t('common.error'), t('fileImport.multiFile.selectionError'));
     } finally {
       setIsSelecting(false);

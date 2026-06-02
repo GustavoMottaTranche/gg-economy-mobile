@@ -14,7 +14,7 @@
  * **Validates: Requirements 1.2, 4.6, 5.1, 5.4, 5.5, 6.1, 6.2, 6.3, 6.4, 6.5, 6.6**
  */
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { View, ScrollView, StyleSheet, RefreshControl, TouchableOpacity, Text } from 'react-native';
+import { View, ScrollView, StyleSheet, RefreshControl } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
@@ -22,7 +22,7 @@ import { useTranslation } from 'react-i18next';
 import { useDashboardData } from '../../src/hooks/useDashboardData';
 import { useThemeColors } from '../../src/hooks/useThemeColors';
 import { useThemeStore } from '../../src/stores/themeStore';
-import { spacing, shadows, borderRadius, typography } from '../../src/constants/theme';
+import { spacing, shadows, borderRadius } from '../../src/constants/theme';
 import { LoadingIndicator } from '../../src/components/ui/LoadingIndicator';
 import { EmptyState } from '../../src/components/ui/EmptyState';
 import {
@@ -353,24 +353,3 @@ export default function DashboardScreen() {
     </ScrollView>
   );
 }
-
-const styles = StyleSheet.create({
-  weeklyRecurringLink: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.base,
-    borderRadius: borderRadius.md,
-    borderWidth: StyleSheet.hairlineWidth,
-    marginBottom: spacing.base,
-  },
-  weeklyRecurringLinkText: {
-    fontSize: typography.body.fontSize,
-    fontWeight: '500',
-  },
-  weeklyRecurringLinkChevron: {
-    fontSize: 22,
-    fontWeight: '600',
-  },
-});

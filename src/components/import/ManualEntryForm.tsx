@@ -270,7 +270,7 @@ function ManualEntryFormComponent({
       setDate(selectedDate);
       // Clear date error if present
       setErrors((prev) => {
-        const { date: _, ...rest } = prev;
+        const { date: _date, ...rest } = prev;
         return rest;
       });
     }
@@ -284,7 +284,7 @@ function ManualEntryFormComponent({
     setAmount(formatted);
     // Clear amount error if present
     setErrors((prev) => {
-      const { amount: _, ...rest } = prev;
+      const { amount: _amount, ...rest } = prev;
       return rest;
     });
   }, []);
@@ -359,7 +359,7 @@ function ManualEntryFormComponent({
     };
 
     onSave(transaction);
-  }, [validateForm, date, amount, description, categoryId, onSave]);
+  }, [validateForm, date, amount, description, categoryId, onSave, t]);
 
   /**
    * Handles cancel action

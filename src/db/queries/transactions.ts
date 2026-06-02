@@ -367,6 +367,73 @@ export async function setTransactionCategory(id: string, categoryId: string | nu
 }
 
 /**
+ * Set transaction category with propagation to future recurring siblings.
+ *
+ * If the transaction has a recurringId, this function will:
+ * 1. Update the transaction itself
+ * 2. Update the recurring parent record's categoryId
+ * 3. Update all sibling transactions with the same recurringId and referenceMonth >= currentMonth
+ *
+ * If the transaction is NOT recurring, it simply updates the single transaction.
+ *
+ * @param id - The transaction ID being updated
+ * @param categoryId - The new category ID (or null to uncategorize)
+ * @param currentMonth - The current month (format: YYYY-MM) used as boundary for propagation
+ * @returns The updated transaction
+ */
+export async function setCategoryWithPropagation(
+  id: string,
+  categoryId: string | null,
+  currentMonth: string
+) {
+  const db = getDb();
+
+  // First get the transaction to check if it's recurring
+  const txRecord = await db
+    .select({ recurringId: transactions.recurringId })
+    .from(transactions)
+    .where(eq(transactions.id, id))
+    .limit(1);
+
+  if (!txRecord || txRecord.length === 0) {
+    return null;
+  }
+
+  const recurringId = txRecord[0]?.recurringId;
+
+  if (!recurringId) {
+    // Not a recurring transaction, just update normally
+    return updateTransaction(id, { categoryId });
+  }
+
+  // Recurring transaction: propagate to parent + future siblings
+  const { recurringTransactions } = await import('../schema');
+  const now = new Date().toISOString();
+
+  await withTransaction(async () => {
+    // 1. Update the recurring parent record
+    await db
+      .update(recurringTransactions)
+      .set({ categoryId: categoryId ?? '', updatedAt: now })
+      .where(eq(recurringTransactions.id, recurringId));
+
+    // 2. Update all transactions for this recurring with referenceMonth >= currentMonth
+    await db
+      .update(transactions)
+      .set({ categoryId, updatedAt: now })
+      .where(
+        and(
+          eq(transactions.recurringId, recurringId),
+          sql`${transactions.referenceMonth} >= ${currentMonth}`
+        )
+      );
+  });
+
+  // Return the updated transaction
+  return getTransactionById(id);
+}
+
+/**
  * Mark transaction as duplicate
  */
 export async function markAsDuplicate(id: string, duplicateOfId: string) {

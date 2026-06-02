@@ -160,7 +160,7 @@ export default function ParcelDetailScreen(): React.ReactElement {
       setOccurrence(updated);
       // Refresh store for the month
       useWeeklyRecurringStore.getState().loadOccurrencesForMonth(occurrence.referenceMonth);
-    } catch (error) {
+    } catch (_error) {
       useToastStore.getState().showError(
         t('paymentStatus.toggleError', {
           defaultValue: 'Não foi possível alterar o status de pagamento.',
@@ -217,7 +217,7 @@ export default function ParcelDetailScreen(): React.ReactElement {
           defaultValue: 'Valor atualizado com sucesso.',
         })
       );
-    } catch (error) {
+    } catch (_error) {
       Alert.alert(
         t('common.error', { defaultValue: 'Erro' }),
         t('weeklyRecurring.errors.updateFailed', {

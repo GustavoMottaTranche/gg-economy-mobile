@@ -2229,8 +2229,6 @@ describe('Property 5: Missed Notification Recovery', () => {
  * Feature: multiple-daily-notifications, Property 8: TIME_INTERVAL Seconds Calculation
  */
 describe('Property 8: TIME_INTERVAL Seconds Calculation', () => {
-  let scheduler: NotificationScheduler;
-
   /**
    * Arbitrary for a "current time" date within a reasonable range
    */
@@ -2245,7 +2243,6 @@ describe('Property 8: TIME_INTERVAL Seconds Calculation', () => {
   const arbitraryPositiveOffsetMs = fc.integer({ min: 1, max: 48 * 60 * 60 * 1000 });
 
   beforeEach(() => {
-    scheduler = new NotificationScheduler();
     jest.clearAllMocks();
     __setTestModule(require('expo-notifications'));
   });

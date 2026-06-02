@@ -98,7 +98,12 @@ export function getMonthlySummaryQuery(referenceMonth: string) {
       transactionCount: sql<number>`COUNT(*)`,
     })
     .from(transactions)
-    .where(eq(transactions.referenceMonth, referenceMonth));
+    .where(
+      and(
+        eq(transactions.referenceMonth, referenceMonth),
+        sql`(${transactions.isPaid} = 1 OR ${transactions.recurringId} IS NULL)`
+      )
+    );
 }
 
 /**
@@ -139,7 +144,8 @@ export function getCategoryBreakdownQuery(referenceMonth: string) {
     .where(
       and(
         eq(transactions.referenceMonth, referenceMonth),
-        eq(transactions.isExcludedFromTotals, false)
+        eq(transactions.isExcludedFromTotals, false),
+        sql`(${transactions.isPaid} = 1 OR ${transactions.recurringId} IS NULL)`
       )
     )
     .groupBy(transactions.categoryId, sql`CASE WHEN ${transactions.amount} < 0 THEN 1 ELSE 0 END`);
@@ -201,7 +207,12 @@ export function getTrendDataQuery(months: string[]) {
       totalExpenses: sql<number>`COALESCE(SUM(CASE WHEN ${transactions.amount} < 0 AND ${transactions.isExcludedFromTotals} = 0 THEN ABS(${transactions.amount}) ELSE 0 END), 0)`,
     })
     .from(transactions)
-    .where(inArray(transactions.referenceMonth, months))
+    .where(
+      and(
+        inArray(transactions.referenceMonth, months),
+        sql`(${transactions.isPaid} = 1 OR ${transactions.recurringId} IS NULL)`
+      )
+    )
     .groupBy(transactions.referenceMonth)
     .orderBy(transactions.referenceMonth);
 }
@@ -286,7 +297,8 @@ export function getCategoryTransactionsQuery(categoryId: string, referenceMonth:
       and(
         eq(transactions.categoryId, categoryId),
         eq(transactions.referenceMonth, referenceMonth),
-        eq(transactions.isExcludedFromTotals, false)
+        eq(transactions.isExcludedFromTotals, false),
+        sql`(${transactions.isPaid} = 1 OR ${transactions.recurringId} IS NULL)`
       )
     )
     .orderBy(desc(transactions.date));

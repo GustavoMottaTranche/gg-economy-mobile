@@ -16,7 +16,6 @@ import { validateWeeklyGroup } from '../../validation/weeklyRecurringValidation'
 import { getTodayBoundary, deriveReferenceMonth, getWeeklyDatesForMonth } from './dateUtils';
 import { getDb, withTransaction } from '../../db/client';
 import { weeklyOccurrences } from '../../db/schema';
-import { logger } from '../logging';
 import type { IOccurrenceGenerator } from './OccurrenceGenerator';
 import { occurrenceGenerator } from './OccurrenceGenerator';
 import type { IWeeklyGroupRepository } from '../../repositories/interfaces/IWeeklyGroupRepository';

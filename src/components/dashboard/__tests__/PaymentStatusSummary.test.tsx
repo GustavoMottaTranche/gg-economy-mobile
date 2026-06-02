@@ -100,7 +100,7 @@ describe('PaymentStatusSummary', () => {
     });
 
     it('displays labels for each row', () => {
-      const { getAllByText, getByText } = render(
+      const { getByText } = render(
         <PaymentStatusSummary
           predictedTotal={100000}
           paidTotal={60000}

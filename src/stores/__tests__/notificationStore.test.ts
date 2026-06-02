@@ -28,7 +28,6 @@ import {
   useNotificationSettings,
   useNotificationPermission,
   DEFAULT_NOTIFICATION_SETTINGS,
-  timeSlotKey,
   type NotificationFrequency,
   type PermissionStatus,
   type TimeSlot,

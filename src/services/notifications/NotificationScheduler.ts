@@ -341,7 +341,7 @@ export class NotificationScheduler implements INotificationScheduler {
    */
   async scheduleAllSlots(
     timeSlots: TimeSlot[],
-    settings: NotificationSettings
+    _settings: NotificationSettings
   ): Promise<Record<string, string>> {
     const NotificationsModule = await getNotifications();
     if (!NotificationsModule) {

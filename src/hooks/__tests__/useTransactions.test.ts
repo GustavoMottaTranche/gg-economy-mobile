@@ -112,6 +112,10 @@ jest.mock('../../db/queries/transactions', () => ({
     id: 'tx-1',
     categoryId: 'cat-2',
   }),
+  setCategoryWithPropagation: jest.fn().mockResolvedValue({
+    id: 'tx-1',
+    categoryId: 'cat-2',
+  }),
 }));
 
 // Import after mocks
@@ -121,7 +125,7 @@ import {
   updateTransaction,
   deleteTransaction,
   markTransactionAsReviewed,
-  setTransactionCategory,
+  setCategoryWithPropagation,
 } from '../../db/queries/transactions';
 
 describe('useTransactions', () => {
@@ -299,7 +303,7 @@ describe('useTransactions', () => {
 
       await result.current.setCategory('tx-1', 'cat-2');
 
-      expect(setTransactionCategory).toHaveBeenCalledWith('tx-1', 'cat-2');
+      expect(setCategoryWithPropagation).toHaveBeenCalledWith('tx-1', 'cat-2', expect.any(String));
     });
   });
 

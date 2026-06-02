@@ -55,7 +55,7 @@ describe('Payment Status Preservation During Group Edits', () => {
   }
 
   // Helper to create past occurrences with mixed isPaid values
-  function createPastOccurrences(count: number, isPaidValues: boolean[]): WeeklyOccurrence[] {
+  function createPastOccurrences(count: number, _isPaidValues: boolean[]): WeeklyOccurrence[] {
     const occurrences: WeeklyOccurrence[] = [];
     for (let i = 0; i < count; i++) {
       const pastDate = new Date();

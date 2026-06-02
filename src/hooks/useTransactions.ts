@@ -15,7 +15,7 @@ import {
   updateTransaction,
   deleteTransaction,
   markTransactionAsReviewed,
-  setTransactionCategory,
+  setCategoryWithPropagation,
 } from '../db/queries/transactions';
 import type { Transaction, Category, CreateTransactionDTO, UpdateTransactionDTO } from '../types';
 
@@ -346,7 +346,9 @@ export function useTransactions(
 
   const setCategory = useCallback(
     async (id: string, categoryId: string | null): Promise<Transaction | null> => {
-      return setTransactionCategory(id, categoryId);
+      const now = new Date();
+      const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+      return setCategoryWithPropagation(id, categoryId, currentMonth);
     },
     []
   );

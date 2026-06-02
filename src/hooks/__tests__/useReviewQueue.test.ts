@@ -91,6 +91,10 @@ jest.mock('../../db/queries/transactions', () => ({
     id: 'tx-1',
     categoryId: 'cat-1',
   }),
+  setCategoryWithPropagation: jest.fn().mockResolvedValue({
+    id: 'tx-1',
+    categoryId: 'cat-1',
+  }),
   deleteTransaction: jest.fn().mockResolvedValue(undefined),
   deleteTransactions: jest.fn().mockResolvedValue(undefined),
 }));
@@ -101,7 +105,7 @@ import {
   updateTransaction,
   markTransactionAsReviewed,
   markTransactionsAsReviewed,
-  setTransactionCategory,
+  setCategoryWithPropagation,
   deleteTransaction,
   deleteTransactions,
 } from '../../db/queries/transactions';
@@ -315,7 +319,7 @@ describe('useReviewQueue', () => {
         await result.current.setCategory('tx-1', 'cat-1');
       });
 
-      expect(setTransactionCategory).toHaveBeenCalledWith('tx-1', 'cat-1');
+      expect(setCategoryWithPropagation).toHaveBeenCalledWith('tx-1', 'cat-1', expect.any(String));
     });
 
     it('sets category for multiple transactions', async () => {
@@ -325,9 +329,9 @@ describe('useReviewQueue', () => {
         await result.current.setCategoryForMultiple(['tx-1', 'tx-2'], 'cat-1');
       });
 
-      expect(setTransactionCategory).toHaveBeenCalledTimes(2);
-      expect(setTransactionCategory).toHaveBeenCalledWith('tx-1', 'cat-1');
-      expect(setTransactionCategory).toHaveBeenCalledWith('tx-2', 'cat-1');
+      expect(setCategoryWithPropagation).toHaveBeenCalledTimes(2);
+      expect(setCategoryWithPropagation).toHaveBeenCalledWith('tx-1', 'cat-1', expect.any(String));
+      expect(setCategoryWithPropagation).toHaveBeenCalledWith('tx-2', 'cat-1', expect.any(String));
     });
   });
 

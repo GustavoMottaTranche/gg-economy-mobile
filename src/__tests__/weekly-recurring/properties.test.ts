@@ -283,8 +283,15 @@ describe('Feature: weekly-recurring-expenses, Property 3: Validation Rejects Inv
     fc.integer({ min: 1, max: 5 }).map((n) => ' '.repeat(n))
   );
 
-  /** Generates invalid titles: exceeds 100 characters */
-  const invalidTitleTooLong = fc.string({ minLength: 101, maxLength: 150 });
+  /** Generates invalid titles: exceeds 100 characters after trim */
+  const invalidTitleTooLong = fc.string({ minLength: 101, maxLength: 150 }).map((s) => {
+    // Ensure the trimmed length still exceeds 100 by padding with non-whitespace
+    const trimmed = s.trim();
+    if (trimmed.length <= 100) {
+      return 'x'.repeat(101);
+    }
+    return s;
+  });
 
   /** Generates valid titles: 1-100 non-whitespace-only characters */
   const validTitle = fc
@@ -1373,7 +1380,6 @@ describe('Feature: weekly-recurring-expenses, Property 7: Group Edit Preserves P
         fc.integer({ min: 1, max: 5 }),
         async (amount, numPast, numFuture) => {
           const groupId = 'test-group-name-edit';
-          const today = getTodayBoundary();
 
           const group: WeeklyRecurringGroup = {
             id: groupId,

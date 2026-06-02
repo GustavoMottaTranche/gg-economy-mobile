@@ -139,6 +139,7 @@ function TestAppContent({ includeHandler = false }: { includeHandler?: boolean }
   const { settings, isHydrated } = useNotificationStore();
   const Notifications = require('expo-notifications');
 
+  /* eslint-disable react-hooks/exhaustive-deps */
   React.useEffect(() => {
     if (isHydrated) {
       notificationScheduler.restore(settings);
@@ -182,6 +183,7 @@ function TestAppContent({ includeHandler = false }: { includeHandler?: boolean }
       responseSubscription.remove();
     };
   }, [router, includeHandler]);
+  /* eslint-enable react-hooks/exhaustive-deps */
 
   return (
     <View testID="test-app-content">

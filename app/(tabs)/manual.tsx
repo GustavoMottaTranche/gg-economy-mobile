@@ -267,7 +267,7 @@ export default function ManualEntryScreen() {
       handleUpdateDraft();
     }, 500);
     return () => clearTimeout(timer);
-  }, [transactionType, date, amount, title, description, categoryId, referenceMonth]);
+  }, [handleUpdateDraft]);
 
   // Installment preview calculation (debounced within 500ms)
   useEffect(() => {
@@ -309,6 +309,7 @@ export default function ManualEntryScreen() {
     };
   }, [
     installmentMode,
+    isInfiniteInstallment,
     amount,
     parcelCount,
     installmentStartMonth,
@@ -847,6 +848,7 @@ export default function ManualEntryScreen() {
     categoryId,
     transactionType,
     date,
+    paymentStatusOption,
     clearDraft,
     resetForm,
     t,
@@ -911,6 +913,7 @@ export default function ManualEntryScreen() {
     categoryId,
     referenceMonth,
     clearDraft,
+    resetForm,
     t,
   ]);
 

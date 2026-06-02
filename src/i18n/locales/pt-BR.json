@@ -574,10 +574,13 @@
     "changeCategory": "Alterar categoria",
     "applyToThisParcel": "Aplicar a esta parcela",
     "applyToAllParcels": "Aplicar a todas as parcelas",
+    "applyToThisOnly": "Apenas esta",
+    "applyToAllFuture": "Esta e todas futuras",
     "selectNewCategory": "Selecione a nova categoria",
     "updateSuccess": "Categoria atualizada com sucesso",
     "updateError": "Não foi possível atualizar a categoria. Tente novamente.",
-    "installmentPrompt": "Esta transação faz parte de um parcelamento. Como deseja aplicar a alteração?"
+    "installmentPrompt": "Esta transação faz parte de um parcelamento. Como deseja aplicar a alteração?",
+    "recurringPrompt": "Esta transação é recorrente. Deseja alterar a categoria apenas desta ou de todas as ocorrências futuras?"
   },
   "charts": {
     "noData": "Sem dados disponíveis",

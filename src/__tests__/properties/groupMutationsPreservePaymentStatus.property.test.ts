@@ -33,14 +33,6 @@ interface OccurrenceWithPayment {
   isPaid: boolean;
 }
 
-interface UpdateWeeklyGroupDTO {
-  title?: string;
-  amount?: number;
-  dayOfWeek?: number;
-  categoryId?: string;
-  description?: string;
-}
-
 // ─── Group Mutation Logic (mirrors WeeklyRecurringService) ───────────────────
 
 /**

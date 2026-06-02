@@ -433,7 +433,7 @@ export default function RulesSettingsScreen() {
           onPress: async () => {
             try {
               await remove(rule.id);
-            } catch (err) {
+            } catch (_err) {
               Alert.alert(t('common.error'), t('rules.deleteError'));
             }
           },
@@ -454,7 +454,7 @@ export default function RulesSettingsScreen() {
         }
         setShowFormModal(false);
         setEditingRule(null);
-      } catch (err) {
+      } catch (_err) {
         Alert.alert(t('common.error'), t('rules.saveError'));
       } finally {
         setIsSaving(false);

@@ -11,7 +11,7 @@ import {
   createCustomServerBackup,
   restoreFromCustomServer,
 } from '../../../../src/services/backup/CustomServerIntegration';
-import { backupService, BackupError } from '../../../../src/services/backup/BackupService';
+import { backupService } from '../../../../src/services/backup/BackupService';
 import { restoreService } from '../../../../src/services/backup/RestoreService';
 import {
   CustomServerError,
@@ -28,7 +28,7 @@ jest.mock('../../../../src/services/backup/BackupService', () => ({
   },
   BackupError: class BackupError extends Error {
     code: string;
-    constructor(message: string, code: string, originalError?: unknown) {
+    constructor(message: string, code: string, _originalError?: unknown) {
       super(message);
       this.name = 'BackupError';
       this.code = code;

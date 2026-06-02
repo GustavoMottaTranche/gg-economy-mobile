@@ -84,9 +84,9 @@ const mockPreviousMonth = jest.fn();
 const mockNextMonth = jest.fn();
 
 // Mock paymentStatusStore
-const mockLoadPendingItemsForMonth = jest.fn().mockResolvedValue(undefined);
-const mockTogglePaymentStatus = jest.fn().mockResolvedValue(undefined);
-const mockLoadPaymentTotalsForMonth = jest.fn().mockResolvedValue(undefined);
+const _mockLoadPendingItemsForMonth = jest.fn().mockResolvedValue(undefined);
+const _mockTogglePaymentStatus = jest.fn().mockResolvedValue(undefined);
+const _mockLoadPaymentTotalsForMonth = jest.fn().mockResolvedValue(undefined);
 jest.mock('../../src/stores/paymentStatusStore', () => {
   const mockState = {
     loadPendingItemsForMonth: jest.fn().mockResolvedValue(undefined),

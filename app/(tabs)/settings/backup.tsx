@@ -115,8 +115,17 @@ export default function BackupSettingsScreen() {
     const loadSettings = async () => {
       try {
         const settings = await customServerSettingsStore.getSettings();
-        if (settings.serverUrl) setServerUrl(settings.serverUrl);
-        if (settings.apiKey) setApiKey(settings.apiKey);
+        if (settings.serverUrl) {
+          setServerUrl(settings.serverUrl);
+        } else if (__DEV__) {
+          // Pre-fill dev defaults for faster testing
+          setServerUrl('http://192.168.15.2:3000');
+        }
+        if (settings.apiKey) {
+          setApiKey(settings.apiKey);
+        } else if (__DEV__) {
+          setApiKey('minha-chave-secreta-gg-economy-2026');
+        }
       } catch (error) {
         console.error('[BackupSettings] Failed to load settings:', error);
       }

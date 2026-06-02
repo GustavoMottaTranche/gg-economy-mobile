@@ -40,7 +40,10 @@ import {
   getCurrentLocale,
   getMonthName,
 } from '../../src/i18n';
-import { setTransactionCategory } from '../../src/db/queries/transactions';
+import {
+  setTransactionCategory,
+  setCategoryWithPropagation,
+} from '../../src/db/queries/transactions';
 import {
   deleteAllInGroup,
   deleteSingleParcel,
@@ -268,7 +271,7 @@ export default function TransactionDetailScreen(): React.ReactElement {
           const signedAmount = transaction.amount < 0 ? -amountInCents : amountInCents;
           try {
             await update(transaction.id, { amount: signedAmount });
-          } catch (err) {
+          } catch (_err) {
             Alert.alert(
               t('common.error'),
               promptMode === 'amount-single'
@@ -291,7 +294,7 @@ export default function TransactionDetailScreen(): React.ReactElement {
             await update(transaction.id, { amount: signedAmount });
             await updateRecurringAmount(transaction.recurringId!, Math.abs(signedAmount));
             Alert.alert(t('common.success'), t('manual.installment.recurringUpdateSuccess'));
-          } catch (err) {
+          } catch (_err) {
             Alert.alert(t('common.error'), t('manual.installment.recurringUpdateError'));
           }
           break;
@@ -307,7 +310,7 @@ export default function TransactionDetailScreen(): React.ReactElement {
           try {
             await recalculateGroup(transaction.installmentGroupId!, totalInCents);
             Alert.alert(t('common.success'), t('manual.installment.recalculateSuccess'));
-          } catch (err) {
+          } catch (_err) {
             Alert.alert(t('common.error'), t('manual.installment.editError'));
           }
           break;
@@ -317,7 +320,7 @@ export default function TransactionDetailScreen(): React.ReactElement {
           if (!value || value.trim().length === 0) return;
           try {
             await update(transaction.id, { description: value.trim() });
-          } catch (err) {
+          } catch (_err) {
             Alert.alert(t('common.error'), t('manual.installment.editError'));
           }
           break;
@@ -328,7 +331,7 @@ export default function TransactionDetailScreen(): React.ReactElement {
           try {
             await updateGroupField(transaction.installmentGroupId!, 'description', value.trim());
             Alert.alert(t('common.success'), t('manual.installment.updateAllSuccess'));
-          } catch (err) {
+          } catch (_err) {
             Alert.alert(t('common.error'), t('manual.installment.editError'));
           }
           break;
@@ -338,7 +341,7 @@ export default function TransactionDetailScreen(): React.ReactElement {
           if (!value || value.trim().length === 0) return;
           try {
             await update(transaction.id, { description: value.trim() });
-          } catch (err) {
+          } catch (_err) {
             Alert.alert(t('common.error'), t('errors.generic'));
           }
           break;
@@ -387,7 +390,7 @@ export default function TransactionDetailScreen(): React.ReactElement {
               setIsCategoryUpdating(true);
               try {
                 await setTransactionCategory(transaction.id, category.id);
-              } catch (err) {
+              } catch (_err) {
                 Alert.alert(t('common.error'), t('categoryEdit.updateError'));
               } finally {
                 setIsCategoryUpdating(false);
@@ -400,7 +403,44 @@ export default function TransactionDetailScreen(): React.ReactElement {
               setIsCategoryUpdating(true);
               try {
                 await updateGroupField(transaction.installmentGroupId!, 'categoryId', category.id);
-              } catch (err) {
+              } catch (_err) {
+                Alert.alert(t('common.error'), t('categoryEdit.updateError'));
+              } finally {
+                setIsCategoryUpdating(false);
+              }
+            },
+          },
+        ]);
+      } else if (transaction.recurringId) {
+        // Recurring transaction: ask if should propagate to future occurrences
+        setCategorySheetOpen(false);
+        Alert.alert(t('categoryEdit.changeCategory'), t('categoryEdit.recurringPrompt'), [
+          {
+            text: t('common.cancel'),
+            style: 'cancel',
+          },
+          {
+            text: t('categoryEdit.applyToThisOnly'),
+            onPress: async () => {
+              setIsCategoryUpdating(true);
+              try {
+                await setTransactionCategory(transaction.id, category.id);
+              } catch (_err) {
+                Alert.alert(t('common.error'), t('categoryEdit.updateError'));
+              } finally {
+                setIsCategoryUpdating(false);
+              }
+            },
+          },
+          {
+            text: t('categoryEdit.applyToAllFuture'),
+            onPress: async () => {
+              setIsCategoryUpdating(true);
+              try {
+                const now = new Date();
+                const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+                await setCategoryWithPropagation(transaction.id, category.id, currentMonth);
+              } catch (_err) {
                 Alert.alert(t('common.error'), t('categoryEdit.updateError'));
               } finally {
                 setIsCategoryUpdating(false);
@@ -409,7 +449,7 @@ export default function TransactionDetailScreen(): React.ReactElement {
           },
         ]);
       } else {
-        // Non-installment: update directly
+        // Non-installment, non-recurring: update directly
         setCategorySheetOpen(false);
         setIsCategoryUpdating(true);
         setTransactionCategory(transaction.id, category.id)
@@ -583,7 +623,7 @@ export default function TransactionDetailScreen(): React.ReactElement {
             try {
               await deleteSingleParcel(transaction.id, transaction.installmentGroupId!);
               router.back();
-            } catch (err) {
+            } catch (_err) {
               Alert.alert(t('common.error'), t('manual.installment.editError'));
             }
           },
@@ -595,7 +635,7 @@ export default function TransactionDetailScreen(): React.ReactElement {
             try {
               await deleteAllInGroup(transaction.installmentGroupId!);
               router.back();
-            } catch (err) {
+            } catch (_err) {
               Alert.alert(t('common.error'), t('manual.installment.editError'));
             }
           },
@@ -611,7 +651,7 @@ export default function TransactionDetailScreen(): React.ReactElement {
             try {
               await remove(transaction.id);
               router.back();
-            } catch (err) {
+            } catch (_err) {
               Alert.alert(t('common.error'), t('errors.generic'));
             }
           },

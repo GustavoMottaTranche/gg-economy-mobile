@@ -119,7 +119,7 @@ describe('Feature: statement-payment-integration, Property 8: Occurrence update 
               .map(([occurrence, newAmount]) => ({ occurrence, newAmount, refMonth }))
           )
         ),
-        async ({ occurrence, newAmount, refMonth }) => {
+        async ({ occurrence, newAmount, _refMonth }) => {
           // Setup mock: repository.update returns the updated occurrence
           const updatedOccurrence: WeeklyOccurrence = {
             ...occurrence,
@@ -172,7 +172,7 @@ describe('Feature: statement-payment-integration, Property 8: Occurrence update 
               .map(([occurrence, newAmount]) => ({ occurrence, newAmount, refMonth }))
           )
         ),
-        async ({ occurrence, newAmount, refMonth }) => {
+        async ({ occurrence, newAmount, _refMonth }) => {
           const updatedOccurrence: WeeklyOccurrence = {
             ...occurrence,
             amount: newAmount,
@@ -208,7 +208,7 @@ describe('Feature: statement-payment-integration, Property 8: Occurrence update 
               .map(([occurrence, newAmount]) => ({ occurrence, newAmount, refMonth }))
           )
         ),
-        async ({ occurrence, newAmount, refMonth }) => {
+        async ({ occurrence, newAmount, _refMonth }) => {
           mockUpdate.mockReset();
           mockGetByMonth.mockReset();
           mockGetMonthlyTotal.mockReset();

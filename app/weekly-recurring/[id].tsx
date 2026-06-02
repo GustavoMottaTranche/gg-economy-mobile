@@ -16,7 +16,6 @@ import { useTranslation } from 'react-i18next';
 import { OccurrenceList } from '../../src/components/weekly-recurring/OccurrenceList';
 import { OccurrenceEditModal } from '../../src/components/weekly-recurring/OccurrenceEditModal';
 import { WeeklyRecurringForm } from '../../src/components/weekly-recurring/WeeklyRecurringForm';
-import { OccurrenceStatusToggle } from '../../src/components/ui/OccurrenceStatusToggle';
 import { useWeeklyRecurringStore } from '../../src/stores/weeklyRecurringStore';
 import { usePaymentStatusStore } from '../../src/stores/paymentStatusStore';
 import { useThemeColors } from '../../src/hooks/useThemeColors';

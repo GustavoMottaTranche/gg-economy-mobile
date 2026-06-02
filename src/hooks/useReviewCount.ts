@@ -40,7 +40,7 @@ export function useReviewCount(): number {
         if (mounted && result[0]) {
           setReviewCount(result[0].count);
         }
-      } catch (error) {
+      } catch (_error) {
         // Database might not be ready yet, that's okay
         if (__DEV__) {
           console.log('[useReviewCount] Database not ready yet');
@@ -71,17 +71,25 @@ export function useReviewCount(): number {
  * @returns The count of transactions with needsReview = true
  */
 export function useReviewCountLive(): number {
+  let query;
+  let dbReady = true;
   try {
     const db = getDb();
-    const { data } = useLiveQuery(
-      db.select({ count: count() }).from(transactions).where(eq(transactions.needsReview, true))
-    );
-
-    return data?.[0]?.count ?? 0;
+    query = db
+      .select({ count: count() })
+      .from(transactions)
+      .where(eq(transactions.needsReview, true));
   } catch {
-    // Fallback if database is not ready
-    return 0;
+    dbReady = false;
+    query = null;
   }
+
+  // useLiveQuery is always called (hooks rule), but with null query when db is not ready
+  // eslint-disable-next-line react-hooks/rules-of-hooks
+  const { data } = useLiveQuery(query as Parameters<typeof useLiveQuery>[0]);
+
+  if (!dbReady) return 0;
+  return data?.[0]?.count ?? 0;
 }
 
 export default useReviewCount;

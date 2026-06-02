@@ -7,7 +7,7 @@
  *
  * Requirements: 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7
  */
-import { eq, and, lte } from 'drizzle-orm';
+import { eq, and, lte, sql } from 'drizzle-orm';
 import { randomUUID } from 'expo-crypto';
 import { getDb, withTransaction } from '../../db/client';
 import { recurringTransactions, transactions } from '../../db/schema';
@@ -130,6 +130,48 @@ export async function updateRecurringAmount(id: string, newAmount: number): Prom
     .update(recurringTransactions)
     .set({ amount: newAmount, updatedAt: now })
     .where(eq(recurringTransactions.id, id));
+}
+
+/**
+ * Update the category of a recurring transaction and propagate
+ * to all future generated transactions (referenceMonth >= current month).
+ *
+ * Updates:
+ * 1. The recurring parent record's categoryId
+ * 2. All transactions linked to this recurring with referenceMonth >= currentMonth
+ *
+ * Past transactions (referenceMonth < currentMonth) are NOT modified.
+ *
+ * @param recurringId - The recurring transaction ID
+ * @param newCategoryId - The new category ID to set
+ * @param currentMonth - The current month boundary (format: YYYY-MM). Transactions from this month onward are updated.
+ */
+export async function updateRecurringCategory(
+  recurringId: string,
+  newCategoryId: string | null,
+  currentMonth: string
+): Promise<void> {
+  await withTransaction(async () => {
+    const db = getDb();
+    const now = new Date().toISOString();
+
+    // 1. Update the recurring parent record
+    await db
+      .update(recurringTransactions)
+      .set({ categoryId: newCategoryId ?? '', updatedAt: now })
+      .where(eq(recurringTransactions.id, recurringId));
+
+    // 2. Update all future transactions linked to this recurring
+    await db
+      .update(transactions)
+      .set({ categoryId: newCategoryId, updatedAt: now })
+      .where(
+        and(
+          eq(transactions.recurringId, recurringId),
+          sql`${transactions.referenceMonth} >= ${currentMonth}`
+        )
+      );
+  });
 }
 
 /**

@@ -17,7 +17,7 @@
  * @module hooks/useAppStateCleanup
  */
 
-import { useEffect, useRef, useCallback } from 'react';
+import { useEffect, useRef, useCallback, useMemo } from 'react';
 import { AppState, AppStateStatus } from 'react-native';
 import { useBackupStore } from '../stores/backupStore';
 import { useDraftStore } from '../stores/draftStore';
@@ -137,7 +137,18 @@ export const sensitiveDataCache = SensitiveDataCache.getInstance();
  * @returns Object with current app state and cleanup function
  */
 export function useAppStateCleanup(config: AppStateCleanupConfig = {}) {
-  const mergedConfig = { ...DEFAULT_CONFIG, ...config };
+  const mergedConfig = useMemo(
+    () => ({ ...DEFAULT_CONFIG, ...config }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [
+      config.clearBackupStatusOnBackground,
+      config.clearInMemoryTokensOnBackground,
+      config.clearDraftDataOnBackground,
+      config.onBackground,
+      config.onForeground,
+      config.cleanupDelayMs,
+    ]
+  );
   const appState = useRef<AppStateStatus>(AppState.currentState);
   const backgroundTimestamp = useRef<number | null>(null);
   const resetBackupOperation = useBackupStore((state) => state.resetOperation);

@@ -14,7 +14,7 @@ import {
   updateTransaction,
   markTransactionAsReviewed,
   markTransactionsAsReviewed,
-  setTransactionCategory,
+  setCategoryWithPropagation,
   deleteTransaction,
   deleteTransactions,
 } from '../db/queries/transactions';
@@ -254,19 +254,23 @@ export function useReviewQueue(): UseReviewQueueReturn {
     []
   );
 
-  // Set transaction category
+  // Set transaction category (propagates to future recurring siblings)
   const setCategory = useCallback(
     async (id: string, categoryId: string | null): Promise<Transaction | null> => {
-      return setTransactionCategory(id, categoryId);
+      const now = new Date();
+      const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+      return setCategoryWithPropagation(id, categoryId, currentMonth);
     },
     []
   );
 
-  // Set category for multiple transactions
+  // Set category for multiple transactions (propagates to future recurring siblings)
   const setCategoryForMultiple = useCallback(
     async (ids: string[], categoryId: string | null): Promise<void> => {
+      const now = new Date();
+      const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
       for (const id of ids) {
-        await setTransactionCategory(id, categoryId);
+        await setCategoryWithPropagation(id, categoryId, currentMonth);
       }
     },
     []

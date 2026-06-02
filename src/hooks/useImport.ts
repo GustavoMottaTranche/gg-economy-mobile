@@ -418,7 +418,7 @@ export function useImport(): UseImportReturn {
         return errorResult;
       }
     },
-    [state.selectedFile, getOrchestrator, handleOrchestratorProgress]
+    [state, getOrchestrator, handleOrchestratorProgress]
   );
 
   /**

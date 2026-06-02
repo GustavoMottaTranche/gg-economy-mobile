@@ -613,7 +613,7 @@ export default function CategoriesSettingsScreen() {
               onPress: async () => {
                 try {
                   await activate(category.id);
-                } catch (err) {
+                } catch (_err) {
                   Alert.alert(t('common.error'), t('categories.toggleError'));
                 }
               },
@@ -639,7 +639,7 @@ export default function CategoriesSettingsScreen() {
               onPress: async () => {
                 try {
                   await deactivate(category.id);
-                } catch (err) {
+                } catch (_err) {
                   Alert.alert(t('common.error'), t('categories.toggleError'));
                 }
               },
@@ -656,7 +656,7 @@ export default function CategoriesSettingsScreen() {
       if (!categoryToDelete) return;
       try {
         await deleteWithReplacement(categoryToDelete.id, replacementCategoryId);
-      } catch (err) {
+      } catch (_err) {
         Alert.alert(t('common.error'), t('categories.toggleError'));
       } finally {
         setShowReplacementPrompt(false);
@@ -670,7 +670,7 @@ export default function CategoriesSettingsScreen() {
     if (!categoryToDelete) return;
     try {
       await deactivate(categoryToDelete.id);
-    } catch (err) {
+    } catch (_err) {
       Alert.alert(t('common.error'), t('categories.toggleError'));
     } finally {
       setShowReplacementPrompt(false);
@@ -694,7 +694,7 @@ export default function CategoriesSettingsScreen() {
         }
         setShowFormModal(false);
         setEditingCategory(null);
-      } catch (err) {
+      } catch (_err) {
         Alert.alert(t('common.error'), t('categories.saveError'));
       } finally {
         setIsSaving(false);

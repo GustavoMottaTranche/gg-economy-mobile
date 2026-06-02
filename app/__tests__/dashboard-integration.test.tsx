@@ -219,9 +219,9 @@ jest.mock('../../src/hooks/useDashboardData', () => ({
 }));
 
 // Mock paymentStatusStore to prevent infinite re-render loop
-const mockLoadPendingItemsForMonth = jest.fn();
-const mockTogglePaymentStatus = jest.fn();
-const mockLoadPaymentTotalsForMonth = jest.fn();
+const _mockLoadPendingItemsForMonth = jest.fn();
+const _mockTogglePaymentStatus = jest.fn();
+const _mockLoadPaymentTotalsForMonth = jest.fn();
 
 jest.mock('../../src/stores/paymentStatusStore', () => {
   const mockState = {

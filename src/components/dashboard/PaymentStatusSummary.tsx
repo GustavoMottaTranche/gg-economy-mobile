@@ -54,15 +54,6 @@ function PaymentStatusSummaryComponent({
   const theme = useThemeStyles();
   const locale = getCurrentLocale();
 
-  // Hide section when predictedTotal equals zero (Req 5.3)
-  if (predictedTotal === 0) {
-    return null;
-  }
-
-  const formattedPredicted = formatCurrencyLocale(predictedTotal / 100, locale);
-  const formattedPaid = formatCurrencyLocale(paidTotal / 100, locale);
-  const formattedPending = formatCurrencyLocale(pendingTotal / 100, locale);
-
   const styles = useMemo(
     () =>
       StyleSheet.create({
@@ -130,6 +121,15 @@ function PaymentStatusSummaryComponent({
       }),
     [theme]
   );
+
+  // Hide section when predictedTotal equals zero (Req 5.3)
+  if (predictedTotal === 0) {
+    return null;
+  }
+
+  const formattedPredicted = formatCurrencyLocale(predictedTotal / 100, locale);
+  const formattedPaid = formatCurrencyLocale(paidTotal / 100, locale);
+  const formattedPending = formatCurrencyLocale(pendingTotal / 100, locale);
 
   return (
     <View
