@@ -148,6 +148,20 @@ Start-Sleep -Seconds 3
 .\gradlew.bat assembleRelease
 ```
 
+### Erro: Caches sujos de node_modules (NoSuchFileException, AAPT errors)
+Quando alterna entre builds dev e release, os caches nativos dos node_modules ficam sujos. Limpar:
+```powershell
+Remove-Item "C:\app\organizador\gg-economy-mobile\node_modules\@react-native-async-storage\async-storage\android\build" -Recurse -Force -ErrorAction SilentlyContinue
+Remove-Item "C:\app\organizador\gg-economy-mobile\node_modules\@react-native-community\datetimepicker\android\build" -Recurse -Force -ErrorAction SilentlyContinue
+Remove-Item "C:\app\organizador\gg-economy-mobile\node_modules\@expo\log-box\android\build" -Recurse -Force -ErrorAction SilentlyContinue
+```
+Então rodar com `clean`:
+```powershell
+.\gradlew.bat --stop
+Start-Sleep -Seconds 2
+.\gradlew.bat clean assembleRelease
+```
+
 ### Erro: Build usa cache antigo (fix não aparece)
 Forçar rebuild completo:
 ```powershell
