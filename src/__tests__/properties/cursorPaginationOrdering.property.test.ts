@@ -51,6 +51,7 @@ function paginateWithCursor(
   const pages: MockTransaction[][] = [];
   let cursor: { lastDate: string; lastId: string } | null = null;
 
+  // eslint-disable-next-line no-constant-condition
   while (true) {
     let page: MockTransaction[];
 
@@ -94,10 +95,7 @@ const dateArb = fc
       .chain((month) =>
         fc
           .integer({ min: 1, max: 28 })
-          .map(
-            (day) =>
-              `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`
-          )
+          .map((day) => `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`)
       )
   );
 

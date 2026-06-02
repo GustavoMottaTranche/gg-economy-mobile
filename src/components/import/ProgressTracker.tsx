@@ -169,19 +169,37 @@ function ProgressTrackerComponent({
   const failedCount = partialResults.filter((r) => !r.success && r.error).length;
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.surface.card }]} testID="progress-tracker">
+    <View
+      style={[styles.container, { backgroundColor: colors.surface.card }]}
+      testID="progress-tracker"
+    >
       {/* Header */}
       <View style={styles.header}>
-        <Text style={[styles.title, { color: colors.text.primary }]}>{t('fileImport.progress.title')}</Text>
-        <Text style={[styles.subtitle, { color: colors.text.secondary }]}>{t('fileImport.progress.subtitle')}</Text>
+        <Text style={[styles.title, { color: colors.text.primary }]}>
+          {t('fileImport.progress.title')}
+        </Text>
+        <Text style={[styles.subtitle, { color: colors.text.secondary }]}>
+          {t('fileImport.progress.subtitle')}
+        </Text>
       </View>
 
       {/* Current File Display (Requirement 6.1, 6.3) */}
-      <View style={[styles.currentFileContainer, { backgroundColor: colors.semantic.info.light, borderColor: colors.semantic.info.base }]}>
+      <View
+        style={[
+          styles.currentFileContainer,
+          { backgroundColor: colors.semantic.info.light, borderColor: colors.semantic.info.base },
+        ]}
+      >
         <Text style={styles.statusIcon}>{statusIcon}</Text>
         <View style={styles.currentFileInfo}>
-          <Text style={[styles.currentFileLabel, { color: colors.semantic.info.dark }]}>{t('fileImport.progress.currentFile')}</Text>
-          <Text style={[styles.currentFileName, { color: colors.semantic.info.dark }]} numberOfLines={1} testID="current-file-name">
+          <Text style={[styles.currentFileLabel, { color: colors.semantic.info.dark }]}>
+            {t('fileImport.progress.currentFile')}
+          </Text>
+          <Text
+            style={[styles.currentFileName, { color: colors.semantic.info.dark }]}
+            numberOfLines={1}
+            testID="current-file-name"
+          >
             {progress.currentFile}
           </Text>
         </View>
@@ -189,13 +207,18 @@ function ProgressTrackerComponent({
 
       {/* Progress Counter (Requirement 6.2) */}
       <View style={styles.progressCounterContainer}>
-        <Text style={[styles.progressCounter, { color: colors.text.primary }]} testID="progress-counter">
+        <Text
+          style={[styles.progressCounter, { color: colors.text.primary }]}
+          testID="progress-counter"
+        >
           {t('fileImport.progress.fileXofY', {
             current: progress.currentIndex + 1,
             total: progress.totalFiles,
           })}
         </Text>
-        <Text style={[styles.progressStatus, { color: colors.text.secondary }]}>{t(`import.progress.status.${progress.status}`)}</Text>
+        <Text style={[styles.progressStatus, { color: colors.text.secondary }]}>
+          {t(`import.progress.status.${progress.status}`)}
+        </Text>
       </View>
 
       {/* Overall Progress Bar (Requirement 6.4) */}
@@ -204,21 +227,36 @@ function ProgressTrackerComponent({
           <View
             style={[
               styles.progressBarFill,
-              { width: `${Math.min(100, Math.max(0, progress.overallProgress))}%`, backgroundColor: colors.interactive.primary },
+              {
+                width: `${Math.min(100, Math.max(0, progress.overallProgress))}%`,
+                backgroundColor: colors.interactive.primary,
+              },
               isFailed && { backgroundColor: colors.semantic.danger.base },
               isCompleted && { backgroundColor: colors.semantic.success.base },
             ]}
             testID="progress-bar-fill"
           />
         </View>
-        <Text style={[styles.progressPercentage, { color: colors.text.primary }]} testID="progress-percentage">
+        <Text
+          style={[styles.progressPercentage, { color: colors.text.primary }]}
+          testID="progress-percentage"
+        >
           {Math.round(progress.overallProgress)}%
         </Text>
       </View>
 
       {/* Failed Files Warning (Requirement 6.5) */}
       {failedCount > 0 && (
-        <View style={[styles.warningContainer, { backgroundColor: colors.semantic.warning.light, borderColor: colors.semantic.warning.base }]} testID="failed-files-warning">
+        <View
+          style={[
+            styles.warningContainer,
+            {
+              backgroundColor: colors.semantic.warning.light,
+              borderColor: colors.semantic.warning.base,
+            },
+          ]}
+          testID="failed-files-warning"
+        >
           <Text style={styles.warningIcon}>⚠️</Text>
           <Text style={[styles.warningText, { color: colors.semantic.warning.dark }]}>
             {t('fileImport.progress.failedFiles', { count: failedCount })}
@@ -229,7 +267,9 @@ function ProgressTrackerComponent({
       {/* File Results List */}
       {partialResults.length > 0 && (
         <View style={styles.resultsContainer}>
-          <Text style={[styles.resultsTitle, { color: colors.text.primary }]}>{t('fileImport.progress.processedFiles')}</Text>
+          <Text style={[styles.resultsTitle, { color: colors.text.primary }]}>
+            {t('fileImport.progress.processedFiles')}
+          </Text>
           <FlatList
             data={partialResults}
             renderItem={renderFileResult}

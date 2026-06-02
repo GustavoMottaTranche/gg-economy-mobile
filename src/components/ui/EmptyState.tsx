@@ -105,14 +105,27 @@ function EmptyStateComponent({
       </Text>
 
       {/* Title */}
-      <Text style={[styles.title, { color: colors.text.primary }, compact && styles.titleCompact, titleStyle]} numberOfLines={2}>
+      <Text
+        style={[
+          styles.title,
+          { color: colors.text.primary },
+          compact && styles.titleCompact,
+          titleStyle,
+        ]}
+        numberOfLines={2}
+      >
         {title}
       </Text>
 
       {/* Description */}
       {description && (
         <Text
-          style={[styles.description, { color: colors.text.secondary }, compact && styles.descriptionCompact, descriptionStyle]}
+          style={[
+            styles.description,
+            { color: colors.text.secondary },
+            compact && styles.descriptionCompact,
+            descriptionStyle,
+          ]}
           numberOfLines={3}
         >
           {description}
@@ -122,14 +135,20 @@ function EmptyStateComponent({
       {/* Action Button */}
       {action && (
         <TouchableOpacity
-          style={[styles.actionButton, { backgroundColor: colors.interactive.primary }, compact && styles.actionButtonCompact]}
+          style={[
+            styles.actionButton,
+            { backgroundColor: colors.interactive.primary },
+            compact && styles.actionButtonCompact,
+          ]}
           onPress={action.onPress}
           activeOpacity={0.7}
           accessibilityRole="button"
           accessibilityLabel={action.label}
           testID={testID ? `${testID}-action` : undefined}
         >
-          <Text style={[styles.actionButtonText, { color: colors.text.inverse }]}>{action.label}</Text>
+          <Text style={[styles.actionButtonText, { color: colors.text.inverse }]}>
+            {action.label}
+          </Text>
         </TouchableOpacity>
       )}
     </View>

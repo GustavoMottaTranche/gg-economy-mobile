@@ -17,9 +17,7 @@ import {
   ViewStyle,
   TextStyle,
 } from 'react-native';
-import DateTimePickerNative, {
-  DateTimePickerEvent,
-} from '@react-native-community/datetimepicker';
+import DateTimePickerNative, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import { useTranslation } from 'react-i18next';
 import { useThemeColors } from '../../hooks/useThemeColors';
 import { spacing, borderRadius, typography } from '../../constants/theme';
@@ -188,7 +186,9 @@ function DateTimePickerComponent({
 
   return (
     <View style={[styles.container, style]} testID={testID}>
-      {label && <Text style={[styles.label, { color: colors.text.primary }, labelStyle]}>{label}</Text>}
+      {label && (
+        <Text style={[styles.label, { color: colors.text.primary }, labelStyle]}>{label}</Text>
+      )}
 
       <TouchableOpacity
         onPress={handlePress}
@@ -196,7 +196,10 @@ function DateTimePickerComponent({
         style={[
           styles.inputContainer,
           { backgroundColor: colors.surface.card, borderColor: colors.border.strong },
-          disabled && { backgroundColor: colors.background.tertiary, borderColor: colors.border.default },
+          disabled && {
+            backgroundColor: colors.background.tertiary,
+            borderColor: colors.border.default,
+          },
           error && { borderColor: colors.semantic.danger.base },
         ]}
         accessibilityRole="button"
@@ -219,7 +222,10 @@ function DateTimePickerComponent({
       </TouchableOpacity>
 
       {error && (
-        <Text style={[styles.errorText, { color: colors.semantic.danger.base }]} accessibilityRole="alert">
+        <Text
+          style={[styles.errorText, { color: colors.semantic.danger.base }]}
+          accessibilityRole="alert"
+        >
           {error}
         </Text>
       )}

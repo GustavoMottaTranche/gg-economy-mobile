@@ -190,12 +190,8 @@ describe('InstallmentGroupManager', () => {
 
       // distributeAmount(1000, 3) = [334, 333, 333]
       expect(mockSet).toHaveBeenCalledTimes(3);
-      expect(mockSet).toHaveBeenCalledWith(
-        expect.objectContaining({ amount: 334 })
-      );
-      expect(mockSet).toHaveBeenCalledWith(
-        expect.objectContaining({ amount: 333 })
-      );
+      expect(mockSet).toHaveBeenCalledWith(expect.objectContaining({ amount: 334 }));
+      expect(mockSet).toHaveBeenCalledWith(expect.objectContaining({ amount: 333 }));
     });
 
     it('throws error when group has no parcels', async () => {
@@ -236,9 +232,7 @@ describe('InstallmentGroupManager', () => {
 
       expect(mockSet).toHaveBeenCalledTimes(3);
       for (const call of mockSet.mock.calls) {
-        expect(call[0]).toEqual(
-          expect.objectContaining({ categoryId: 'new-cat-id' })
-        );
+        expect(call[0]).toEqual(expect.objectContaining({ categoryId: 'new-cat-id' }));
       }
     });
 
@@ -266,9 +260,9 @@ describe('InstallmentGroupManager', () => {
     it('throws error when group has no parcels', async () => {
       mockOrderBy.mockResolvedValue([]);
 
-      await expect(
-        updateGroupField('nonexistent-group', 'categoryId', 'cat-1')
-      ).rejects.toThrow('No parcels found for installment group: nonexistent-group');
+      await expect(updateGroupField('nonexistent-group', 'categoryId', 'cat-1')).rejects.toThrow(
+        'No parcels found for installment group: nonexistent-group'
+      );
     });
   });
 });

@@ -59,8 +59,18 @@ jest.mock('../../src/i18n', () => ({
   getCurrencySymbol: () => '$',
   getMonthName: (monthIndex: number, _locale: string, _style: string) => {
     const months = [
-      'January', 'February', 'March', 'April', 'May', 'June',
-      'July', 'August', 'September', 'October', 'November', 'December',
+      'January',
+      'February',
+      'March',
+      'April',
+      'May',
+      'June',
+      'July',
+      'August',
+      'September',
+      'October',
+      'November',
+      'December',
     ];
     return months[monthIndex] ?? 'Unknown';
   },

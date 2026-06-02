@@ -13,11 +13,7 @@
 import { create } from 'zustand';
 
 import { CategoryType } from '../../types/category';
-import {
-  BatchSession,
-  BatchSessionActions,
-  BatchSessionSummary,
-} from '../../types/batch';
+import { BatchSession, BatchSessionActions, BatchSessionSummary } from '../../types/batch';
 
 type BatchSessionStore = BatchSession & BatchSessionActions;
 

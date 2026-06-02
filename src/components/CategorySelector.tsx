@@ -161,9 +161,15 @@ function CategorySelectorComponent({
   );
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.surface.card }, style]} testID={testID}>
+    <View
+      style={[styles.container, { backgroundColor: colors.surface.card }, style]}
+      testID={testID}
+    >
       {/* First Select: Expense Group */}
-      <View style={[styles.groupContainer, { borderBottomColor: colors.border.default }]} testID={testID ? `${testID}-group` : undefined}>
+      <View
+        style={[styles.groupContainer, { borderBottomColor: colors.border.default }]}
+        testID={testID ? `${testID}-group` : undefined}
+      >
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
@@ -210,7 +216,9 @@ function CategorySelectorComponent({
             style={[
               styles.categoryItem,
               { borderBottomColor: colors.border.subtle },
-              category.id === selectedCategoryId && { backgroundColor: colors.semantic.primary.light },
+              category.id === selectedCategoryId && {
+                backgroundColor: colors.semantic.primary.light,
+              },
             ]}
             onPress={() => handleCategorySelect(category)}
             accessibilityRole="button"
@@ -225,7 +233,10 @@ function CategorySelectorComponent({
               style={[
                 styles.categoryName,
                 { color: colors.text.primary },
-                category.id === selectedCategoryId && { color: colors.interactive.primary, fontWeight: '600' },
+                category.id === selectedCategoryId && {
+                  color: colors.interactive.primary,
+                  fontWeight: '600',
+                },
               ]}
               numberOfLines={1}
             >
@@ -240,7 +251,9 @@ function CategorySelectorComponent({
         ))}
         {filteredCategories.length === 0 && (
           <View style={styles.emptyContainer}>
-            <Text style={[styles.emptyText, { color: colors.text.secondary }]}>Nenhuma categoria encontrada</Text>
+            <Text style={[styles.emptyText, { color: colors.text.secondary }]}>
+              Nenhuma categoria encontrada
+            </Text>
           </View>
         )}
       </ScrollView>

@@ -48,9 +48,6 @@ export type {
   OccurrenceDateValidationInput,
 } from './weeklyRecurringValidation';
 
-export {
-  validateParcelAmount,
-  validateParcelAmountStandard,
-} from './parcelAmountValidation';
+export { validateParcelAmount, validateParcelAmountStandard } from './parcelAmountValidation';
 
 export type { ParcelAmountValidationResult } from './parcelAmountValidation';

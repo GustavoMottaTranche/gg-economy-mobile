@@ -80,8 +80,18 @@ jest.mock('../../src/i18n', () => ({
   getCurrentLocale: () => 'pt-BR',
   getMonthName: (monthIndex: number, _locale: string, _style: string) => {
     const months = [
-      'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
-      'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro',
+      'Janeiro',
+      'Fevereiro',
+      'Março',
+      'Abril',
+      'Maio',
+      'Junho',
+      'Julho',
+      'Agosto',
+      'Setembro',
+      'Outubro',
+      'Novembro',
+      'Dezembro',
     ];
     return months[monthIndex] ?? 'Unknown';
   },
@@ -218,9 +228,7 @@ jest.mock('../../src/components/CategorySelector', () => ({
     lastCategorySelectorProps = props;
     return (
       <View testID={props.testID}>
-        <Text testID={`${props.testID}-selected`}>
-          {props.selectedCategoryId ?? 'none'}
-        </Text>
+        <Text testID={`${props.testID}-selected`}>{props.selectedCategoryId ?? 'none'}</Text>
         <TouchableOpacity
           testID={`${props.testID}-select-transport`}
           onPress={() =>

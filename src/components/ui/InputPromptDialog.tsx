@@ -92,17 +92,33 @@ export function InputPromptDialog({
         style={styles.overlay}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
-        <View style={[styles.dialogContainer, { backgroundColor: colors.surface.card, shadowColor: '#000' }]} testID={`${testID}-container`}>
+        <View
+          style={[
+            styles.dialogContainer,
+            { backgroundColor: colors.surface.card, shadowColor: '#000' },
+          ]}
+          testID={`${testID}-container`}
+        >
           <Text style={[styles.title, { color: colors.text.primary }]} testID={`${testID}-title`}>
             {title}
           </Text>
           {message && (
-            <Text style={[styles.message, { color: colors.text.secondary }]} testID={`${testID}-message`}>
+            <Text
+              style={[styles.message, { color: colors.text.secondary }]}
+              testID={`${testID}-message`}
+            >
               {message}
             </Text>
           )}
           <TextInput
-            style={[styles.input, { borderColor: colors.border.default, color: colors.text.primary, backgroundColor: colors.background.secondary }]}
+            style={[
+              styles.input,
+              {
+                borderColor: colors.border.default,
+                color: colors.text.primary,
+                backgroundColor: colors.background.secondary,
+              },
+            ]}
             value={inputValue}
             onChangeText={setInputValue}
             placeholder={placeholder}
@@ -121,7 +137,9 @@ export function InputPromptDialog({
               accessibilityLabel={cancelText}
               testID={`${testID}-cancel`}
             >
-              <Text style={[styles.cancelButtonText, { color: colors.text.primary }]}>{cancelText}</Text>
+              <Text style={[styles.cancelButtonText, { color: colors.text.primary }]}>
+                {cancelText}
+              </Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.confirmButton, { backgroundColor: colors.interactive.primary }]}
@@ -130,7 +148,9 @@ export function InputPromptDialog({
               accessibilityLabel={confirmText}
               testID={`${testID}-confirm`}
             >
-              <Text style={[styles.confirmButtonText, { color: colors.text.inverse }]}>{confirmText}</Text>
+              <Text style={[styles.confirmButtonText, { color: colors.text.inverse }]}>
+                {confirmText}
+              </Text>
             </TouchableOpacity>
           </View>
         </View>

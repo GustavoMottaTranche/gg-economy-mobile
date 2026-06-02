@@ -57,9 +57,9 @@ describe('Property 2: Section total equals sum of category amounts', () => {
           const sectionTotal = computeSectionTotal(items);
           const expectedSum = items.reduce((sum, item) => sum + item.total, 0);
           expect(sectionTotal).toBe(expectedSum);
-        },
+        }
       ),
-      { numRuns: 100 },
+      { numRuns: 100 }
     );
   });
 
@@ -71,9 +71,9 @@ describe('Property 2: Section total equals sum of category amounts', () => {
           const sectionTotal = computeSectionTotal(items);
           const expectedSum = items.reduce((sum, item) => sum + item.total, 0);
           expect(sectionTotal).toBe(expectedSum);
-        },
+        }
       ),
-      { numRuns: 100 },
+      { numRuns: 100 }
     );
   });
 
@@ -96,9 +96,9 @@ describe('Property 2: Section total equals sum of category amounts', () => {
           }));
           const sectionTotal = computeSectionTotal(items);
           expect(sectionTotal).toBe(0);
-        },
+        }
       ),
-      { numRuns: 100 },
+      { numRuns: 100 }
     );
   });
 
@@ -109,9 +109,9 @@ describe('Property 2: Section total equals sum of category amounts', () => {
         (item: CategoryBreakdownItem) => {
           const sectionTotal = computeSectionTotal([item]);
           expect(sectionTotal).toBe(item.total);
-        },
+        }
       ),
-      { numRuns: 100 },
+      { numRuns: 100 }
     );
   });
 });

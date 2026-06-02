@@ -11,10 +11,7 @@ import { useState, useCallback, useEffect, useRef } from 'react';
 import { eq, desc, sql } from 'drizzle-orm';
 import { useLiveQuery, getDb } from '../db/client';
 import { transactions, categories } from '../db/schema';
-import {
-  buildFilterConditions,
-  type PaginationFilters,
-} from '../db/buildFilterConditions';
+import { buildFilterConditions, type PaginationFilters } from '../db/buildFilterConditions';
 import type { Transaction, Category } from '../types';
 
 /**

@@ -70,8 +70,7 @@ export function PressableCard({
   const isDark = resolvedScheme === 'dark';
 
   // Border radius based on variant
-  const radius =
-    variant === 'primary' ? theme.borderRadius.lg : theme.borderRadius.md;
+  const radius = variant === 'primary' ? theme.borderRadius.lg : theme.borderRadius.md;
 
   // Shadow/border based on mode
   const elevationStyle: ViewStyle = isDark

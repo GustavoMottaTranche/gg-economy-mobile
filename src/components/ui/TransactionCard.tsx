@@ -135,7 +135,10 @@ function TransactionCardComponent({
           {transaction.title}
         </Text>
         {transaction.description !== '' && (
-          <Text style={[styles.description, { color: themeColors.text.secondary }]} numberOfLines={2}>
+          <Text
+            style={[styles.description, { color: themeColors.text.secondary }]}
+            numberOfLines={2}
+          >
             {transaction.description}
           </Text>
         )}
@@ -145,7 +148,10 @@ function TransactionCardComponent({
         {category && (
           <View style={styles.categoryContainer}>
             <View style={[styles.categoryDot, { backgroundColor: category.color }]} />
-            <Text style={[styles.categoryName, { color: themeColors.text.secondary }]} numberOfLines={1}>
+            <Text
+              style={[styles.categoryName, { color: themeColors.text.secondary }]}
+              numberOfLines={1}
+            >
               {category.name}
             </Text>
           </View>
@@ -163,7 +169,9 @@ function TransactionCardComponent({
         <View style={styles.indicators}>
           {isRecurring && (
             <View style={styles.indicator} accessibilityLabel={t('transactions.recurring')}>
-              <Text style={[styles.recurringIndicator, { color: themeColors.semantic.info.base }]}>∞</Text>
+              <Text style={[styles.recurringIndicator, { color: themeColors.semantic.info.base }]}>
+                ∞
+              </Text>
             </View>
           )}
           {showDuplicateIndicator && isDuplicate && (

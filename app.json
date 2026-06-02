@@ -2,7 +2,7 @@
   "expo": {
     "name": "GG Economy",
     "slug": "gg-economy-mobile",
-    "version": "1.0.0",
+    "version": "1.1.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
@@ -120,8 +120,6 @@
     "plugins": [
       "expo-sqlite",
       "expo-secure-store",
-      "expo-localization",
-      "expo-web-browser",
       "expo-navigation-bar",
       [
         "expo-router",
@@ -140,18 +138,9 @@
       "eas": {
         "projectId": "8330e90e-6a7a-49a2-8b8d-940d89aeddbd"
       },
-      "googleOAuth": {
-        "webClientId": "316079469489-7oq375t2g6ph8b2ahq56611pjejc3oq7.apps.googleusercontent.com",
-        "androidClientId": "316079469489-ht2ts297l15agje9fm8n3vfck093kb1a.apps.googleusercontent.com",
-        "iosClientId": "YOUR_IOS_CLIENT_ID.apps.googleusercontent.com"
-      },
       "router": {
         "root": "./app"
       }
-    },
-    "locales": {
-      "pt-BR": "./src/i18n/locales/pt-BR.json",
-      "en": "./src/i18n/locales/en.json"
     },
     "owner": "gutaolox"
   }

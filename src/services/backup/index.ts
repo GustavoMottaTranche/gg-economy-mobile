@@ -1,34 +1,16 @@
 /**
  * Backup services module
  *
- * Exports OAuth and backup-related services for Google Drive integration.
+ * Exports backup-related services for custom server integration.
  *
  * @module services/backup
  */
 
 export {
-  OAuthService,
-  oAuthService,
-  OAuthError,
-  type GoogleUser,
-  type OAuthTokens,
-  type OAuthErrorCode,
-} from './OAuthService';
-
-export {
-  GoogleDriveClient,
-  googleDriveClient,
-  DriveError,
-  BACKUP_CONFIG,
-  type DriveFile,
-  type DriveErrorCode,
-  type UploadProgressCallback,
-} from './GoogleDriveClient';
-
-export {
   BackupService,
   backupService,
   BackupError,
+  BACKUP_CONFIG,
   generateBackupFileName,
   parseBackupTimestamp,
   type BackupErrorCode,
@@ -59,3 +41,28 @@ export {
 } from './RestoreService';
 
 export { createCustomServerBackup, restoreFromCustomServer } from './CustomServerIntegration';
+
+export {
+  CustomServerSettingsStore,
+  customServerSettingsStore,
+  type ServerSettings,
+  type ValidationResult,
+} from './CustomServerSettingsStore';
+
+export {
+  CustomServerError,
+  customServerClient,
+  testConnection,
+  listBackups,
+  upload,
+  download,
+  deleteBackup,
+  validateConfig,
+  mapServerToAppMetadata,
+  type CustomServerConfig,
+  type CustomServerErrorCode,
+  type ServerBackupMetadata,
+  type ServerBackupResponse,
+  type UploadProgressCallback,
+  type DownloadProgressCallback,
+} from './CustomServerClient';

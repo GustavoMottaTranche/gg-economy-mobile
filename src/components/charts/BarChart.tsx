@@ -160,7 +160,9 @@ function BarChartComponent({
         accessibilityLabel={t('charts.noData')}
       >
         <View style={[styles.emptyChart, { backgroundColor: colors.background.secondary }]}>
-          <Text style={[styles.emptyText, { color: colors.text.tertiary }]}>{t('charts.noData')}</Text>
+          <Text style={[styles.emptyText, { color: colors.text.tertiary }]}>
+            {t('charts.noData')}
+          </Text>
         </View>
       </View>
     );
@@ -447,11 +449,15 @@ function BarChartComponent({
       <View style={styles.legend}>
         <View style={styles.legendItem}>
           <View style={[styles.legendColor, { backgroundColor: resolvedIncomeColor }]} />
-          <Text style={[styles.legendText, { color: colors.text.primary }]}>{t('dashboard.income')}</Text>
+          <Text style={[styles.legendText, { color: colors.text.primary }]}>
+            {t('dashboard.income')}
+          </Text>
         </View>
         <View style={styles.legendItem}>
           <View style={[styles.legendColor, { backgroundColor: resolvedExpenseColor }]} />
-          <Text style={[styles.legendText, { color: colors.text.primary }]}>{t('dashboard.expenses')}</Text>
+          <Text style={[styles.legendText, { color: colors.text.primary }]}>
+            {t('dashboard.expenses')}
+          </Text>
         </View>
       </View>
     </View>

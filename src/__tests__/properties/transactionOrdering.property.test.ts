@@ -52,45 +52,36 @@ const transactionItemArb = fc.record({
 describe('Property 3: Transaction list ordering by date descending', () => {
   it('for every consecutive pair (t[i], t[i+1]), t[i].date >= t[i+1].date', () => {
     fc.assert(
-      fc.property(
-        fc.array(transactionItemArb, { minLength: 2, maxLength: 30 }),
-        (transactions) => {
-          const sorted = sortTransactionsByDateDescending(transactions);
+      fc.property(fc.array(transactionItemArb, { minLength: 2, maxLength: 30 }), (transactions) => {
+        const sorted = sortTransactionsByDateDescending(transactions);
 
-          for (let i = 0; i < sorted.length - 1; i++) {
-            expect(sorted[i]!.date >= sorted[i + 1]!.date).toBe(true);
-          }
-        },
-      ),
-      { numRuns: 100 },
+        for (let i = 0; i < sorted.length - 1; i++) {
+          expect(sorted[i]!.date >= sorted[i + 1]!.date).toBe(true);
+        }
+      }),
+      { numRuns: 100 }
     );
   });
 
   it('sorted list has the same length as the input', () => {
     fc.assert(
-      fc.property(
-        fc.array(transactionItemArb, { minLength: 1, maxLength: 30 }),
-        (transactions) => {
-          const sorted = sortTransactionsByDateDescending(transactions);
-          expect(sorted).toHaveLength(transactions.length);
-        },
-      ),
-      { numRuns: 100 },
+      fc.property(fc.array(transactionItemArb, { minLength: 1, maxLength: 30 }), (transactions) => {
+        const sorted = sortTransactionsByDateDescending(transactions);
+        expect(sorted).toHaveLength(transactions.length);
+      }),
+      { numRuns: 100 }
     );
   });
 
   it('sorted list contains all original transactions', () => {
     fc.assert(
-      fc.property(
-        fc.array(transactionItemArb, { minLength: 1, maxLength: 30 }),
-        (transactions) => {
-          const sorted = sortTransactionsByDateDescending(transactions);
-          for (const tx of transactions) {
-            expect(sorted).toContainEqual(tx);
-          }
-        },
-      ),
-      { numRuns: 100 },
+      fc.property(fc.array(transactionItemArb, { minLength: 1, maxLength: 30 }), (transactions) => {
+        const sorted = sortTransactionsByDateDescending(transactions);
+        for (const tx of transactions) {
+          expect(sorted).toContainEqual(tx);
+        }
+      }),
+      { numRuns: 100 }
     );
   });
 });

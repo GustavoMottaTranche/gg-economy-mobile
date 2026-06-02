@@ -106,23 +106,21 @@ const occurrenceArb = (groupId: string, isPaid: boolean): fc.Arbitrary<WeeklyOcc
  * Generates a group with mixed paid/unpaid occurrences.
  * Returns the group, its occurrences, and metadata about paid/unpaid counts.
  */
-const groupWithMixedOccurrencesArb = fc
-  .uuid()
-  .chain((groupId) =>
-    fc
-      .tuple(
-        weeklyGroupArb(groupId),
-        fc.array(occurrenceArb(groupId, false), { minLength: 0, maxLength: 4 }),
-        fc.array(occurrenceArb(groupId, true), { minLength: 0, maxLength: 4 })
-      )
-      .filter(([, unpaid, paid]) => unpaid.length + paid.length > 0)
-      .map(([group, unpaid, paid]) => ({
-        group,
-        occurrences: [...unpaid, ...paid],
-        unpaidCount: unpaid.length,
-        paidCount: paid.length,
-      }))
-  );
+const groupWithMixedOccurrencesArb = fc.uuid().chain((groupId) =>
+  fc
+    .tuple(
+      weeklyGroupArb(groupId),
+      fc.array(occurrenceArb(groupId, false), { minLength: 0, maxLength: 4 }),
+      fc.array(occurrenceArb(groupId, true), { minLength: 0, maxLength: 4 })
+    )
+    .filter(([, unpaid, paid]) => unpaid.length + paid.length > 0)
+    .map(([group, unpaid, paid]) => ({
+      group,
+      occurrences: [...unpaid, ...paid],
+      unpaidCount: unpaid.length,
+      paidCount: paid.length,
+    }))
+);
 
 // ─── Property Tests ──────────────────────────────────────────────────────────
 
@@ -318,7 +316,6 @@ describe('Feature: statement-payment-integration, Property 5: Pending filter ret
     );
   });
 });
-
 
 // ─── Property 1: Unified list is sorted by date descending ───────────────────
 

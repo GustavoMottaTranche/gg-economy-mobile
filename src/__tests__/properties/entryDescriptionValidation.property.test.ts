@@ -9,10 +9,7 @@
  */
 
 import * as fc from 'fast-check';
-import {
-  validateDescription,
-  DESCRIPTION_MAX_LENGTH,
-} from '../../validation/entryValidation';
+import { validateDescription, DESCRIPTION_MAX_LENGTH } from '../../validation/entryValidation';
 
 describe('Feature: entry-title-and-dates, Property 2: Description Validation', () => {
   /**
@@ -21,14 +18,11 @@ describe('Feature: entry-title-and-dates, Property 2: Description Validation', (
 
   it('should accept any string with length <= 500', () => {
     fc.assert(
-      fc.property(
-        fc.string({ minLength: 0, maxLength: DESCRIPTION_MAX_LENGTH }),
-        (description) => {
-          const result = validateDescription(description);
-          expect(result.valid).toBe(true);
-          expect(result.errors).toBeUndefined();
-        }
-      ),
+      fc.property(fc.string({ minLength: 0, maxLength: DESCRIPTION_MAX_LENGTH }), (description) => {
+        const result = validateDescription(description);
+        expect(result.valid).toBe(true);
+        expect(result.errors).toBeUndefined();
+      }),
       { numRuns: 100 }
     );
   });
@@ -50,7 +44,9 @@ describe('Feature: entry-title-and-dates, Property 2: Description Validation', (
         fc.string({ minLength: DESCRIPTION_MAX_LENGTH, maxLength: DESCRIPTION_MAX_LENGTH }),
         (description) => {
           // Ensure we have exactly 500 chars (fast-check string may use unicode)
-          const padded = description.padEnd(DESCRIPTION_MAX_LENGTH, 'x').slice(0, DESCRIPTION_MAX_LENGTH);
+          const padded = description
+            .padEnd(DESCRIPTION_MAX_LENGTH, 'x')
+            .slice(0, DESCRIPTION_MAX_LENGTH);
           expect(padded.length).toBe(DESCRIPTION_MAX_LENGTH);
           const result = validateDescription(padded);
           expect(result.valid).toBe(true);
@@ -78,14 +74,11 @@ describe('Feature: entry-title-and-dates, Property 2: Description Validation', (
 
   it('should satisfy the biconditional: valid iff length <= 500', () => {
     fc.assert(
-      fc.property(
-        fc.string({ minLength: 0, maxLength: 1000 }),
-        (description) => {
-          const result = validateDescription(description);
-          const expectedValid = description.length <= DESCRIPTION_MAX_LENGTH;
-          expect(result.valid).toBe(expectedValid);
-        }
-      ),
+      fc.property(fc.string({ minLength: 0, maxLength: 1000 }), (description) => {
+        const result = validateDescription(description);
+        const expectedValid = description.length <= DESCRIPTION_MAX_LENGTH;
+        expect(result.valid).toBe(expectedValid);
+      }),
       { numRuns: 100 }
     );
   });

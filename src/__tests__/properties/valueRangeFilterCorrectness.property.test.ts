@@ -41,8 +41,7 @@ const mockTransactionArb = (referenceMonth: string): fc.Arbitrary<MockTransactio
             fc
               .integer({ min: 1, max: 28 })
               .map(
-                (day) =>
-                  `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`
+                (day) => `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`
               )
           )
       ),
@@ -52,9 +51,7 @@ const mockTransactionArb = (referenceMonth: string): fc.Arbitrary<MockTransactio
 /** Generates a valid [min, max] range where min ≤ max */
 const valueRangeArb = fc
   .integer({ min: 0, max: 9999999 })
-  .chain((a) =>
-    fc.integer({ min: a, max: 9999999 }).map((b) => ({ minAmount: a, maxAmount: b }))
-  );
+  .chain((a) => fc.integer({ min: a, max: 9999999 }).map((b) => ({ minAmount: a, maxAmount: b })));
 
 // --- Filter function under test ---
 
@@ -219,9 +216,7 @@ describe('Property 4: Value Range Filter Correctness', () => {
         (transactions) => {
           const filtered = applyValueRangeFilter(transactions, null, null);
           expect(filtered.length).toBe(transactions.length);
-          expect(filtered.map((t) => t.id).sort()).toEqual(
-            transactions.map((t) => t.id).sort()
-          );
+          expect(filtered.map((t) => t.id).sort()).toEqual(transactions.map((t) => t.id).sort());
         }
       ),
       { numRuns: 100 }
@@ -259,9 +254,7 @@ describe('Property 4: Value Range Filter Correctness', () => {
           });
 
           // Apply value range filter independently on same-month transactions
-          const monthFiltered = transactions.filter(
-            (t) => t.referenceMonth === refMonth
-          );
+          const monthFiltered = transactions.filter((t) => t.referenceMonth === refMonth);
           const rangeFiltered = applyValueRangeFilter(monthFiltered, minAmount, maxAmount);
 
           // Both approaches should yield the same result
@@ -298,11 +291,7 @@ describe('Property 4: Value Range Filter Correctness', () => {
           ];
 
           // Use the boundary amount as both min and max (exact match)
-          const filtered = applyValueRangeFilter(
-            transactions,
-            boundaryAmount,
-            boundaryAmount
-          );
+          const filtered = applyValueRangeFilter(transactions, boundaryAmount, boundaryAmount);
 
           // Both transactions have abs(amount) === boundaryAmount, so both should be included
           expect(filtered.length).toBe(2);

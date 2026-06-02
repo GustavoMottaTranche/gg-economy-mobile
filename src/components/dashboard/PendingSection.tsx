@@ -9,7 +9,7 @@
  * **Validates: Requirements 4.1, 4.2, 4.3, 4.4, 4.5, 4.6**
  */
 
-import React, { memo, useMemo, useCallback } from 'react';
+import React, { memo, useCallback } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
@@ -193,19 +193,12 @@ const PendingItemRow = memo(function PendingItemRow({
         testID={testID ? `${testID}-pressable` : undefined}
       >
         <View style={styles.itemTextContainer}>
-          <Text
-            style={[styles.itemName, { color: textPrimaryColor }]}
-            numberOfLines={1}
-          >
+          <Text style={[styles.itemName, { color: textPrimaryColor }]} numberOfLines={1}>
             {item.groupName}
           </Text>
-          <Text style={[styles.itemDate, { color: textTertiaryColor }]}>
-            {formattedDate}
-          </Text>
+          <Text style={[styles.itemDate, { color: textTertiaryColor }]}>{formattedDate}</Text>
         </View>
-        <Text style={[styles.itemAmount, { color: textSecondaryColor }]}>
-          {formattedAmount}
-        </Text>
+        <Text style={[styles.itemAmount, { color: textSecondaryColor }]}>{formattedAmount}</Text>
       </TouchableOpacity>
     </View>
   );

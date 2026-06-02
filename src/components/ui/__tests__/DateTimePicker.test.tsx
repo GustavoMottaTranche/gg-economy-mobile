@@ -14,7 +14,11 @@
 
 import React from 'react';
 import { render, fireEvent } from '@testing-library/react-native';
-import { DateTimePicker, type DateTimePickerProps, formatDateTimeForLocale } from '../DateTimePicker';
+import {
+  DateTimePicker,
+  type DateTimePickerProps,
+  formatDateTimeForLocale,
+} from '../DateTimePicker';
 
 // Mock react-i18next
 jest.mock('react-i18next', () => ({
@@ -96,16 +100,12 @@ describe('DateTimePicker', () => {
     });
 
     it('renders formatted date+time for en locale', () => {
-      const { getByText } = render(
-        <DateTimePicker {...defaultProps} locale="en" />
-      );
+      const { getByText } = render(<DateTimePicker {...defaultProps} locale="en" />);
       expect(getByText('06/15/2024 02:30 PM')).toBeTruthy();
     });
 
     it('renders label when provided', () => {
-      const { getByText } = render(
-        <DateTimePicker {...defaultProps} label="Data da Compra" />
-      );
+      const { getByText } = render(<DateTimePicker {...defaultProps} label="Data da Compra" />);
       expect(getByText('Data da Compra')).toBeTruthy();
     });
 
@@ -169,9 +169,7 @@ describe('DateTimePicker', () => {
     });
 
     it('applies disabled styling when disabled', () => {
-      const { getByTestId } = render(
-        <DateTimePicker {...defaultProps} disabled testID="dtp" />
-      );
+      const { getByTestId } = render(<DateTimePicker {...defaultProps} disabled testID="dtp" />);
 
       const button = getByTestId('dtp-button');
       const flatStyle = Array.isArray(button.props.style)
@@ -195,18 +193,14 @@ describe('DateTimePicker', () => {
 
   describe('accessibility', () => {
     it('has correct accessibility role on button', () => {
-      const { getByTestId } = render(
-        <DateTimePicker {...defaultProps} testID="dtp" />
-      );
+      const { getByTestId } = render(<DateTimePicker {...defaultProps} testID="dtp" />);
 
       const button = getByTestId('dtp-button');
       expect(button.props.accessibilityRole).toBe('button');
     });
 
     it('has correct accessibility state when disabled', () => {
-      const { getByTestId } = render(
-        <DateTimePicker {...defaultProps} disabled testID="dtp" />
-      );
+      const { getByTestId } = render(<DateTimePicker {...defaultProps} disabled testID="dtp" />);
 
       const button = getByTestId('dtp-button');
       expect(button.props.accessibilityState.disabled).toBe(true);

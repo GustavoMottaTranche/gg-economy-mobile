@@ -49,14 +49,9 @@ interface PendingItem {
  * This mirrors the SQL WHERE clause (referenceMonth = month AND isPaid = false)
  * followed by the in-memory sort by date.
  */
-function getPendingItemsForMonth(
-  occurrences: RecurringOccurrence[],
-  month: string
-): PendingItem[] {
+function getPendingItemsForMonth(occurrences: RecurringOccurrence[], month: string): PendingItem[] {
   // Filter: same reference month AND unpaid
-  const pending = occurrences.filter(
-    (o) => o.referenceMonth === month && !o.isPaid
-  );
+  const pending = occurrences.filter((o) => o.referenceMonth === month && !o.isPaid);
 
   // Map to PendingItem (drop isPaid field)
   const pendingItems: PendingItem[] = pending.map((o) => ({
@@ -83,9 +78,7 @@ function getPendingItemsForMonth(
 const referenceMonthArb = fc
   .integer({ min: 2020, max: 2030 })
   .chain((year) =>
-    fc
-      .integer({ min: 1, max: 12 })
-      .map((month) => `${year}-${String(month).padStart(2, '0')}`)
+    fc.integer({ min: 1, max: 12 }).map((month) => `${year}-${String(month).padStart(2, '0')}`)
   );
 
 /**
@@ -139,17 +132,16 @@ const occurrenceInMonthArb = (month: string): fc.Arbitrary<RecurringOccurrence> 
 /**
  * Generates a single recurring occurrence for a random month (noise).
  */
-const occurrenceAnyMonthArb = fc
-  .record({
-    id: fc.uuid(),
-    type: fc.constantFrom('weekly' as const, 'monthly' as const),
-    groupId: fc.uuid(),
-    groupName: groupNameArb,
-    amount: fc.integer({ min: 1, max: 9999999 }),
-    date: dateArb,
-    referenceMonth: referenceMonthArb,
-    isPaid: fc.boolean(),
-  });
+const occurrenceAnyMonthArb = fc.record({
+  id: fc.uuid(),
+  type: fc.constantFrom('weekly' as const, 'monthly' as const),
+  groupId: fc.uuid(),
+  groupName: groupNameArb,
+  amount: fc.integer({ min: 1, max: 9999999 }),
+  date: dateArb,
+  referenceMonth: referenceMonthArb,
+  isPaid: fc.boolean(),
+});
 
 // ─── Property Tests ──────────────────────────────────────────────────────────
 

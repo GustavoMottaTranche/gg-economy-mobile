@@ -19,6 +19,7 @@ import {
 import type { WeeklyOccurrence } from '../types/weeklyRecurring';
 import type {
   IWeeklyOccurrenceRepository,
+  CreateWeeklyOccurrenceInput,
   WeeklyOccurrenceUpdateFields,
 } from './interfaces/IWeeklyOccurrenceRepository';
 
@@ -48,7 +49,7 @@ export class WeeklyOccurrenceRepository implements IWeeklyOccurrenceRepository {
   /**
    * Create a single weekly occurrence.
    */
-  async create(data: NewWeeklyOccurrenceRecord): Promise<WeeklyOccurrence> {
+  async create(data: CreateWeeklyOccurrenceInput): Promise<WeeklyOccurrence> {
     const db = getDb();
     const id = data.id ?? randomUUID();
     const now = new Date().toISOString();
@@ -70,6 +71,7 @@ export class WeeklyOccurrenceRepository implements IWeeklyOccurrenceRepository {
       amount: record.amount,
       description: record.description ?? '',
       isValueEdited: record.isValueEdited ?? false,
+      isPaid: record.isPaid ?? false,
       createdAt: record.createdAt ?? now,
       updatedAt: record.updatedAt ?? now,
     });
@@ -79,7 +81,7 @@ export class WeeklyOccurrenceRepository implements IWeeklyOccurrenceRepository {
    * Create multiple weekly occurrences.
    * Each occurrence gets a unique UUID if not provided.
    */
-  async createMany(data: NewWeeklyOccurrenceRecord[]): Promise<WeeklyOccurrence[]> {
+  async createMany(data: CreateWeeklyOccurrenceInput[]): Promise<WeeklyOccurrence[]> {
     const db = getDb();
     const now = new Date().toISOString();
     const results: WeeklyOccurrence[] = [];
@@ -104,6 +106,7 @@ export class WeeklyOccurrenceRepository implements IWeeklyOccurrenceRepository {
           amount: record.amount,
           description: record.description ?? '',
           isValueEdited: record.isValueEdited ?? false,
+          isPaid: record.isPaid ?? false,
           createdAt: record.createdAt ?? now,
           updatedAt: record.updatedAt ?? now,
         })
@@ -212,10 +215,7 @@ export class WeeklyOccurrenceRepository implements IWeeklyOccurrenceRepository {
    */
   async getById(id: string): Promise<WeeklyOccurrence | null> {
     const db = getDb();
-    const results = await db
-      .select()
-      .from(weeklyOccurrences)
-      .where(eq(weeklyOccurrences.id, id));
+    const results = await db.select().from(weeklyOccurrences).where(eq(weeklyOccurrences.id, id));
     if (results.length === 0) return null;
     return toWeeklyOccurrence(results[0]!);
   }
@@ -286,9 +286,7 @@ export class WeeklyOccurrenceRepository implements IWeeklyOccurrenceRepository {
     const result = await db
       .select({ count: sql<number>`count(*)` })
       .from(weeklyOccurrences)
-      .where(
-        and(eq(weeklyOccurrences.weeklyGroupId, groupId), eq(weeklyOccurrences.date, date))
-      );
+      .where(and(eq(weeklyOccurrences.weeklyGroupId, groupId), eq(weeklyOccurrences.date, date)));
 
     return (result[0]?.count ?? 0) > 0;
   }

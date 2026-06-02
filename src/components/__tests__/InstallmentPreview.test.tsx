@@ -66,11 +66,7 @@ describe('InstallmentPreview', () => {
 
   it('renders null when installments array is empty', () => {
     const { toJSON } = render(
-      <InstallmentPreview
-        installments={[]}
-        locale="en-US"
-        transactionType="expense"
-      />
+      <InstallmentPreview installments={[]} locale="en-US" transactionType="expense" />
     );
     expect(toJSON()).toBeNull();
   });

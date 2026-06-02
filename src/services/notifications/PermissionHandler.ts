@@ -71,8 +71,11 @@ export class PermissionHandler implements IPermissionHandler {
     }
 
     try {
-      const { status } = await NotificationsModule.getPermissionsAsync();
-      const mappedStatus = mapExpoPermissionStatus(status);
+      const result = await NotificationsModule.getPermissionsAsync();
+      const status = (result as { status: string }).status;
+      const mappedStatus = mapExpoPermissionStatus(
+        status as import('expo-notifications').PermissionStatus
+      );
       logger.debug('Notification permission status checked', { status: mappedStatus });
       return mappedStatus;
     } catch (error) {
@@ -104,8 +107,11 @@ export class PermissionHandler implements IPermissionHandler {
 
     logger.debug('Requesting notification permission');
     try {
-      const { status } = await NotificationsModule.requestPermissionsAsync();
-      const mappedStatus = mapExpoPermissionStatus(status);
+      const result = await NotificationsModule.requestPermissionsAsync();
+      const status = (result as { status: string }).status;
+      const mappedStatus = mapExpoPermissionStatus(
+        status as import('expo-notifications').PermissionStatus
+      );
       logger.debug('Notification permission request result', { status: mappedStatus });
       return mappedStatus;
     } catch (error) {

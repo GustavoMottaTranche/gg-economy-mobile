@@ -53,8 +53,7 @@ const dateArb = fc.oneof(
           fc
             .integer({ min: 1, max: 28 })
             .map(
-              (day) =>
-                `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`
+              (day) => `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`
             )
         )
     )
@@ -92,8 +91,7 @@ const mockTransactionArb = fc.record({
           fc
             .integer({ min: 1, max: 28 })
             .map(
-              (day) =>
-                `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`
+              (day) => `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`
             )
         )
     ),
@@ -248,9 +246,9 @@ describe('Property 6: Combined Filter Query Builder', () => {
           expect(filtered.length).toBe(2);
         } else {
           // Category filter active → only matching transactions pass
-          expect(
-            filtered.every((t) => filters.categoryIds!.includes(t.categoryId ?? ''))
-          ).toBe(true);
+          expect(filtered.every((t) => filters.categoryIds!.includes(t.categoryId ?? ''))).toBe(
+            true
+          );
         }
       }),
       { numRuns: 100 }
@@ -340,13 +338,9 @@ describe('Property 6: Combined Filter Query Builder', () => {
           // Apply filters in different orders and verify same result
 
           // Order 1: month → category → amount → date
-          let order1 = transactions.filter(
-            (t) => t.referenceMonth === filters.referenceMonth
-          );
+          let order1 = transactions.filter((t) => t.referenceMonth === filters.referenceMonth);
           if (filters.categoryIds && filters.categoryIds.length > 0) {
-            order1 = order1.filter((t) =>
-              filters.categoryIds!.includes(t.categoryId ?? '')
-            );
+            order1 = order1.filter((t) => filters.categoryIds!.includes(t.categoryId ?? ''));
           }
           if (filters.minAmount != null) {
             order1 = order1.filter((t) => Math.abs(t.amount) >= filters.minAmount!);
@@ -376,9 +370,7 @@ describe('Property 6: Combined Filter Query Builder', () => {
             order2 = order2.filter((t) => Math.abs(t.amount) <= filters.maxAmount!);
           }
           if (filters.categoryIds && filters.categoryIds.length > 0) {
-            order2 = order2.filter((t) =>
-              filters.categoryIds!.includes(t.categoryId ?? '')
-            );
+            order2 = order2.filter((t) => filters.categoryIds!.includes(t.categoryId ?? ''));
           }
           order2 = order2.filter((t) => t.referenceMonth === filters.referenceMonth);
 

@@ -45,10 +45,7 @@ const categoryIdArb = fc.uuid();
 const transactionArb = (categoryPool: string[]): fc.Arbitrary<Transaction> =>
   fc.record({
     id: fc.uuid(),
-    categoryId: fc.oneof(
-      fc.constantFrom(...categoryPool),
-      fc.constant(null)
-    ),
+    categoryId: fc.oneof(fc.constantFrom(...categoryPool), fc.constant(null)),
     amount: fc.integer({ min: -9999999, max: 9999999 }).filter((a) => a !== 0),
     date: fc
       .integer({ min: 2020, max: 2030 })
@@ -59,8 +56,7 @@ const transactionArb = (categoryPool: string[]): fc.Arbitrary<Transaction> =>
             fc
               .integer({ min: 1, max: 28 })
               .map(
-                (day) =>
-                  `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`
+                (day) => `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`
               )
           )
       ),
@@ -79,12 +75,14 @@ describe('Property 2: Category Filter Correctness', () => {
     fc.assert(
       fc.property(
         // Generate a pool of category IDs first, then use them for transactions and filter
-        fc.array(categoryIdArb, { minLength: 2, maxLength: 8 }).chain((categoryPool) =>
-          fc.tuple(
-            fc.array(transactionArb(categoryPool), { minLength: 0, maxLength: 30 }),
-            fc.subarray(categoryPool, { minLength: 1 })
-          )
-        ),
+        fc
+          .array(categoryIdArb, { minLength: 2, maxLength: 8 })
+          .chain((categoryPool) =>
+            fc.tuple(
+              fc.array(transactionArb(categoryPool), { minLength: 0, maxLength: 30 }),
+              fc.subarray(categoryPool, { minLength: 1 })
+            )
+          ),
         ([transactions, filterCategoryIds]) => {
           const result = applyCategoryFilter(transactions, filterCategoryIds);
 
@@ -98,9 +96,7 @@ describe('Property 2: Category Filter Correctness', () => {
           const resultIds = new Set(result.map((t) => t.id));
           const excluded = transactions.filter((t) => !resultIds.has(t.id));
           for (const t of excluded) {
-            expect(
-              t.categoryId === null || !filterCategoryIds.includes(t.categoryId)
-            ).toBe(true);
+            expect(t.categoryId === null || !filterCategoryIds.includes(t.categoryId)).toBe(true);
           }
 
           // The result should be exactly the set of transactions with matching categoryId
@@ -117,9 +113,11 @@ describe('Property 2: Category Filter Correctness', () => {
   it('when filter is empty, all transactions pass through unfiltered', () => {
     fc.assert(
       fc.property(
-        fc.array(categoryIdArb, { minLength: 2, maxLength: 8 }).chain((categoryPool) =>
-          fc.array(transactionArb(categoryPool), { minLength: 0, maxLength: 30 })
-        ),
+        fc
+          .array(categoryIdArb, { minLength: 2, maxLength: 8 })
+          .chain((categoryPool) =>
+            fc.array(transactionArb(categoryPool), { minLength: 0, maxLength: 30 })
+          ),
         (transactions) => {
           // Empty array filter
           const resultEmpty = applyCategoryFilter(transactions, []);
@@ -137,12 +135,14 @@ describe('Property 2: Category Filter Correctness', () => {
   it('filter preserves original transaction order', () => {
     fc.assert(
       fc.property(
-        fc.array(categoryIdArb, { minLength: 2, maxLength: 8 }).chain((categoryPool) =>
-          fc.tuple(
-            fc.array(transactionArb(categoryPool), { minLength: 1, maxLength: 30 }),
-            fc.subarray(categoryPool, { minLength: 1 })
-          )
-        ),
+        fc
+          .array(categoryIdArb, { minLength: 2, maxLength: 8 })
+          .chain((categoryPool) =>
+            fc.tuple(
+              fc.array(transactionArb(categoryPool), { minLength: 1, maxLength: 30 }),
+              fc.subarray(categoryPool, { minLength: 1 })
+            )
+          ),
         ([transactions, filterCategoryIds]) => {
           const result = applyCategoryFilter(transactions, filterCategoryIds);
 
@@ -161,12 +161,14 @@ describe('Property 2: Category Filter Correctness', () => {
   it('transactions with null categoryId are always excluded when a non-empty filter is active', () => {
     fc.assert(
       fc.property(
-        fc.array(categoryIdArb, { minLength: 2, maxLength: 8 }).chain((categoryPool) =>
-          fc.tuple(
-            fc.array(transactionArb(categoryPool), { minLength: 0, maxLength: 30 }),
-            fc.subarray(categoryPool, { minLength: 1 })
-          )
-        ),
+        fc
+          .array(categoryIdArb, { minLength: 2, maxLength: 8 })
+          .chain((categoryPool) =>
+            fc.tuple(
+              fc.array(transactionArb(categoryPool), { minLength: 0, maxLength: 30 }),
+              fc.subarray(categoryPool, { minLength: 1 })
+            )
+          ),
         ([transactions, filterCategoryIds]) => {
           const result = applyCategoryFilter(transactions, filterCategoryIds);
 
@@ -183,12 +185,14 @@ describe('Property 2: Category Filter Correctness', () => {
   it('filter result count is always less than or equal to total transaction count', () => {
     fc.assert(
       fc.property(
-        fc.array(categoryIdArb, { minLength: 2, maxLength: 8 }).chain((categoryPool) =>
-          fc.tuple(
-            fc.array(transactionArb(categoryPool), { minLength: 0, maxLength: 30 }),
-            fc.subarray(categoryPool, { minLength: 1 })
-          )
-        ),
+        fc
+          .array(categoryIdArb, { minLength: 2, maxLength: 8 })
+          .chain((categoryPool) =>
+            fc.tuple(
+              fc.array(transactionArb(categoryPool), { minLength: 0, maxLength: 30 }),
+              fc.subarray(categoryPool, { minLength: 1 })
+            )
+          ),
         ([transactions, filterCategoryIds]) => {
           const result = applyCategoryFilter(transactions, filterCategoryIds);
           expect(result.length).toBeLessThanOrEqual(transactions.length);

@@ -170,10 +170,7 @@ describe('Feature: entry-title-and-dates, Property 12: Recurring Amount Update P
 
           // Step 2: Generate a transaction for a future month
           const futureMonth = advanceMonth(recurring.startMonth, monthsAhead);
-          const generated = simulateGenerateMonthlyTransactions(
-            [updatedRecurring],
-            futureMonth
-          );
+          const generated = simulateGenerateMonthlyTransactions([updatedRecurring], futureMonth);
 
           // Step 3: Verify the generated transaction uses the new amount
           expect(generated).toHaveLength(1);

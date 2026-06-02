@@ -56,9 +56,9 @@ describe('Property 2: Month advancement correctness', () => {
               expect(nextYear).toBe(currentYear);
             }
           }
-        },
+        }
       ),
-      { numRuns: 100 },
+      { numRuns: 100 }
     );
   });
 });

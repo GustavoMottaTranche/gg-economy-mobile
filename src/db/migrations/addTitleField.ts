@@ -144,9 +144,7 @@ export async function rollbackAddTitleField(): Promise<void> {
     );
     db.execSync(`CREATE INDEX \`idx_transactions_batch_id\` ON \`transactions\` (\`batch_id\`)`);
     db.execSync(`CREATE INDEX \`idx_transactions_date\` ON \`transactions\` (\`date\`)`);
-    db.execSync(
-      `CREATE INDEX \`idx_transactions_date_id\` ON \`transactions\` (\`date\`, \`id\`)`
-    );
+    db.execSync(`CREATE INDEX \`idx_transactions_date_id\` ON \`transactions\` (\`date\`, \`id\`)`);
     db.execSync(
       `CREATE INDEX \`idx_transactions_month_date\` ON \`transactions\` (\`reference_month\`, \`date\`)`
     );

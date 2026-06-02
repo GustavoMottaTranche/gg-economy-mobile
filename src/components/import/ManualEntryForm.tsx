@@ -146,7 +146,10 @@ const CategoryItem = memo(function CategoryItem({
       style={[
         styles.categoryItem,
         { borderBottomColor: colors.background.tertiary },
-        isSelected && [styles.categoryItemSelected, { backgroundColor: colors.semantic.primary.light }],
+        isSelected && [
+          styles.categoryItemSelected,
+          { backgroundColor: colors.semantic.primary.light },
+        ],
       ]}
       onPress={handlePress}
       activeOpacity={0.7}
@@ -165,7 +168,9 @@ const CategoryItem = memo(function CategoryItem({
       >
         {category.name}
       </Text>
-      {isSelected && <Text style={[styles.checkmark, { color: colors.interactive.primary }]}>✓</Text>}
+      {isSelected && (
+        <Text style={[styles.checkmark, { color: colors.interactive.primary }]}>✓</Text>
+      )}
     </TouchableOpacity>
   );
 });
@@ -411,18 +416,30 @@ function ManualEntryFormComponent({
       >
         {/* Header */}
         <View style={styles.header}>
-          <Text style={[styles.title, { color: colors.text.primary }]}>{t('manual.newTransaction')}</Text>
-          <Text style={[styles.subtitle, { color: colors.text.secondary }]}>{t('manual.title')}</Text>
+          <Text style={[styles.title, { color: colors.text.primary }]}>
+            {t('manual.newTransaction')}
+          </Text>
+          <Text style={[styles.subtitle, { color: colors.text.secondary }]}>
+            {t('manual.title')}
+          </Text>
         </View>
 
         {/* Date Field */}
         <View style={styles.fieldContainer}>
-          <Text style={[styles.fieldLabel, { color: colors.text.primary }]}>{t('transactions.date')} *</Text>
+          <Text style={[styles.fieldLabel, { color: colors.text.primary }]}>
+            {t('transactions.date')} *
+          </Text>
           <TouchableOpacity
             style={[
               styles.fieldInput,
               { backgroundColor: colors.background.secondary, borderColor: colors.border.default },
-              errors.date && [styles.fieldInputError, { borderColor: colors.semantic.danger.base, backgroundColor: colors.semantic.danger.light }],
+              errors.date && [
+                styles.fieldInputError,
+                {
+                  borderColor: colors.semantic.danger.base,
+                  backgroundColor: colors.semantic.danger.light,
+                },
+              ],
             ]}
             onPress={handleOpenDatePicker}
             activeOpacity={0.7}
@@ -430,11 +447,16 @@ function ManualEntryFormComponent({
             accessibilityLabel={t('manual.selectDate')}
             testID="date-picker-button"
           >
-            <Text style={[styles.fieldInputText, { color: colors.text.primary }]}>{formatDate(date, i18n.language)}</Text>
+            <Text style={[styles.fieldInputText, { color: colors.text.primary }]}>
+              {formatDate(date, i18n.language)}
+            </Text>
             <Text style={[styles.fieldIcon, { color: colors.text.secondary }]}>📅</Text>
           </TouchableOpacity>
           {errors.date && (
-            <Text style={[styles.errorText, { color: colors.semantic.danger.base }]} testID="date-error">
+            <Text
+              style={[styles.errorText, { color: colors.semantic.danger.base }]}
+              testID="date-error"
+            >
               {errors.date}
             </Text>
           )}
@@ -442,12 +464,22 @@ function ManualEntryFormComponent({
 
         {/* Amount Field */}
         <View style={styles.fieldContainer}>
-          <Text style={[styles.fieldLabel, { color: colors.text.primary }]}>{t('transactions.amount')} *</Text>
-          <View style={[
-            styles.amountInputContainer,
-            { backgroundColor: colors.background.secondary, borderColor: colors.border.default },
-            errors.amount && [styles.fieldInputError, { borderColor: colors.semantic.danger.base, backgroundColor: colors.semantic.danger.light }],
-          ]}>
+          <Text style={[styles.fieldLabel, { color: colors.text.primary }]}>
+            {t('transactions.amount')} *
+          </Text>
+          <View
+            style={[
+              styles.amountInputContainer,
+              { backgroundColor: colors.background.secondary, borderColor: colors.border.default },
+              errors.amount && [
+                styles.fieldInputError,
+                {
+                  borderColor: colors.semantic.danger.base,
+                  backgroundColor: colors.semantic.danger.light,
+                },
+              ],
+            ]}
+          >
             <Text style={[styles.currencySymbol, { color: colors.text.primary }]}>R$</Text>
             <TextInput
               style={[styles.amountInput, { color: colors.text.primary }]}
@@ -461,7 +493,10 @@ function ManualEntryFormComponent({
             />
           </View>
           {errors.amount && (
-            <Text style={[styles.errorText, { color: colors.semantic.danger.base }]} testID="amount-error">
+            <Text
+              style={[styles.errorText, { color: colors.semantic.danger.base }]}
+              testID="amount-error"
+            >
               {errors.amount}
             </Text>
           )}
@@ -472,9 +507,18 @@ function ManualEntryFormComponent({
 
         {/* Description Field */}
         <View style={styles.fieldContainer}>
-          <Text style={[styles.fieldLabel, { color: colors.text.primary }]}>{t('transactions.description')}</Text>
+          <Text style={[styles.fieldLabel, { color: colors.text.primary }]}>
+            {t('transactions.description')}
+          </Text>
           <TextInput
-            style={[styles.descriptionInput, { backgroundColor: colors.background.secondary, borderColor: colors.border.default, color: colors.text.primary }]}
+            style={[
+              styles.descriptionInput,
+              {
+                backgroundColor: colors.background.secondary,
+                borderColor: colors.border.default,
+                color: colors.text.primary,
+              },
+            ]}
             value={description}
             onChangeText={handleDescriptionChange}
             placeholder={t('manual.enterDescription')}
@@ -489,9 +533,14 @@ function ManualEntryFormComponent({
 
         {/* Category Field */}
         <View style={styles.fieldContainer}>
-          <Text style={[styles.fieldLabel, { color: colors.text.primary }]}>{t('transactions.category')}</Text>
+          <Text style={[styles.fieldLabel, { color: colors.text.primary }]}>
+            {t('transactions.category')}
+          </Text>
           <TouchableOpacity
-            style={[styles.fieldInput, { backgroundColor: colors.background.secondary, borderColor: colors.border.default }]}
+            style={[
+              styles.fieldInput,
+              { backgroundColor: colors.background.secondary, borderColor: colors.border.default },
+            ]}
             onPress={handleOpenCategoryModal}
             activeOpacity={0.7}
             accessibilityRole="button"
@@ -503,10 +552,14 @@ function ManualEntryFormComponent({
                 <View style={[styles.categoryIcon, { backgroundColor: selectedCategory.color }]}>
                   <Text style={styles.categoryIconText}>{selectedCategory.icon}</Text>
                 </View>
-                <Text style={[styles.fieldInputText, { color: colors.text.primary }]}>{selectedCategory.name}</Text>
+                <Text style={[styles.fieldInputText, { color: colors.text.primary }]}>
+                  {selectedCategory.name}
+                </Text>
               </View>
             ) : (
-              <Text style={[styles.placeholderText, { color: colors.text.tertiary }]}>{t('manual.selectCategory')}</Text>
+              <Text style={[styles.placeholderText, { color: colors.text.tertiary }]}>
+                {t('manual.selectCategory')}
+              </Text>
             )}
             <Text style={[styles.fieldIcon, { color: colors.text.secondary }]}>▼</Text>
           </TouchableOpacity>
@@ -524,11 +577,17 @@ function ManualEntryFormComponent({
           testID="cancel-button"
           disabled={isLoading}
         >
-          <Text style={[styles.cancelButtonText, { color: colors.text.primary }]}>{t('common.cancel')}</Text>
+          <Text style={[styles.cancelButtonText, { color: colors.text.primary }]}>
+            {t('common.cancel')}
+          </Text>
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={[styles.saveButton, { backgroundColor: colors.interactive.primary }, (hasErrors || isLoading) && styles.saveButtonDisabled]}
+          style={[
+            styles.saveButton,
+            { backgroundColor: colors.interactive.primary },
+            (hasErrors || isLoading) && styles.saveButtonDisabled,
+          ]}
           onPress={handleSave}
           activeOpacity={0.7}
           accessibilityRole="button"
@@ -539,7 +598,9 @@ function ManualEntryFormComponent({
           {isLoading ? (
             <ActivityIndicator size="small" color={colors.text.inverse} testID="save-loading" />
           ) : (
-            <Text style={[styles.saveButtonText, { color: colors.text.inverse }]}>{t('common.save')}</Text>
+            <Text style={[styles.saveButtonText, { color: colors.text.inverse }]}>
+              {t('common.save')}
+            </Text>
           )}
         </TouchableOpacity>
       </View>
@@ -555,9 +616,13 @@ function ManualEntryFormComponent({
           >
             <View style={styles.datePickerModal}>
               <View style={[styles.datePickerContainer, { backgroundColor: colors.surface.card }]}>
-                <View style={[styles.datePickerHeader, { borderBottomColor: colors.border.default }]}>
+                <View
+                  style={[styles.datePickerHeader, { borderBottomColor: colors.border.default }]}
+                >
                   <TouchableOpacity onPress={handleCloseDatePicker}>
-                    <Text style={[styles.datePickerDone, { color: colors.interactive.primary }]}>{t('common.done')}</Text>
+                    <Text style={[styles.datePickerDone, { color: colors.interactive.primary }]}>
+                      {t('common.done')}
+                    </Text>
                   </TouchableOpacity>
                 </View>
                 <DateTimePicker
@@ -592,8 +657,12 @@ function ManualEntryFormComponent({
       >
         <View style={styles.categoryModal}>
           <View style={[styles.categoryModalContent, { backgroundColor: colors.surface.card }]}>
-            <View style={[styles.categoryModalHeader, { borderBottomColor: colors.border.default }]}>
-              <Text style={[styles.categoryModalTitle, { color: colors.text.primary }]}>{t('manual.selectCategory')}</Text>
+            <View
+              style={[styles.categoryModalHeader, { borderBottomColor: colors.border.default }]}
+            >
+              <Text style={[styles.categoryModalTitle, { color: colors.text.primary }]}>
+                {t('manual.selectCategory')}
+              </Text>
               <TouchableOpacity
                 onPress={handleCloseCategoryModal}
                 accessibilityRole="button"
@@ -615,7 +684,9 @@ function ManualEntryFormComponent({
               />
             ) : (
               <View style={styles.emptyCategoryContainer}>
-                <Text style={[styles.emptyCategoryText, { color: colors.text.secondary }]}>{t('categories.noCategories')}</Text>
+                <Text style={[styles.emptyCategoryText, { color: colors.text.secondary }]}>
+                  {t('categories.noCategories')}
+                </Text>
               </View>
             )}
 
@@ -650,12 +721,19 @@ function ManualEntryFormComponent({
         <View style={styles.duplicateModal}>
           <View style={[styles.duplicateModalContent, { backgroundColor: colors.surface.card }]}>
             {/* Warning Icon */}
-            <View style={[styles.duplicateWarningIcon, { backgroundColor: colors.semantic.warning.light }]}>
+            <View
+              style={[
+                styles.duplicateWarningIcon,
+                { backgroundColor: colors.semantic.warning.light },
+              ]}
+            >
               <Text style={styles.duplicateWarningIconText}>⚠️</Text>
             </View>
 
             {/* Title */}
-            <Text style={[styles.duplicateModalTitle, { color: colors.text.primary }]}>{t('manual.duplicateWarning.title')}</Text>
+            <Text style={[styles.duplicateModalTitle, { color: colors.text.primary }]}>
+              {t('manual.duplicateWarning.title')}
+            </Text>
 
             {/* Description */}
             <Text style={[styles.duplicateModalDescription, { color: colors.text.secondary }]}>
@@ -664,18 +742,30 @@ function ManualEntryFormComponent({
 
             {/* Existing Transaction Info */}
             {existingTransactionInfo && (
-              <View style={[styles.existingTransactionCard, { backgroundColor: colors.background.secondary, borderColor: colors.border.default }]}>
+              <View
+                style={[
+                  styles.existingTransactionCard,
+                  {
+                    backgroundColor: colors.background.secondary,
+                    borderColor: colors.border.default,
+                  },
+                ]}
+              >
                 <Text style={[styles.existingTransactionLabel, { color: colors.text.secondary }]}>
                   {t('manual.duplicateWarning.existingTransaction')}
                 </Text>
                 <View style={styles.existingTransactionRow}>
-                  <Text style={[styles.existingTransactionField, { color: colors.text.secondary }]}>{t('transactions.date')}:</Text>
+                  <Text style={[styles.existingTransactionField, { color: colors.text.secondary }]}>
+                    {t('transactions.date')}:
+                  </Text>
                   <Text style={[styles.existingTransactionValue, { color: colors.text.primary }]}>
                     {existingTransactionInfo.date}
                   </Text>
                 </View>
                 <View style={styles.existingTransactionRow}>
-                  <Text style={[styles.existingTransactionField, { color: colors.text.secondary }]}>{t('transactions.amount')}:</Text>
+                  <Text style={[styles.existingTransactionField, { color: colors.text.secondary }]}>
+                    {t('transactions.amount')}:
+                  </Text>
                   <Text style={[styles.existingTransactionValue, { color: colors.text.primary }]}>
                     {existingTransactionInfo.amount}
                   </Text>
@@ -684,11 +774,19 @@ function ManualEntryFormComponent({
                   <Text style={[styles.existingTransactionField, { color: colors.text.secondary }]}>
                     {t('transactions.description')}:
                   </Text>
-                  <Text style={[styles.existingTransactionValue, { color: colors.text.primary }]} numberOfLines={2}>
+                  <Text
+                    style={[styles.existingTransactionValue, { color: colors.text.primary }]}
+                    numberOfLines={2}
+                  >
                     {existingTransactionInfo.description || '-'}
                   </Text>
                 </View>
-                <View style={[styles.confidenceBadge, { backgroundColor: colors.semantic.warning.light }]}>
+                <View
+                  style={[
+                    styles.confidenceBadge,
+                    { backgroundColor: colors.semantic.warning.light },
+                  ]}
+                >
                   <Text style={[styles.confidenceText, { color: colors.semantic.warning.dark }]}>
                     {t('manual.duplicateWarning.confidence', {
                       percent: existingTransactionInfo.confidence,
@@ -701,16 +799,24 @@ function ManualEntryFormComponent({
             {/* Action Buttons */}
             <View style={styles.duplicateModalActions}>
               <TouchableOpacity
-                style={[styles.duplicateCancelButton, { backgroundColor: colors.background.tertiary }]}
+                style={[
+                  styles.duplicateCancelButton,
+                  { backgroundColor: colors.background.tertiary },
+                ]}
                 onPress={onCancelDuplicate}
                 activeOpacity={0.7}
                 testID="duplicate-cancel-button"
               >
-                <Text style={[styles.duplicateCancelButtonText, { color: colors.text.primary }]}>{t('common.cancel')}</Text>
+                <Text style={[styles.duplicateCancelButtonText, { color: colors.text.primary }]}>
+                  {t('common.cancel')}
+                </Text>
               </TouchableOpacity>
 
               <TouchableOpacity
-                style={[styles.duplicateSaveButton, { backgroundColor: colors.semantic.warning.base }]}
+                style={[
+                  styles.duplicateSaveButton,
+                  { backgroundColor: colors.semantic.warning.base },
+                ]}
                 onPress={onConfirmDuplicate}
                 activeOpacity={0.7}
                 testID="duplicate-save-anyway-button"
@@ -921,8 +1027,7 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.md,
     borderBottomWidth: 1,
   },
-  categoryItemSelected: {
-  },
+  categoryItemSelected: {},
   categoryName: {
     flex: 1,
     fontSize: 16,

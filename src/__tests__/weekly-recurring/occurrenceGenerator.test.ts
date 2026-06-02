@@ -176,7 +176,11 @@ describe('OccurrenceGenerator', () => {
       expect(occRepo.create).toHaveBeenCalled();
       // group-2 has dayOfWeek=3 (Wednesday), January 2024 has 5 Wednesdays
       const createCalls = (occRepo.create as jest.Mock).mock.calls;
-      expect(createCalls.every((call: unknown[]) => (call[0] as { weeklyGroupId: string }).weeklyGroupId === 'group-2')).toBe(true);
+      expect(
+        createCalls.every(
+          (call: unknown[]) => (call[0] as { weeklyGroupId: string }).weeklyGroupId === 'group-2'
+        )
+      ).toBe(true);
     });
 
     it('should log error when a group fails', async () => {
@@ -258,9 +262,11 @@ describe('OccurrenceGenerator', () => {
 
       // First two Mondays already exist
       const occRepo = createMockOccurrenceRepository({
-        existsForGroupAndDate: jest.fn().mockImplementation(async (_groupId: string, date: string) => {
-          return date === '2024-01-01' || date === '2024-01-08';
-        }),
+        existsForGroupAndDate: jest
+          .fn()
+          .mockImplementation(async (_groupId: string, date: string) => {
+            return date === '2024-01-01' || date === '2024-01-08';
+          }),
       });
 
       const generator = new OccurrenceGenerator({

@@ -82,9 +82,8 @@ export const useThemeStore = create<ThemeState>((set, get) => ({
   preference: 'system',
   resolvedScheme: Appearance.getColorScheme() === 'dark' ? 'dark' : 'light',
   setPreference: (pref) => {
-    const resolved = pref === 'system'
-      ? (Appearance.getColorScheme() === 'dark' ? 'dark' : 'light')
-      : pref;
+    const resolved =
+      pref === 'system' ? (Appearance.getColorScheme() === 'dark' ? 'dark' : 'light') : pref;
     set({ preference: pref, resolvedScheme: resolved });
   },
 }));
@@ -148,7 +147,7 @@ interface SemanticColors {
 }
 
 interface NeutralScale {
-  readonly 0: string;    // white / near-black
+  readonly 0: string; // white / near-black
   readonly 50: string;
   readonly 100: string;
   readonly 200: string;
@@ -158,7 +157,7 @@ interface NeutralScale {
   readonly 600: string;
   readonly 700: string;
   readonly 800: string;
-  readonly 900: string;  // near-black / white
+  readonly 900: string; // near-black / white
 }
 
 interface ModeColors {
@@ -208,12 +207,12 @@ interface TypographyLevel {
 }
 
 export interface TypographyScale {
-  readonly display: TypographyLevel;   // 34px, 700
-  readonly heading: TypographyLevel;   // 28px, 700
-  readonly title: TypographyLevel;     // 22px, 600
-  readonly body: TypographyLevel;      // 16px, 400
-  readonly caption: TypographyLevel;   // 13px, 400
-  readonly overline: TypographyLevel;  // 11px, 500
+  readonly display: TypographyLevel; // 34px, 700
+  readonly heading: TypographyLevel; // 28px, 700
+  readonly title: TypographyLevel; // 22px, 600
+  readonly body: TypographyLevel; // 16px, 400
+  readonly caption: TypographyLevel; // 13px, 400
+  readonly overline: TypographyLevel; // 11px, 500
 }
 ```
 
@@ -289,10 +288,10 @@ export function TabBarIcon({ name, focused, color, size = 24 }: TabBarIconProps)
 ```typescript
 // Complete theme export structure
 export const theme = {
-  colors,       // ThemeColors (light + dark palettes)
-  typography,   // TypographyScale
-  spacing,      // SpacingScale
-  shadows,      // ShadowSystem
+  colors, // ThemeColors (light + dark palettes)
+  typography, // TypographyScale
+  spacing, // SpacingScale
+  shadows, // ShadowSystem
   borderRadius, // BorderRadiusScale
 } as const;
 
@@ -381,7 +380,9 @@ const darkColors: ModeColors = {
       light: '#1E3A5F',
       base: '#60A5FA',
       dark: '#93C5FD',
-      scale: { /* adjusted for dark mode */ },
+      scale: {
+        /* adjusted for dark mode */
+      },
     },
     success: { light: '#064E3B', base: '#34D399', dark: '#6EE7B7' },
     danger: { light: '#7F1D1D', base: '#F87171', dark: '#FCA5A5' },
@@ -406,11 +407,11 @@ const darkColors: ModeColors = {
 
 ```typescript
 export const typography: TypographyScale = {
-  display:  { fontSize: 34, fontWeight: '700', lineHeight: 41 },  // 1.2x
-  heading:  { fontSize: 28, fontWeight: '700', lineHeight: 36 },  // 1.29x
-  title:    { fontSize: 22, fontWeight: '600', lineHeight: 30 },  // 1.36x
-  body:     { fontSize: 16, fontWeight: '400', lineHeight: 24 },  // 1.5x
-  caption:  { fontSize: 13, fontWeight: '400', lineHeight: 18 },  // 1.38x
+  display: { fontSize: 34, fontWeight: '700', lineHeight: 41 }, // 1.2x
+  heading: { fontSize: 28, fontWeight: '700', lineHeight: 36 }, // 1.29x
+  title: { fontSize: 22, fontWeight: '600', lineHeight: 30 }, // 1.36x
+  body: { fontSize: 16, fontWeight: '400', lineHeight: 24 }, // 1.5x
+  caption: { fontSize: 13, fontWeight: '400', lineHeight: 18 }, // 1.38x
   overline: { fontSize: 11, fontWeight: '500', lineHeight: 16, letterSpacing: 0.5 }, // 1.45x
 } as const;
 ```
@@ -485,53 +486,53 @@ export const shadows: ShadowSystem = {
 
 ## Correctness Properties
 
-*A property is a characteristic or behavior that should hold true across all valid executions of a system — essentially, a formal statement about what the system should do. Properties serve as the bridge between human-readable specifications and machine-verifiable correctness guarantees.*
+_A property is a characteristic or behavior that should hold true across all valid executions of a system — essentially, a formal statement about what the system should do. Properties serve as the bridge between human-readable specifications and machine-verifiable correctness guarantees._
 
 ### Property 1: Color palette completeness
 
-*For any* semantic color name (primary, secondary, success, danger, warning, info) and *for any* variant (light, base, dark) and *for any* mode (light, dark), the Color_Palette SHALL return a valid 6-digit hex color string matching the pattern `/^#[0-9A-Fa-f]{6}$/`.
+_For any_ semantic color name (primary, secondary, success, danger, warning, info) and _for any_ variant (light, base, dark) and _for any_ mode (light, dark), the Color_Palette SHALL return a valid 6-digit hex color string matching the pattern `/^#[0-9A-Fa-f]{6}$/`.
 
 **Validates: Requirements 1.1**
 
 ### Property 2: Dark mode color selection
 
-*For any* color token path, when the resolved scheme is 'dark', the value returned by `useThemeColors()` SHALL equal the corresponding value in the dark mode palette, and when the resolved scheme is 'light', it SHALL equal the light mode palette value.
+_For any_ color token path, when the resolved scheme is 'dark', the value returned by `useThemeColors()` SHALL equal the corresponding value in the dark mode palette, and when the resolved scheme is 'light', it SHALL equal the light mode palette value.
 
 **Validates: Requirements 2.1**
 
 ### Property 3: Dark mode luminance constraints
 
-*For any* background color in the dark mode palette, the relative luminance SHALL be ≤ 0.05. *For any* primary text color in the dark mode palette, the relative luminance SHALL be ≥ 0.8.
+_For any_ background color in the dark mode palette, the relative luminance SHALL be ≤ 0.05. _For any_ primary text color in the dark mode palette, the relative luminance SHALL be ≥ 0.8.
 
 **Validates: Requirements 2.2**
 
 ### Property 4: Shadow opacity reduction in dark mode
 
-*For any* shadow level (sm, md, lg), the dark mode shadowOpacity SHALL be at most 50% of the corresponding light mode shadowOpacity.
+_For any_ shadow level (sm, md, lg), the dark mode shadowOpacity SHALL be at most 50% of the corresponding light mode shadowOpacity.
 
 **Validates: Requirements 2.3**
 
 ### Property 5: WCAG contrast compliance
 
-*For any* text color and its corresponding background color in either light or dark mode, the WCAG 2.1 contrast ratio SHALL be ≥ 4.5:1. *For any* interactive/graphic element color against its background, the contrast ratio SHALL be ≥ 3:1.
+_For any_ text color and its corresponding background color in either light or dark mode, the WCAG 2.1 contrast ratio SHALL be ≥ 4.5:1. _For any_ interactive/graphic element color against its background, the contrast ratio SHALL be ≥ 3:1.
 
 **Validates: Requirements 2.5, 3.3**
 
 ### Property 6: Primary color progressive luminosity
 
-*For any* two primary color scale variants where variant index A < variant index B (e.g., 50 < 100 < 200 ... < 900), the relative luminance of variant A SHALL be strictly greater than the relative luminance of variant B.
+_For any_ two primary color scale variants where variant index A < variant index B (e.g., 50 < 100 < 200 ... < 900), the relative luminance of variant A SHALL be strictly greater than the relative luminance of variant B.
 
 **Validates: Requirements 3.1**
 
 ### Property 7: Typography scale validity
 
-*For any* typography level in the scale: (a) fontSize SHALL be between 11 and 34 inclusive, (b) fontWeight SHALL be one of '400', '500', '600', '700', (c) lineHeight/fontSize ratio SHALL be between 1.2 and 1.6 inclusive. Additionally, *for any* two adjacent levels in the hierarchy (display > heading > title > body > caption > overline), the fontSize difference SHALL be ≥ 2px.
+_For any_ typography level in the scale: (a) fontSize SHALL be between 11 and 34 inclusive, (b) fontWeight SHALL be one of '400', '500', '600', '700', (c) lineHeight/fontSize ratio SHALL be between 1.2 and 1.6 inclusive. Additionally, _for any_ two adjacent levels in the hierarchy (display > heading > title > body > caption > overline), the fontSize difference SHALL be ≥ 2px.
 
 **Validates: Requirements 1.2, 4.2, 4.3**
 
 ### Property 8: Spacing scale multiples
 
-*For any* value in the Spacing_Scale, the value SHALL be a positive multiple of 4.
+_For any_ value in the Spacing_Scale, the value SHALL be a positive multiple of 4.
 
 **Validates: Requirements 1.3**
 
@@ -558,12 +559,14 @@ function getToken<T>(obj: Record<string, T>, key: string, fallback: T): T {
 ### Appearance API Failure
 
 If `Appearance.getColorScheme()` returns `null` (rare edge case on some Android devices):
+
 - Default to `'light'` mode
 - Log a warning in development
 
 ### Theme Store Persistence
 
 If AsyncStorage fails to load the saved theme preference:
+
 - Default to `'system'` preference
 - The app functions normally with system-detected scheme
 - Retry persistence on next preference change
@@ -575,6 +578,7 @@ If AsyncStorage fails to load the saved theme preference:
 The project already has `fast-check` installed. Property-based tests will validate the correctness properties defined above.
 
 **Configuration:**
+
 - Minimum 100 iterations per property test
 - Each test tagged with: `Feature: ui-style-improvements, Property {N}: {description}`
 - Tests located in `src/constants/__tests__/theme.test.ts`
@@ -582,6 +586,7 @@ The project already has `fast-check` installed. Property-based tests will valida
 **Library:** `fast-check` (already in devDependencies)
 
 **Properties to test:**
+
 1. Color palette completeness — generate random (semanticColor, variant, mode) tuples
 2. Dark mode selection — mock Appearance API, verify correct palette returned
 3. Dark mode luminance — compute relative luminance for all dark mode colors

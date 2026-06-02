@@ -172,10 +172,9 @@ describe('Property 3: HTTP Error Code Mapping', () => {
   /**
    * Arbitrary for generating response body strings.
    */
-  const responseBodyArb = fc.option(
-    fc.string({ minLength: 1, maxLength: 200 }),
-    { nil: undefined }
-  );
+  const responseBodyArb = fc.option(fc.string({ minLength: 1, maxLength: 200 }), {
+    nil: undefined,
+  });
 
   it('should map 401 to AUTH_FAILED for any response body', () => {
     fc.assert(
@@ -353,20 +352,16 @@ describe('Property 7: Backup List Sorting', () => {
         minLength: count,
         maxLength: count,
       })
-      .map((offsets) =>
-        offsets.map((offset) => new Date(946684800000 + offset).toISOString())
-      );
+      .map((offsets) => offsets.map((offset) => new Date(946684800000 + offset).toISOString()));
 
   /**
    * Arbitrary for generating valid filenames
    */
   const filenameArb = fc
-    .array(
-      fc.constantFrom(
-        ...'abcdefghijklmnopqrstuvwxyz0123456789-_'.split('')
-      ),
-      { minLength: 1, maxLength: 30 }
-    )
+    .array(fc.constantFrom(...'abcdefghijklmnopqrstuvwxyz0123456789-_'.split('')), {
+      minLength: 1,
+      maxLength: 30,
+    })
     .map((chars) => chars.join('') + '.db');
 
   /**
@@ -450,9 +445,7 @@ describe('Property 7: Backup List Sorting', () => {
         const originalTimestamps = unsortedBackups
           .map((b: ServerBackupMetadata) => b.createdAt)
           .sort();
-        const resultTimestamps = result
-          .map((b: ServerBackupMetadata) => b.createdAt)
-          .sort();
+        const resultTimestamps = result.map((b: ServerBackupMetadata) => b.createdAt).sort();
         expect(resultTimestamps).toEqual(originalTimestamps);
       }),
       { numRuns: 100 }
@@ -488,7 +481,6 @@ describe('Property 7: Backup List Sorting', () => {
   });
 });
 
-
 /**
  * Property 1: Required Headers Invariant
  *
@@ -506,13 +498,12 @@ describe('Property 1: Required Headers Invariant', () => {
    * Ensures serverUrl starts with http:// or https://, and apiKey/deviceId are non-empty.
    */
   const serverUrlArb = fc
-    .tuple(
-      fc.constantFrom('http://', 'https://'),
-      fc.stringMatching(/^[a-z][a-z0-9.-]{0,49}$/)
-    )
+    .tuple(fc.constantFrom('http://', 'https://'), fc.stringMatching(/^[a-z][a-z0-9.-]{0,49}$/))
     .map(([scheme, host]) => `${scheme}${host}`);
 
-  const nonEmptyStringArb = fc.string({ minLength: 1, maxLength: 64 }).filter((s) => s.trim().length > 0);
+  const nonEmptyStringArb = fc
+    .string({ minLength: 1, maxLength: 64 })
+    .filter((s) => s.trim().length > 0);
 
   const customServerConfigArb = fc.record({
     serverUrl: serverUrlArb,
@@ -614,7 +605,11 @@ describe('Property 1: Required Headers Invariant', () => {
             }
             return Promise.resolve({
               status: 200,
-              body: JSON.stringify({ filename: 'backup.db', timestamp: '2025-01-01T00:00:00Z', sizeBytes: 1024 }),
+              body: JSON.stringify({
+                filename: 'backup.db',
+                timestamp: '2025-01-01T00:00:00Z',
+                sizeBytes: 1024,
+              }),
               headers: {},
             });
           }

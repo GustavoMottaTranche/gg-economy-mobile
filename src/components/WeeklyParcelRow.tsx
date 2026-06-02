@@ -124,11 +124,7 @@ function WeeklyParcelRowComponent({
 
       <View style={styles.contentContainer}>
         <Text
-          style={[
-            styles.dateText,
-            dynamicStyles.dateText,
-            isPaid && styles.dateTextPaid,
-          ]}
+          style={[styles.dateText, dynamicStyles.dateText, isPaid && styles.dateTextPaid]}
           testID={testID ? `${testID}-date` : undefined}
         >
           {formattedDate}

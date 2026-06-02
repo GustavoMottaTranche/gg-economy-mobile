@@ -97,6 +97,7 @@ function toReviewTransaction(
     duplicateOf: txRecord.duplicateOf,
     installmentGroupId: txRecord.installmentGroupId ?? null,
     recurringId: txRecord.recurringId ?? null,
+    isPaid: txRecord.isPaid ?? false,
     createdAt: new Date(txRecord.createdAt),
     updatedAt: new Date(txRecord.updatedAt),
     category: catRecord

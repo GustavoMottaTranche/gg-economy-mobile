@@ -1,10 +1,8 @@
 /**
- * RestoreService - Database restore operations from Google Drive backups
+ * RestoreService - Database restore operations
  *
- * Implements backup listing, download, and database restoration with
- * Drizzle migration support.
- *
- * **Validates: Requirements 10, 29, 32**
+ * Handles backup validation and database restoration with
+ * Drizzle migration support. No external service dependency.
  *
  * @module services/backup/RestoreService
  */
@@ -12,16 +10,12 @@
 import * as FileSystem from 'expo-file-system/legacy';
 import { DATABASE_NAME, resetDbClient, getExpoDatabase } from '../../db/client';
 import { runMigrations, getCurrentSchemaVersion } from '../../db/migrate';
-import { oAuthService, OAuthError } from './OAuthService';
-import { googleDriveClient, DriveError } from './GoogleDriveClient';
-import { parseBackupTimestamp } from './BackupService';
-import type { BackupMetadata, RestoreResult } from '../../types/backup';
+import type { RestoreResult } from '../../types/backup';
 
 /**
  * Error types for restore operations
  */
 export type RestoreErrorCode =
-  | 'NOT_AUTHENTICATED'
   | 'BACKUP_NOT_FOUND'
   | 'DOWNLOAD_FAILED'
   | 'RESTORE_FAILED'
@@ -69,8 +63,6 @@ export interface RestoreOptions {
  * RestoreService for database restore operations
  */
 export class RestoreService {
-  private backupsFolderId: string | null = null;
-
   /**
    * Get the path to the SQLite database file
    */
@@ -83,151 +75,6 @@ export class RestoreService {
    */
   getRestoreTempPath(fileName: string): string {
     return `${FileSystem.cacheDirectory}${fileName}`;
-  }
-
-  /**
-   * List available backups from Google Drive
-   *
-   * @returns Array of backup metadata sorted by creation date (newest first)
-   */
-  async listBackups(onProgress?: RestoreProgressCallback): Promise<BackupMetadata[]> {
-    onProgress?.({
-      stage: 'listing',
-      progress: 0,
-      message: 'Connecting to Google Drive...',
-    });
-
-    const accessToken = await oAuthService.getAccessToken();
-    if (!accessToken) {
-      throw new RestoreError(
-        'Not authenticated with Google Drive. Please sign in first.',
-        'NOT_AUTHENTICATED'
-      );
-    }
-
-    try {
-      onProgress?.({
-        stage: 'listing',
-        progress: 0.3,
-        message: 'Finding backup folder...',
-      });
-
-      // Ensure backup folder exists
-      if (!this.backupsFolderId) {
-        this.backupsFolderId = await googleDriveClient.ensureBackupFolder(accessToken);
-      }
-
-      onProgress?.({
-        stage: 'listing',
-        progress: 0.6,
-        message: 'Fetching backup list...',
-      });
-
-      const files = await googleDriveClient.listBackups(accessToken, this.backupsFolderId);
-
-      onProgress?.({
-        stage: 'listing',
-        progress: 1,
-        message: `Found ${files.length} backup(s)`,
-      });
-
-      // Convert to BackupMetadata and sort by date (newest first)
-      return files
-        .map((file) => {
-          const timestamp = parseBackupTimestamp(file.name);
-          return {
-            id: file.id,
-            fileName: file.name,
-            createdAt: timestamp ?? (file.createdTime ? new Date(file.createdTime) : new Date()),
-            sizeBytes: file.size ? parseInt(file.size, 10) : 0,
-            schemaVersion: 1, // TODO: Extract from backup metadata
-          };
-        })
-        .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
-    } catch (error) {
-      if (error instanceof OAuthError) {
-        throw new RestoreError(
-          'Authentication error. Please sign in again.',
-          'NOT_AUTHENTICATED',
-          error
-        );
-      }
-      if (error instanceof DriveError) {
-        if (error.code === 'AUTH_ERROR') {
-          throw new RestoreError(
-            'Authentication expired. Please sign in again.',
-            'NOT_AUTHENTICATED',
-            error
-          );
-        }
-        throw new RestoreError(error.message, 'NETWORK_ERROR', error);
-      }
-      throw new RestoreError('Failed to list backups', 'NETWORK_ERROR', error);
-    }
-  }
-
-  /**
-   * Download a backup file from Google Drive
-   *
-   * @param backupId - Google Drive file ID
-   * @param onProgress - Progress callback
-   * @returns Local path to downloaded file
-   */
-  async downloadBackup(backupId: string, onProgress?: RestoreProgressCallback): Promise<string> {
-    onProgress?.({
-      stage: 'downloading',
-      progress: 0,
-      message: 'Preparing download...',
-    });
-
-    const accessToken = await oAuthService.getAccessToken();
-    if (!accessToken) {
-      throw new RestoreError('Not authenticated with Google Drive', 'NOT_AUTHENTICATED');
-    }
-
-    const localPath = this.getRestoreTempPath(`restore-${Date.now()}.db`);
-
-    try {
-      onProgress?.({
-        stage: 'downloading',
-        progress: 0.1,
-        message: 'Downloading backup...',
-      });
-
-      await googleDriveClient.downloadFile(accessToken, backupId, localPath, (progress) => {
-        onProgress?.({
-          stage: 'downloading',
-          progress: 0.1 + progress * 0.9,
-          message: `Downloading... ${Math.round(progress * 100)}%`,
-        });
-      });
-
-      onProgress?.({
-        stage: 'downloading',
-        progress: 1,
-        message: 'Download complete',
-      });
-
-      return localPath;
-    } catch (error) {
-      if (error instanceof DriveError) {
-        if (error.code === 'AUTH_ERROR') {
-          throw new RestoreError(
-            'Authentication expired. Please sign in again.',
-            'NOT_AUTHENTICATED',
-            error
-          );
-        }
-        if (error.code === 'NOT_FOUND') {
-          throw new RestoreError(
-            'Backup file not found. It may have been deleted.',
-            'BACKUP_NOT_FOUND',
-            error
-          );
-        }
-      }
-      throw new RestoreError('Failed to download backup', 'DOWNLOAD_FAILED', error);
-    }
   }
 
   /**
@@ -429,70 +276,10 @@ export class RestoreService {
   }
 
   /**
-   * Perform a complete restore operation from a backup
-   *
-   * This is the main entry point for restore operations.
-   * It handles the full flow: download, validate, restore.
-   *
-   * @param backupId - Google Drive file ID of the backup
-   * @param options - Restore options
-   * @returns RestoreResult with success status and details
-   */
-  async restoreFromBackup(backupId: string, options: RestoreOptions = {}): Promise<RestoreResult> {
-    const { onProgress } = options;
-    let tempPath: string | null = null;
-
-    try {
-      // Step 1: Download backup
-      tempPath = await this.downloadBackup(backupId, onProgress);
-
-      // Step 2: Validate backup
-      await this.validateBackup(tempPath, onProgress);
-
-      // Step 3: Restore database
-      const result = await this.restoreDatabase(tempPath, onProgress);
-
-      return result;
-    } catch (error) {
-      const errorMessage =
-        error instanceof RestoreError
-          ? error.message
-          : error instanceof Error
-            ? error.message
-            : 'Unknown error occurred';
-
-      return {
-        success: false,
-        errorMessage,
-      };
-    } finally {
-      // Clean up temp file
-      if (tempPath) {
-        try {
-          await FileSystem.deleteAsync(tempPath, { idempotent: true });
-        } catch {
-          // Ignore cleanup errors
-        }
-      }
-    }
-  }
-
-  /**
-   * Get backup details by ID
-   *
-   * @param backupId - Google Drive file ID
-   * @returns BackupMetadata or null if not found
-   */
-  async getBackupDetails(backupId: string): Promise<BackupMetadata | null> {
-    const backups = await this.listBackups();
-    return backups.find((b) => b.id === backupId) ?? null;
-  }
-
-  /**
-   * Clear cached folder ID (useful for testing or after sign out)
+   * Clear cached state (useful for testing)
    */
   clearCache(): void {
-    this.backupsFolderId = null;
+    // No-op, kept for API compatibility
   }
 }
 

@@ -64,11 +64,7 @@ describe('filterStore', () => {
         useFilterStore.getState().setCategoryIds(['cat-1', 'cat-2', 'cat-3']);
       });
 
-      expect(useFilterStore.getState().filters.categoryIds).toEqual([
-        'cat-1',
-        'cat-2',
-        'cat-3',
-      ]);
+      expect(useFilterStore.getState().filters.categoryIds).toEqual(['cat-1', 'cat-2', 'cat-3']);
     });
 
     it('replaces existing category IDs', () => {
@@ -79,10 +75,7 @@ describe('filterStore', () => {
         useFilterStore.getState().setCategoryIds(['cat-2', 'cat-3']);
       });
 
-      expect(useFilterStore.getState().filters.categoryIds).toEqual([
-        'cat-2',
-        'cat-3',
-      ]);
+      expect(useFilterStore.getState().filters.categoryIds).toEqual(['cat-2', 'cat-3']);
     });
 
     it('clears categories when set to empty array', () => {
@@ -125,10 +118,7 @@ describe('filterStore', () => {
         useFilterStore.getState().toggleCategory('cat-2');
       });
 
-      expect(useFilterStore.getState().filters.categoryIds).toEqual([
-        'cat-1',
-        'cat-2',
-      ]);
+      expect(useFilterStore.getState().filters.categoryIds).toEqual(['cat-1', 'cat-2']);
 
       act(() => {
         useFilterStore.getState().toggleCategory('cat-1');

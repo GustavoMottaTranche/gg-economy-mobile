@@ -457,8 +457,8 @@
     "noCategories": "Nenhuma categoria encontrada",
     "deleteConfirmation": "Tem certeza que deseja excluir esta categoria?",
     "cannotDelete": "Esta categoria não pode ser excluída pois possui transações associadas",
-    "expenseGroup": "Grupo de despesa",
-    "fixedCost": "Custo Fixo",
+    "expenseGroup": "Tipo de custo",
+    "fixedCost": "Fixo",
     "variableCost": "Variável",
     "filterAll": "Todos"
   },

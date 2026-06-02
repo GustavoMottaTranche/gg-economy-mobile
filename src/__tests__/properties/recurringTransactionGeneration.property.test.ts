@@ -119,133 +119,101 @@ describe('Feature: entry-title-and-dates, Property 8: Recurring Transaction Gene
 
   it('generates a transaction for targetMonth >= startMonth', () => {
     fc.assert(
-      fc.property(
-        recurringArbitrary,
-        monthArbitrary,
-        (recurring, randomMonth) => {
-          // Ensure targetMonth >= startMonth by picking the later of the two
-          const targetMonth =
-            randomMonth >= recurring.startMonth ? randomMonth : recurring.startMonth;
+      fc.property(recurringArbitrary, monthArbitrary, (recurring, randomMonth) => {
+        // Ensure targetMonth >= startMonth by picking the later of the two
+        const targetMonth =
+          randomMonth >= recurring.startMonth ? randomMonth : recurring.startMonth;
 
-          const generated = simulateGenerateMonthlyTransactions(
-            [recurring],
-            targetMonth
-          );
+        const generated = simulateGenerateMonthlyTransactions([recurring], targetMonth);
 
-          // Should generate exactly one transaction
-          expect(generated).toHaveLength(1);
-          expect(generated[0]!.title).toBe(recurring.title);
-          expect(generated[0]!.amount).toBe(recurring.amount);
-          expect(generated[0]!.categoryId).toBe(recurring.categoryId);
-          expect(generated[0]!.referenceMonth).toBe(targetMonth);
-          expect(generated[0]!.recurringId).toBe(recurring.id);
-        }
-      ),
+        // Should generate exactly one transaction
+        expect(generated).toHaveLength(1);
+        expect(generated[0]!.title).toBe(recurring.title);
+        expect(generated[0]!.amount).toBe(recurring.amount);
+        expect(generated[0]!.categoryId).toBe(recurring.categoryId);
+        expect(generated[0]!.referenceMonth).toBe(targetMonth);
+        expect(generated[0]!.recurringId).toBe(recurring.id);
+      }),
       { numRuns: 100 }
     );
   });
 
   it('does NOT generate a transaction for targetMonth < startMonth', () => {
     fc.assert(
-      fc.property(
-        recurringArbitrary,
-        monthArbitrary,
-        (recurring, randomMonth) => {
-          // Ensure targetMonth < startMonth by picking the earlier of the two
-          // We need startMonth to be strictly greater than targetMonth
-          const targetMonth =
-            randomMonth < recurring.startMonth ? randomMonth : undefined;
+      fc.property(recurringArbitrary, monthArbitrary, (recurring, randomMonth) => {
+        // Ensure targetMonth < startMonth by picking the earlier of the two
+        // We need startMonth to be strictly greater than targetMonth
+        const targetMonth = randomMonth < recurring.startMonth ? randomMonth : undefined;
 
-          // Skip if we can't produce a valid targetMonth < startMonth
-          if (targetMonth === undefined) {
-            // Force a targetMonth that is before startMonth
-            const [yearStr, monthStr] = recurring.startMonth.split('-');
-            const year = parseInt(yearStr ?? '0', 10);
-            const month = parseInt(monthStr ?? '0', 10);
+        // Skip if we can't produce a valid targetMonth < startMonth
+        if (targetMonth === undefined) {
+          // Force a targetMonth that is before startMonth
+          const [yearStr, monthStr] = recurring.startMonth.split('-');
+          const year = parseInt(yearStr ?? '0', 10);
+          const month = parseInt(monthStr ?? '0', 10);
 
-            let prevMonth: string;
-            if (month === 1) {
-              prevMonth = `${year - 1}-12`;
-            } else {
-              prevMonth = `${year}-${String(month - 1).padStart(2, '0')}`;
-            }
-
-            const generated = simulateGenerateMonthlyTransactions(
-              [recurring],
-              prevMonth
-            );
-
-            expect(generated).toHaveLength(0);
-            return;
+          let prevMonth: string;
+          if (month === 1) {
+            prevMonth = `${year - 1}-12`;
+          } else {
+            prevMonth = `${year}-${String(month - 1).padStart(2, '0')}`;
           }
 
-          const generated = simulateGenerateMonthlyTransactions(
-            [recurring],
-            targetMonth
-          );
+          const generated = simulateGenerateMonthlyTransactions([recurring], prevMonth);
 
           expect(generated).toHaveLength(0);
+          return;
         }
-      ),
+
+        const generated = simulateGenerateMonthlyTransactions([recurring], targetMonth);
+
+        expect(generated).toHaveLength(0);
+      }),
       { numRuns: 100 }
     );
   });
 
   it('generates transaction with correct title, amount, and category from recurring', () => {
     fc.assert(
-      fc.property(
-        recurringArbitrary,
-        (recurring) => {
-          // Use startMonth itself as targetMonth (boundary case: equal)
-          const targetMonth = recurring.startMonth;
+      fc.property(recurringArbitrary, (recurring) => {
+        // Use startMonth itself as targetMonth (boundary case: equal)
+        const targetMonth = recurring.startMonth;
 
-          const generated = simulateGenerateMonthlyTransactions(
-            [recurring],
-            targetMonth
-          );
+        const generated = simulateGenerateMonthlyTransactions([recurring], targetMonth);
 
-          expect(generated).toHaveLength(1);
-          expect(generated[0]!.title).toBe(recurring.title);
-          expect(generated[0]!.amount).toBe(recurring.amount);
-          expect(generated[0]!.categoryId).toBe(recurring.categoryId);
-          expect(generated[0]!.recurringId).toBe(recurring.id);
-        }
-      ),
+        expect(generated).toHaveLength(1);
+        expect(generated[0]!.title).toBe(recurring.title);
+        expect(generated[0]!.amount).toBe(recurring.amount);
+        expect(generated[0]!.categoryId).toBe(recurring.categoryId);
+        expect(generated[0]!.recurringId).toBe(recurring.id);
+      }),
       { numRuns: 100 }
     );
   });
 
   it('does not generate duplicate transactions (idempotency)', () => {
     fc.assert(
-      fc.property(
-        recurringArbitrary,
-        (recurring) => {
-          const targetMonth = recurring.startMonth;
+      fc.property(recurringArbitrary, (recurring) => {
+        const targetMonth = recurring.startMonth;
 
-          // First generation
-          const firstGeneration = simulateGenerateMonthlyTransactions(
-            [recurring],
-            targetMonth
-          );
+        // First generation
+        const firstGeneration = simulateGenerateMonthlyTransactions([recurring], targetMonth);
 
-          expect(firstGeneration).toHaveLength(1);
+        expect(firstGeneration).toHaveLength(1);
 
-          // Simulate that the first generation already exists
-          const existingTransactions = [
-            { recurringId: recurring.id, referenceMonth: targetMonth },
-          ];
+        // Simulate that the first generation already exists
+        const existingTransactions = [{ recurringId: recurring.id, referenceMonth: targetMonth }];
 
-          // Second generation with existing transactions
-          const secondGeneration = simulateGenerateMonthlyTransactions(
-            [recurring],
-            targetMonth,
-            existingTransactions
-          );
+        // Second generation with existing transactions
+        const secondGeneration = simulateGenerateMonthlyTransactions(
+          [recurring],
+          targetMonth,
+          existingTransactions
+        );
 
-          // Should not generate again
-          expect(secondGeneration).toHaveLength(0);
-        }
-      ),
+        // Should not generate again
+        expect(secondGeneration).toHaveLength(0);
+      }),
       { numRuns: 100 }
     );
   });
@@ -257,18 +225,11 @@ describe('Feature: entry-title-and-dates, Property 8: Recurring Transaction Gene
     }));
 
     fc.assert(
-      fc.property(
-        inactiveRecurringArbitrary,
-        monthArbitrary,
-        (recurring, targetMonth) => {
-          const generated = simulateGenerateMonthlyTransactions(
-            [recurring],
-            targetMonth
-          );
+      fc.property(inactiveRecurringArbitrary, monthArbitrary, (recurring, targetMonth) => {
+        const generated = simulateGenerateMonthlyTransactions([recurring], targetMonth);
 
-          expect(generated).toHaveLength(0);
-        }
-      ),
+        expect(generated).toHaveLength(0);
+      }),
       { numRuns: 100 }
     );
   });

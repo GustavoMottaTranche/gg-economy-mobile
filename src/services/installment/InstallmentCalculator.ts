@@ -1,7 +1,4 @@
-import {
-  InstallmentCalculatorInput,
-  InstallmentDetail,
-} from '../../types/installment';
+import { InstallmentCalculatorInput, InstallmentDetail } from '../../types/installment';
 
 /**
  * Distributes a total amount (in cents) across a given number of parts
@@ -55,9 +52,7 @@ export function advanceMonth(month: string, offset: number): string {
  * @param input - Calculator input with totalAmount, parcelCount, startMonth, title, etc.
  * @returns Array of InstallmentDetail objects for each parcel
  */
-export function calculateInstallments(
-  input: InstallmentCalculatorInput,
-): InstallmentDetail[] {
+export function calculateInstallments(input: InstallmentCalculatorInput): InstallmentDetail[] {
   const { totalAmount, parcelCount, startMonth, title } = input;
 
   const amounts = distributeAmount(totalAmount, parcelCount);

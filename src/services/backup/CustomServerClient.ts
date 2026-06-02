@@ -202,9 +202,7 @@ export async function listBackups(config: CustomServerConfig): Promise<ServerBac
 
   const backups: ServerBackupMetadata[] = await response.json();
 
-  backups.sort(
-    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-  );
+  backups.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
   return backups;
 }
@@ -255,8 +253,6 @@ export async function upload(
     throw new CustomServerError(message, 'NETWORK_ERROR', undefined, error);
   }
 }
-
-
 
 /**
  * Delete a backup from the server.
@@ -357,12 +353,7 @@ export async function download(
       // Ignore delete errors
     }
 
-    throw new CustomServerError(
-      'Download failed',
-      'DOWNLOAD_FAILED',
-      undefined,
-      error
-    );
+    throw new CustomServerError('Download failed', 'DOWNLOAD_FAILED', undefined, error);
   }
 }
 

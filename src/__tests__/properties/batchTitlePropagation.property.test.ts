@@ -33,9 +33,9 @@ describe('Feature: entry-title-and-dates, Property 6: Batch Mode Title Propagati
 
           const state = useBatchSessionStore.getState();
           expect(state.title).toBe(title);
-        },
+        }
       ),
-      { numRuns: 100 },
+      { numRuns: 100 }
     );
   });
 
@@ -57,9 +57,9 @@ describe('Feature: entry-title-and-dates, Property 6: Batch Mode Title Propagati
             const state = useBatchSessionStore.getState();
             expect(state.title).toBe(title);
           }
-        },
+        }
       ),
-      { numRuns: 100 },
+      { numRuns: 100 }
     );
   });
 
@@ -74,7 +74,7 @@ describe('Feature: entry-title-and-dates, Property 6: Batch Mode Title Propagati
             amount: fc.integer({ min: 1, max: 99999999 }),
             description: fc.string({ minLength: 0, maxLength: 500 }),
           }),
-          { minLength: 1, maxLength: 15 },
+          { minLength: 1, maxLength: 15 }
         ),
         (title, categoryId, categoryType, entries) => {
           const store = useBatchSessionStore.getState();
@@ -87,9 +87,9 @@ describe('Feature: entry-title-and-dates, Property 6: Batch Mode Title Propagati
             const state = useBatchSessionStore.getState();
             expect(state.title).toBe(title);
           }
-        },
+        }
       ),
-      { numRuns: 100 },
+      { numRuns: 100 }
     );
   });
 
@@ -117,9 +117,9 @@ describe('Feature: entry-title-and-dates, Property 6: Batch Mode Title Propagati
 
           // Title is cleared after session ends
           expect(useBatchSessionStore.getState().title).toBeNull();
-        },
+        }
       ),
-      { numRuns: 100 },
+      { numRuns: 100 }
     );
   });
 });

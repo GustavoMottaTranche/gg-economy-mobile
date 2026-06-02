@@ -56,9 +56,7 @@ function createGroup(overrides: Partial<WeeklyRecurringGroup> = {}): WeeklyRecur
   };
 }
 
-function createOccurrence(
-  overrides: Partial<WeeklyOccurrence> = {}
-): WeeklyOccurrence {
+function createOccurrence(overrides: Partial<WeeklyOccurrence> = {}): WeeklyOccurrence {
   return {
     id: `occ-${Math.random().toString(36).slice(2, 8)}`,
     weeklyGroupId: 'group-1',
@@ -130,13 +128,7 @@ describe('buildUnifiedStatementItems', () => {
         createOccurrence({ weeklyGroupId: 'group-1', date: '2024-06-17' }),
       ];
 
-      const result = buildUnifiedStatementItems(
-        txns,
-        occurrences,
-        [group],
-        false,
-        new Set()
-      );
+      const result = buildUnifiedStatementItems(txns, occurrences, [group], false, new Set());
 
       // txn-1 (Jun 20) > group header (earliest: Jun 10) > txn-2 (Jun 5)
       expect(result[0].type).toBe('transaction');
@@ -147,22 +139,14 @@ describe('buildUnifiedStatementItems', () => {
     });
 
     it('uses earliest occurrence date for group header sorting', () => {
-      const txns = [
-        createTransaction({ id: 'txn-1', date: new Date('2024-06-08') }),
-      ];
+      const txns = [createTransaction({ id: 'txn-1', date: new Date('2024-06-08') })];
       const group = createGroup({ id: 'group-1' });
       const occurrences = [
         createOccurrence({ weeklyGroupId: 'group-1', date: '2024-06-03' }),
         createOccurrence({ weeklyGroupId: 'group-1', date: '2024-06-10' }),
       ];
 
-      const result = buildUnifiedStatementItems(
-        txns,
-        occurrences,
-        [group],
-        false,
-        new Set()
-      );
+      const result = buildUnifiedStatementItems(txns, occurrences, [group], false, new Set());
 
       // txn-1 (Jun 8) > group header (earliest: Jun 3)
       expect(result[0].type).toBe('transaction');
@@ -238,9 +222,7 @@ describe('buildUnifiedStatementItems', () => {
     });
 
     it('parcels appear between header and next item in sorted order', () => {
-      const txns = [
-        createTransaction({ id: 'txn-1', date: new Date('2024-06-01') }),
-      ];
+      const txns = [createTransaction({ id: 'txn-1', date: new Date('2024-06-01') })];
       const group = createGroup({ id: 'group-1' });
       const occurrences = [
         createOccurrence({ id: 'occ-1', weeklyGroupId: 'group-1', date: '2024-06-10' }),
@@ -272,13 +254,7 @@ describe('buildUnifiedStatementItems', () => {
         createOccurrence({ weeklyGroupId: 'group-1', amount: 1500 }),
       ];
 
-      const result = buildUnifiedStatementItems(
-        [],
-        occurrences,
-        [group],
-        false,
-        new Set()
-      );
+      const result = buildUnifiedStatementItems([], occurrences, [group], false, new Set());
 
       expect(result[0].type).toBe('weeklyGroupHeader');
       expect(result[0].data.monthlyTotal).toBe(4500);
@@ -293,13 +269,7 @@ describe('buildUnifiedStatementItems', () => {
         createOccurrence({ weeklyGroupId: 'group-1', isPaid: false }),
       ];
 
-      const result = buildUnifiedStatementItems(
-        [],
-        occurrences,
-        [group],
-        false,
-        new Set()
-      );
+      const result = buildUnifiedStatementItems([], occurrences, [group], false, new Set());
 
       const header = result[0].data as any;
       expect(header.paidCount).toBe(2);
@@ -370,9 +340,24 @@ describe('buildUnifiedStatementItems', () => {
     it('shows only pending parcels when expanded with pendingOnly', () => {
       const group = createGroup({ id: 'group-1' });
       const occurrences = [
-        createOccurrence({ id: 'occ-1', weeklyGroupId: 'group-1', isPaid: true, date: '2024-06-03' }),
-        createOccurrence({ id: 'occ-2', weeklyGroupId: 'group-1', isPaid: false, date: '2024-06-10' }),
-        createOccurrence({ id: 'occ-3', weeklyGroupId: 'group-1', isPaid: false, date: '2024-06-17' }),
+        createOccurrence({
+          id: 'occ-1',
+          weeklyGroupId: 'group-1',
+          isPaid: true,
+          date: '2024-06-03',
+        }),
+        createOccurrence({
+          id: 'occ-2',
+          weeklyGroupId: 'group-1',
+          isPaid: false,
+          date: '2024-06-10',
+        }),
+        createOccurrence({
+          id: 'occ-3',
+          weeklyGroupId: 'group-1',
+          isPaid: false,
+          date: '2024-06-17',
+        }),
       ];
 
       const result = buildUnifiedStatementItems(
@@ -400,13 +385,7 @@ describe('buildUnifiedStatementItems', () => {
         createOccurrence({ weeklyGroupId: 'group-1', isPaid: false }),
       ];
 
-      const result = buildUnifiedStatementItems(
-        [],
-        occurrences,
-        [group],
-        true,
-        new Set()
-      );
+      const result = buildUnifiedStatementItems([], occurrences, [group], true, new Set());
 
       const header = result[0].data as any;
       expect(header.paidCount).toBe(1);

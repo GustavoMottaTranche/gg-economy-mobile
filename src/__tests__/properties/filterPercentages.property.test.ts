@@ -57,24 +57,22 @@ describe('Property 5: Filtered chart shows only matching group with correct rela
           for (const item of filteredCategories) {
             expect(item.expenseGroup).toBe(filter);
           }
-        },
+        }
       ),
-      { numRuns: 100 },
+      { numRuns: 100 }
     );
   });
 
   it('filtered percentages sum to exactly 100 when group has items with positive totals', () => {
     fc.assert(
       fc.property(
-        fc
-          .array(categoryBreakdownItemArb, { minLength: 1, maxLength: 30 })
-          .filter((cats) => {
-            // Ensure at least one item in either fixed or variable group
-            return (
-              cats.some((c) => c.expenseGroup === 'fixed') ||
-              cats.some((c) => c.expenseGroup === 'variable')
-            );
-          }),
+        fc.array(categoryBreakdownItemArb, { minLength: 1, maxLength: 30 }).filter((cats) => {
+          // Ensure at least one item in either fixed or variable group
+          return (
+            cats.some((c) => c.expenseGroup === 'fixed') ||
+            cats.some((c) => c.expenseGroup === 'variable')
+          );
+        }),
         filterArb,
         (categories: CategoryBreakdownItem[], filter) => {
           const grouped = groupByExpenseGroup(categories);
@@ -93,9 +91,9 @@ describe('Property 5: Filtered chart shows only matching group with correct rela
           const sum = percentages.reduce((acc, v) => acc + v, 0);
 
           expect(sum).toBe(100);
-        },
+        }
       ),
-      { numRuns: 100 },
+      { numRuns: 100 }
     );
   });
 
@@ -118,9 +116,9 @@ describe('Property 5: Filtered chart shows only matching group with correct rela
           const percentages = roundPercentages(values, groupTotal);
 
           expect(percentages.length).toBe(filteredCategories.length);
-        },
+        }
       ),
-      { numRuns: 100 },
+      { numRuns: 100 }
     );
   });
 
@@ -136,9 +134,9 @@ describe('Property 5: Filtered chart shows only matching group with correct rela
           for (const item of filteredCategories) {
             expect(item.expenseGroup).not.toBeNull();
           }
-        },
+        }
       ),
-      { numRuns: 100 },
+      { numRuns: 100 }
     );
   });
 });

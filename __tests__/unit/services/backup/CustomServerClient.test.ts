@@ -208,12 +208,12 @@ describe('testConnection', () => {
 
 describe('validateConfig', () => {
   it('should throw NOT_CONFIGURED when serverUrl is missing', () => {
-    expect(() =>
-      validateConfig({ serverUrl: '', apiKey: 'key', deviceId: 'device123' })
-    ).toThrow(CustomServerError);
-    expect(() =>
-      validateConfig({ serverUrl: '', apiKey: 'key', deviceId: 'device123' })
-    ).toThrow(expect.objectContaining({ code: 'NOT_CONFIGURED' }));
+    expect(() => validateConfig({ serverUrl: '', apiKey: 'key', deviceId: 'device123' })).toThrow(
+      CustomServerError
+    );
+    expect(() => validateConfig({ serverUrl: '', apiKey: 'key', deviceId: 'device123' })).toThrow(
+      expect.objectContaining({ code: 'NOT_CONFIGURED' })
+    );
   });
 
   it('should throw NOT_CONFIGURED when apiKey is missing', () => {
@@ -370,7 +370,9 @@ describe('upload', () => {
     deviceId: 'abcdef1234567890abcdef1234567890',
   };
 
-  const mockUploadAsync = FileSystem.uploadAsync as jest.MockedFunction<typeof FileSystem.uploadAsync>;
+  const mockUploadAsync = FileSystem.uploadAsync as jest.MockedFunction<
+    typeof FileSystem.uploadAsync
+  >;
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -408,7 +410,7 @@ describe('upload', () => {
       expect.objectContaining({
         httpMethod: 'POST',
         uploadType: FileSystem.FileSystemUploadType.MULTIPART,
-        fieldName: 'backup',
+        fieldName: 'file',
         headers: {
           'x-api-key': 'test-api-key-123',
           'x-device-id': 'abcdef1234567890abcdef1234567890',
@@ -491,8 +493,12 @@ describe('download', () => {
     deviceId: 'abcdef1234567890abcdef1234567890',
   };
 
-  const mockDownloadAsync = FileSystem.downloadAsync as jest.MockedFunction<typeof FileSystem.downloadAsync>;
-  const mockDeleteAsync = FileSystem.deleteAsync as jest.MockedFunction<typeof FileSystem.deleteAsync>;
+  const mockDownloadAsync = FileSystem.downloadAsync as jest.MockedFunction<
+    typeof FileSystem.downloadAsync
+  >;
+  const mockDeleteAsync = FileSystem.deleteAsync as jest.MockedFunction<
+    typeof FileSystem.deleteAsync
+  >;
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -553,7 +559,11 @@ describe('download', () => {
   });
 
   it('should throw NOT_CONFIGURED when config is incomplete', async () => {
-    const badConfig: CustomServerConfig = { serverUrl: 'http://localhost', apiKey: '', deviceId: 'dev' };
+    const badConfig: CustomServerConfig = {
+      serverUrl: 'http://localhost',
+      apiKey: '',
+      deviceId: 'dev',
+    };
 
     await expect(download('test.db', badConfig)).rejects.toMatchObject({
       code: 'NOT_CONFIGURED',
@@ -573,10 +583,9 @@ describe('download', () => {
       code: 'NOT_FOUND',
     });
 
-    expect(mockDeleteAsync).toHaveBeenCalledWith(
-      expect.stringContaining('/mock/cache/backup-'),
-      { idempotent: true }
-    );
+    expect(mockDeleteAsync).toHaveBeenCalledWith(expect.stringContaining('/mock/cache/backup-'), {
+      idempotent: true,
+    });
   });
 
   it('should throw DOWNLOAD_FAILED on non-200/non-404 and delete temp file', async () => {
@@ -591,10 +600,9 @@ describe('download', () => {
       code: 'DOWNLOAD_FAILED',
     });
 
-    expect(mockDeleteAsync).toHaveBeenCalledWith(
-      expect.stringContaining('/mock/cache/backup-'),
-      { idempotent: true }
-    );
+    expect(mockDeleteAsync).toHaveBeenCalledWith(expect.stringContaining('/mock/cache/backup-'), {
+      idempotent: true,
+    });
   });
 
   it('should delete partial file on network error', async () => {
@@ -604,10 +612,9 @@ describe('download', () => {
       code: 'DOWNLOAD_FAILED',
     });
 
-    expect(mockDeleteAsync).toHaveBeenCalledWith(
-      expect.stringContaining('/mock/cache/backup-'),
-      { idempotent: true }
-    );
+    expect(mockDeleteAsync).toHaveBeenCalledWith(expect.stringContaining('/mock/cache/backup-'), {
+      idempotent: true,
+    });
   });
 
   it('should not fail if temp file deletion throws during cleanup', async () => {
@@ -761,7 +768,11 @@ describe('deleteBackup', () => {
   });
 
   it('should throw NOT_CONFIGURED when config is incomplete', async () => {
-    const badConfig: CustomServerConfig = { serverUrl: 'http://localhost', apiKey: 'key', deviceId: '' };
+    const badConfig: CustomServerConfig = {
+      serverUrl: 'http://localhost',
+      apiKey: 'key',
+      deviceId: '',
+    };
 
     await expect(deleteBackup('file.db', badConfig)).rejects.toMatchObject({
       code: 'NOT_CONFIGURED',

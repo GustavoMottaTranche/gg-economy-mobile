@@ -242,9 +242,36 @@ jest.mock('../../src/stores/filterStore', () => ({
 jest.mock('../../src/hooks/useCategories', () => ({
   useCategories: () => ({
     categories: [
-      { id: 'cat-1', name: 'Salary', type: 'income', icon: '💰', color: '#22C55E', isActive: true, expenseGroup: null, createdAt: new Date() },
-      { id: 'cat-2', name: 'Food', type: 'expense', icon: '🍔', color: '#EF4444', isActive: true, expenseGroup: null, createdAt: new Date() },
-      { id: 'cat-3', name: 'Transport', type: 'expense', icon: '🚗', color: '#F59E0B', isActive: true, expenseGroup: null, createdAt: new Date() },
+      {
+        id: 'cat-1',
+        name: 'Salary',
+        type: 'income',
+        icon: '💰',
+        color: '#22C55E',
+        isActive: true,
+        expenseGroup: null,
+        createdAt: new Date(),
+      },
+      {
+        id: 'cat-2',
+        name: 'Food',
+        type: 'expense',
+        icon: '🍔',
+        color: '#EF4444',
+        isActive: true,
+        expenseGroup: null,
+        createdAt: new Date(),
+      },
+      {
+        id: 'cat-3',
+        name: 'Transport',
+        type: 'expense',
+        icon: '🚗',
+        color: '#F59E0B',
+        isActive: true,
+        expenseGroup: null,
+        createdAt: new Date(),
+      },
     ],
   }),
 }));
@@ -278,6 +305,8 @@ jest.mock('../../src/stores/weeklyRecurringStore', () => ({
     },
     {
       getState: () => ({
+        groups: [],
+        loadGroups: jest.fn().mockResolvedValue(undefined),
         loadOccurrencesForMonth: jest.fn().mockResolvedValue(undefined),
         toggleGroupExpansion: mockToggleGroupExpansion,
         collapseAllGroups: jest.fn(),
@@ -287,6 +316,7 @@ jest.mock('../../src/stores/weeklyRecurringStore', () => ({
   useWeeklyOccurrences: () => [],
   useWeeklyGroups: () => [],
   useExpandedGroupIds: () => new Set<string>(),
+  useWeeklyMonthlyTotal: () => 0,
 }));
 
 // Mock paymentStatusStore
@@ -343,7 +373,15 @@ jest.mock('../../src/components/WeeklyParcelRow', () => ({
 
 // Mock PaymentStatusToggle
 jest.mock('../../src/components/PaymentStatusToggle', () => ({
-  PaymentStatusToggle: ({ isPaid, onToggle, testID }: { isPaid: boolean; onToggle: () => void; testID?: string }) => {
+  PaymentStatusToggle: ({
+    isPaid,
+    onToggle,
+    testID,
+  }: {
+    isPaid: boolean;
+    onToggle: () => void;
+    testID?: string;
+  }) => {
     const { TouchableOpacity, Text } = require('react-native');
     return (
       <TouchableOpacity testID={testID} onPress={onToggle}>

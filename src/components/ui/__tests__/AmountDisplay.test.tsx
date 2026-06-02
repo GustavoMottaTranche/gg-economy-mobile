@@ -81,7 +81,9 @@ describe('AmountDisplay', () => {
       );
       const text = getByTestId('amount-text');
       expect(text.props.style).toEqual(
-        expect.arrayContaining([expect.objectContaining({ color: LIGHT_COLORS.semantic.success.dark })])
+        expect.arrayContaining([
+          expect.objectContaining({ color: LIGHT_COLORS.semantic.success.dark }),
+        ])
       );
     });
 
@@ -91,7 +93,9 @@ describe('AmountDisplay', () => {
       );
       const text = getByTestId('amount-text');
       expect(text.props.style).toEqual(
-        expect.arrayContaining([expect.objectContaining({ color: LIGHT_COLORS.semantic.danger.dark })])
+        expect.arrayContaining([
+          expect.objectContaining({ color: LIGHT_COLORS.semantic.danger.dark }),
+        ])
       );
     });
 
@@ -111,7 +115,9 @@ describe('AmountDisplay', () => {
       );
       const text = getByTestId('amount-text');
       expect(text.props.style).toEqual(
-        expect.arrayContaining([expect.objectContaining({ color: LIGHT_COLORS.semantic.success.dark })])
+        expect.arrayContaining([
+          expect.objectContaining({ color: LIGHT_COLORS.semantic.success.dark }),
+        ])
       );
     });
 
@@ -121,7 +127,9 @@ describe('AmountDisplay', () => {
       );
       const text = getByTestId('amount-text');
       expect(text.props.style).toEqual(
-        expect.arrayContaining([expect.objectContaining({ color: LIGHT_COLORS.semantic.danger.dark })])
+        expect.arrayContaining([
+          expect.objectContaining({ color: LIGHT_COLORS.semantic.danger.dark }),
+        ])
       );
     });
   });
@@ -190,7 +198,9 @@ describe('AmountDisplay', () => {
       const { getByTestId } = render(<IncomeAmount amount={-5000} testID="amount" />);
       const text = getByTestId('amount-text');
       expect(text.props.style).toEqual(
-        expect.arrayContaining([expect.objectContaining({ color: LIGHT_COLORS.semantic.success.dark })])
+        expect.arrayContaining([
+          expect.objectContaining({ color: LIGHT_COLORS.semantic.success.dark }),
+        ])
       );
     });
 
@@ -198,7 +208,9 @@ describe('AmountDisplay', () => {
       const { getByTestId } = render(<ExpenseAmount amount={5000} testID="amount" />);
       const text = getByTestId('amount-text');
       expect(text.props.style).toEqual(
-        expect.arrayContaining([expect.objectContaining({ color: LIGHT_COLORS.semantic.danger.dark })])
+        expect.arrayContaining([
+          expect.objectContaining({ color: LIGHT_COLORS.semantic.danger.dark }),
+        ])
       );
     });
 
@@ -207,7 +219,9 @@ describe('AmountDisplay', () => {
       expect(getByText('+$50.00')).toBeTruthy();
       const text = getByTestId('amount-text');
       expect(text.props.style).toEqual(
-        expect.arrayContaining([expect.objectContaining({ color: LIGHT_COLORS.semantic.success.dark })])
+        expect.arrayContaining([
+          expect.objectContaining({ color: LIGHT_COLORS.semantic.success.dark }),
+        ])
       );
     });
   });

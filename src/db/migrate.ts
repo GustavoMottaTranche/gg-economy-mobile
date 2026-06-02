@@ -218,8 +218,7 @@ export async function initializeDatabase(): Promise<void> {
     try {
       await runMigrations();
     } catch (error) {
-      const errorMessage =
-        error instanceof Error ? error.message : 'Unknown migration error';
+      const errorMessage = error instanceof Error ? error.message : 'Unknown migration error';
 
       console.error('[Database] Migration failed:', errorMessage);
 

@@ -60,9 +60,7 @@ export function PaymentStatusOption({
 
   return (
     <View style={styles.container} testID={testID}>
-      <Text style={[styles.label, { color: colors.text.secondary }]}>
-        Status de pagamento
-      </Text>
+      <Text style={[styles.label, { color: colors.text.secondary }]}>Status de pagamento</Text>
       <View style={styles.optionsContainer}>
         {OPTIONS.map((option) => {
           const isSelected = selected === option.value;
@@ -75,9 +73,7 @@ export function PaymentStatusOption({
                   backgroundColor: isSelected
                     ? colors.semantic.primary.light
                     : colors.background.secondary,
-                  borderColor: isSelected
-                    ? colors.interactive.primary
-                    : colors.border.default,
+                  borderColor: isSelected ? colors.interactive.primary : colors.border.default,
                 },
               ]}
               onPress={() => handleSelect(option.value)}
@@ -90,18 +86,13 @@ export function PaymentStatusOption({
                 style={[
                   styles.radio,
                   {
-                    borderColor: isSelected
-                      ? colors.interactive.primary
-                      : colors.border.strong,
+                    borderColor: isSelected ? colors.interactive.primary : colors.border.strong,
                   },
                 ]}
               >
                 {isSelected && (
                   <View
-                    style={[
-                      styles.radioInner,
-                      { backgroundColor: colors.interactive.primary },
-                    ]}
+                    style={[styles.radioInner, { backgroundColor: colors.interactive.primary }]}
                   />
                 )}
               </View>
@@ -109,9 +100,7 @@ export function PaymentStatusOption({
                 style={[
                   styles.optionText,
                   {
-                    color: isSelected
-                      ? colors.text.primary
-                      : colors.text.secondary,
+                    color: isSelected ? colors.text.primary : colors.text.secondary,
                   },
                   isSelected && styles.optionTextSelected,
                 ]}

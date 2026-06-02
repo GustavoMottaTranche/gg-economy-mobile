@@ -20,7 +20,12 @@ jest.mock('expo-router', () => {
   // Tabs.Screen collects tab configuration
   function TabsScreen(props: {
     name: string;
-    options?: { title?: string; tabBarLabel?: string; href?: null; tabBarAccessibilityLabel?: string };
+    options?: {
+      title?: string;
+      tabBarLabel?: string;
+      href?: null;
+      tabBarAccessibilityLabel?: string;
+    };
     children?: React.ReactNode;
   }) {
     const { View, Text } = require('react-native');

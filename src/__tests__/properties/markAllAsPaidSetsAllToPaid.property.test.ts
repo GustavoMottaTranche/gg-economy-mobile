@@ -196,9 +196,9 @@ describe('Feature: payment-status-tracking, Property 5: Mark all as paid sets al
   it('the number of occurrences is preserved after applying "all_paid"', () => {
     fc.assert(
       fc.property(
-        fc.uuid().chain((groupId) =>
-          occurrencesArbitrary(groupId).map((occs) => ({ groupId, occs }))
-        ),
+        fc
+          .uuid()
+          .chain((groupId) => occurrencesArbitrary(groupId).map((occs) => ({ groupId, occs }))),
         ({ occs }) => {
           const result = applyAllPaidOption(occs);
 
@@ -213,9 +213,9 @@ describe('Feature: payment-status-tracking, Property 5: Mark all as paid sets al
   it('other occurrence fields remain unchanged after applying "all_paid"', () => {
     fc.assert(
       fc.property(
-        fc.uuid().chain((groupId) =>
-          occurrencesArbitrary(groupId).map((occs) => ({ groupId, occs }))
-        ),
+        fc
+          .uuid()
+          .chain((groupId) => occurrencesArbitrary(groupId).map((occs) => ({ groupId, occs }))),
         ({ groupId, occs }) => {
           const result = applyAllPaidOption(occs);
 

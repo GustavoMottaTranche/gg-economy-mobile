@@ -2,6 +2,11 @@ import type { WeeklyOccurrence } from '../../types/weeklyRecurring';
 import type { NewWeeklyOccurrenceRecord } from '../../db/schema';
 
 /**
+ * Input type for creating occurrences - id is optional (auto-generated if not provided).
+ */
+export type CreateWeeklyOccurrenceInput = Omit<NewWeeklyOccurrenceRecord, 'id'> & { id?: string };
+
+/**
  * Fields that can be updated on a weekly occurrence.
  */
 export interface WeeklyOccurrenceUpdateFields {
@@ -19,8 +24,8 @@ export interface WeeklyOccurrenceUpdateFields {
  */
 export interface IWeeklyOccurrenceRepository {
   // Create methods
-  create(data: NewWeeklyOccurrenceRecord): Promise<WeeklyOccurrence>;
-  createMany(data: NewWeeklyOccurrenceRecord[]): Promise<WeeklyOccurrence[]>;
+  create(data: CreateWeeklyOccurrenceInput): Promise<WeeklyOccurrence>;
+  createMany(data: CreateWeeklyOccurrenceInput[]): Promise<WeeklyOccurrence[]>;
 
   // Update methods
   update(id: string, data: Partial<WeeklyOccurrenceUpdateFields>): Promise<WeeklyOccurrence | null>;

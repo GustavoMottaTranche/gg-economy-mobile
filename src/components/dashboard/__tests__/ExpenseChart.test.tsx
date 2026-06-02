@@ -24,10 +24,14 @@ jest.mock('react-native-svg', () => {
   return {
     __esModule: true,
     default: ({ children, testID, ...props }: any) => (
-      <View testID={testID} {...props}>{children}</View>
+      <View testID={testID} {...props}>
+        {children}
+      </View>
     ),
     Svg: ({ children, testID, ...props }: any) => (
-      <View testID={testID} {...props}>{children}</View>
+      <View testID={testID} {...props}>
+        {children}
+      </View>
     ),
     G: ({ children, ...props }: any) => <View {...props}>{children}</View>,
     Path: (props: any) => <View {...props} />,

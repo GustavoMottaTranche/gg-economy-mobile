@@ -70,6 +70,7 @@
 2. Procure a seção **"Contas pendentes"** entre o SummaryCard e os gráficos
 
 **Resultado esperado:**
+
 - Se houver ocorrências com `isPaid=false` no mês selecionado, a seção aparece com a lista de itens pendentes
 - Cada item mostra: nome do grupo, valor formatado, data, e um toggle
 - Se todas estiverem pagas, a seção NÃO aparece (está oculta)
@@ -94,6 +95,7 @@
 2. Procure a seção **"Previsto vs. Pago"** na parte inferior do card
 
 **Resultado esperado:**
+
 - **Previsto:** soma de todos os gastos recorrentes do mês (valor total)
 - **Pago:** soma dos que estão marcados como pagos (cor verde)
 - **Pendente:** diferença (cor laranja)
@@ -168,24 +170,24 @@
 
 ## Checklist Rápido
 
-| # | Teste | Status |
-|---|-------|--------|
-| 1.1 | Criar gasto recorrente mensal (infinito) | ☐ |
-| 1.2 | Criar gasto semanal com "primeira paga" | ☐ |
-| 1.3 | Visualizar ocorrências do grupo | ☐ |
-| 2.1 | Toggle individual na Entry Screen | ☐ |
-| 2.2 | Bulk Mark (marcar todas) | ☐ |
-| 2.3 | Seção "Contas pendentes" na Home | ☐ |
-| 2.4 | Marcar como paga pela Home | ☐ |
-| 2.5 | Navegar para detalhe pela Home | ☐ |
-| 2.6 | Previsto vs. Pago no SummaryCard | ☐ |
-| 2.7 | Navegação entre meses atualiza dados | ☐ |
-| 3.1 | Opção "Todas pendentes" | ☐ |
-| 3.2 | Opção "Marcar primeira como paga" | ☐ |
-| 3.3 | Opção "Marcar todas como pagas" | ☐ |
-| 4.1 | Persistência após fechar app | ☐ |
-| 4.2 | Edição preserva status | ☐ |
-| 5.1 | Valor por parcela correto (não divide) | ☐ |
+| #   | Teste                                    | Status |
+| --- | ---------------------------------------- | ------ |
+| 1.1 | Criar gasto recorrente mensal (infinito) | ☐      |
+| 1.2 | Criar gasto semanal com "primeira paga"  | ☐      |
+| 1.3 | Visualizar ocorrências do grupo          | ☐      |
+| 2.1 | Toggle individual na Entry Screen        | ☐      |
+| 2.2 | Bulk Mark (marcar todas)                 | ☐      |
+| 2.3 | Seção "Contas pendentes" na Home         | ☐      |
+| 2.4 | Marcar como paga pela Home               | ☐      |
+| 2.5 | Navegar para detalhe pela Home           | ☐      |
+| 2.6 | Previsto vs. Pago no SummaryCard         | ☐      |
+| 2.7 | Navegação entre meses atualiza dados     | ☐      |
+| 3.1 | Opção "Todas pendentes"                  | ☐      |
+| 3.2 | Opção "Marcar primeira como paga"        | ☐      |
+| 3.3 | Opção "Marcar todas como pagas"          | ☐      |
+| 4.1 | Persistência após fechar app             | ☐      |
+| 4.2 | Edição preserva status                   | ☐      |
+| 5.1 | Valor por parcela correto (não divide)   | ☐      |
 
 ---
 

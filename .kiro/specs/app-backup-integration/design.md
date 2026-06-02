@@ -191,10 +191,7 @@ export class CustomServerClient {
    * Delete a backup from the server.
    * Timeout: 30 seconds.
    */
-  async deleteBackup(
-    filename: string,
-    config: CustomServerConfig
-  ): Promise<{ message: string }>;
+  async deleteBackup(filename: string, config: CustomServerConfig): Promise<{ message: string }>;
 }
 
 export const customServerClient: CustomServerClient;
@@ -275,32 +272,32 @@ A new section "Custom Server" is added below the existing Google Drive sections:
 
 ### Storage Keys
 
-| Key | Store | Value |
-|-----|-------|-------|
-| `@gg-economy/custom-server-url` | AsyncStorage | Server URL string |
-| `custom-server-api-key` | SecureStore | API key string |
-| `custom-server-device-id` | SecureStore | 32-char hex device ID |
+| Key                             | Store        | Value                 |
+| ------------------------------- | ------------ | --------------------- |
+| `@gg-economy/custom-server-url` | AsyncStorage | Server URL string     |
+| `custom-server-api-key`         | SecureStore  | API key string        |
+| `custom-server-device-id`       | SecureStore  | 32-char hex device ID |
 
 ### Server API Response Types (as received)
 
 ```typescript
 // POST /api/backups response
 interface ServerUploadResponse {
-  filename: string;       // e.g. "gg-economy-backup-20250115-143022.db"
-  timestamp: string;      // ISO 8601
+  filename: string; // e.g. "gg-economy-backup-20250115-143022.db"
+  timestamp: string; // ISO 8601
   sizeBytes: number;
 }
 
 // GET /api/backups response
 type ServerListResponse = Array<{
   filename: string;
-  createdAt: string;      // ISO 8601
+  createdAt: string; // ISO 8601
   sizeBytes: number;
 }>;
 
 // GET /api/health response
 interface ServerHealthResponse {
-  status: "ok";
+  status: 'ok';
   timestamp: string;
 }
 
@@ -320,75 +317,73 @@ interface ServerErrorResponse {
 ```typescript
 function mapServerToAppMetadata(server: ServerBackupMetadata): BackupMetadata {
   return {
-    id: server.filename,           // filename as unique ID
+    id: server.filename, // filename as unique ID
     fileName: server.filename,
     createdAt: new Date(server.createdAt),
     sizeBytes: server.sizeBytes,
-    schemaVersion: 0,              // unknown for server backups
+    schemaVersion: 0, // unknown for server backups
   };
 }
 ```
 
 ### Error Code Mapping
 
-| HTTP Status | Error Code | Message |
-|-------------|-----------|---------|
-| 401 | `AUTH_FAILED` | Invalid API key |
-| 413 | `FILE_TOO_LARGE` | File exceeds 50 MB limit |
-| 400 | `BAD_REQUEST` | Server error message from response body |
-| 404 | `NOT_FOUND` | Backup not found |
-| 500 | `SERVER_ERROR` | Server-side error |
-| Timeout | `NETWORK_ERROR` | Request timed out |
-| No connection | `NETWORK_ERROR` | Server unreachable |
-| DNS failure | `NETWORK_ERROR` | DNS resolution failed |
-| Other non-2xx | `UNKNOWN_ERROR` | Unexpected status: {code} |
-| No config | `NOT_CONFIGURED` | Server not configured |
-
-
+| HTTP Status   | Error Code       | Message                                 |
+| ------------- | ---------------- | --------------------------------------- |
+| 401           | `AUTH_FAILED`    | Invalid API key                         |
+| 413           | `FILE_TOO_LARGE` | File exceeds 50 MB limit                |
+| 400           | `BAD_REQUEST`    | Server error message from response body |
+| 404           | `NOT_FOUND`      | Backup not found                        |
+| 500           | `SERVER_ERROR`   | Server-side error                       |
+| Timeout       | `NETWORK_ERROR`  | Request timed out                       |
+| No connection | `NETWORK_ERROR`  | Server unreachable                      |
+| DNS failure   | `NETWORK_ERROR`  | DNS resolution failed                   |
+| Other non-2xx | `UNKNOWN_ERROR`  | Unexpected status: {code}               |
+| No config     | `NOT_CONFIGURED` | Server not configured                   |
 
 ## Correctness Properties
 
-*A property is a characteristic or behavior that should hold true across all valid executions of a system — essentially, a formal statement about what the system should do. Properties serve as the bridge between human-readable specifications and machine-verifiable correctness guarantees.*
+_A property is a characteristic or behavior that should hold true across all valid executions of a system — essentially, a formal statement about what the system should do. Properties serve as the bridge between human-readable specifications and machine-verifiable correctness guarantees._
 
 ### Property 1: Required Headers Invariant
 
-*For any* valid `CustomServerConfig` and *for any* operation (upload, list, download, delete, testConnection), the outgoing HTTP request SHALL include both the `x-api-key` header set to the configured API key and the `x-device-id` header set to the configured device ID.
+_For any_ valid `CustomServerConfig` and _for any_ operation (upload, list, download, delete, testConnection), the outgoing HTTP request SHALL include both the `x-api-key` header set to the configured API key and the `x-device-id` header set to the configured device ID.
 
 **Validates: Requirements 1.2, 1.3, 3.3**
 
 ### Property 2: Server Response Mapping
 
-*For any* valid server backup metadata object containing a `filename` (non-empty string), a `createdAt` (valid ISO 8601 string), and a `sizeBytes` (non-negative integer), the mapping function SHALL produce a `BackupMetadata` object where `id` equals `filename`, `fileName` equals `filename`, `createdAt` is a Date object representing the same instant, `sizeBytes` is preserved as-is, and `schemaVersion` equals 0.
+_For any_ valid server backup metadata object containing a `filename` (non-empty string), a `createdAt` (valid ISO 8601 string), and a `sizeBytes` (non-negative integer), the mapping function SHALL produce a `BackupMetadata` object where `id` equals `filename`, `fileName` equals `filename`, `createdAt` is a Date object representing the same instant, `sizeBytes` is preserved as-is, and `schemaVersion` equals 0.
 
 **Validates: Requirements 1.6, 4.3, 5.2**
 
 ### Property 3: HTTP Error Code Mapping
 
-*For any* HTTP response with a non-2xx status code, the client SHALL produce a `CustomServerError` with the correct `code` field: `AUTH_FAILED` for 401, `FILE_TOO_LARGE` for 413, `BAD_REQUEST` for 400, `NOT_FOUND` for 404, `SERVER_ERROR` for 500, and `UNKNOWN_ERROR` for any other non-2xx status. Every error SHALL contain both a `code` (string) and `message` (string) field.
+_For any_ HTTP response with a non-2xx status code, the client SHALL produce a `CustomServerError` with the correct `code` field: `AUTH_FAILED` for 401, `FILE_TOO_LARGE` for 413, `BAD_REQUEST` for 400, `NOT_FOUND` for 404, `SERVER_ERROR` for 500, and `UNKNOWN_ERROR` for any other non-2xx status. Every error SHALL contain both a `code` (string) and `message` (string) field.
 
 **Validates: Requirements 1.9, 8.1, 8.2, 8.3, 8.4, 8.5, 8.7, 8.8**
 
 ### Property 4: URL Validation
 
-*For any* string input, the URL validator SHALL accept it if and only if it starts with `http://` or `https://`, contains a host component after the scheme, and has a total length not exceeding 2048 characters. Invalid URLs SHALL produce a rejection with an error indication.
+_For any_ string input, the URL validator SHALL accept it if and only if it starts with `http://` or `https://`, contains a host component after the scheme, and has a total length not exceeding 2048 characters. Invalid URLs SHALL produce a rejection with an error indication.
 
 **Validates: Requirements 2.4, 2.5**
 
 ### Property 5: API Key Validation
 
-*For any* string input, the API key validator SHALL accept it if and only if the string, after trimming leading and trailing whitespace, has a length between 1 and 256 characters inclusive. Invalid API keys SHALL produce a rejection with an error indication.
+_For any_ string input, the API key validator SHALL accept it if and only if the string, after trimming leading and trailing whitespace, has a length between 1 and 256 characters inclusive. Invalid API keys SHALL produce a rejection with an error indication.
 
 **Validates: Requirements 2.6, 2.7**
 
 ### Property 6: Device ID Format
 
-*For any* invocation of device ID generation, the resulting string SHALL be exactly 32 characters long and every character SHALL be a valid lowercase hexadecimal digit (0-9, a-f).
+_For any_ invocation of device ID generation, the resulting string SHALL be exactly 32 characters long and every character SHALL be a valid lowercase hexadecimal digit (0-9, a-f).
 
 **Validates: Requirements 3.1**
 
 ### Property 7: Backup List Sorting
 
-*For any* non-empty array of server backup metadata objects with distinct `createdAt` timestamps, the list returned by `listBackups` SHALL be sorted in descending order by `createdAt` (newest first), such that for every consecutive pair of items, the earlier item's `createdAt` is greater than or equal to the later item's `createdAt`.
+_For any_ non-empty array of server backup metadata objects with distinct `createdAt` timestamps, the list returned by `listBackups` SHALL be sorted in descending order by `createdAt` (newest first), such that for every consecutive pair of items, the earlier item's `createdAt` is greater than or equal to the later item's `createdAt`.
 
 **Validates: Requirements 5.1**
 
@@ -425,12 +420,12 @@ try {
 
 ### Timeout Strategy
 
-| Operation | Timeout | Rationale |
-|-----------|---------|-----------|
-| Health check | 10s | Quick connectivity test |
-| Upload | 60s | Large files up to 50 MB |
-| Download | 120s | Large files + slow networks |
-| List / Delete | 30s | Small payloads |
+| Operation     | Timeout | Rationale                   |
+| ------------- | ------- | --------------------------- |
+| Health check  | 10s     | Quick connectivity test     |
+| Upload        | 60s     | Large files up to 50 MB     |
+| Download      | 120s    | Large files + slow networks |
+| List / Delete | 30s     | Small payloads              |
 
 ### Timeout Implementation
 
@@ -442,10 +437,7 @@ function fetchWithTimeout(url: string, options: RequestInit, timeoutMs: number):
   return fetch(url, { ...options, signal: controller.signal })
     .catch((error) => {
       if (error.name === 'AbortError') {
-        throw new CustomServerError(
-          'Request timed out',
-          'NETWORK_ERROR'
-        );
+        throw new CustomServerError('Request timed out', 'NETWORK_ERROR');
       }
       throw new CustomServerError(
         `Network error: ${error.message}`,
@@ -479,25 +471,27 @@ Property-based testing is appropriate for this feature because it contains pure 
 **Minimum iterations**: 100 per property
 
 Each property test is tagged with:
+
 ```
 Feature: app-backup-integration, Property {N}: {property_text}
 ```
 
-| Property | Test File | Iterations |
-|----------|-----------|------------|
-| 1: Required Headers | `customServerClient.property.test.ts` | 100 |
-| 2: Server Response Mapping | `customServerClient.property.test.ts` | 100 |
-| 3: HTTP Error Code Mapping | `customServerClient.property.test.ts` | 100 |
-| 4: URL Validation | `customServerSettings.property.test.ts` | 100 |
-| 5: API Key Validation | `customServerSettings.property.test.ts` | 100 |
-| 6: Device ID Format | `customServerSettings.property.test.ts` | 100 |
-| 7: Backup List Sorting | `customServerClient.property.test.ts` | 100 |
+| Property                   | Test File                               | Iterations |
+| -------------------------- | --------------------------------------- | ---------- |
+| 1: Required Headers        | `customServerClient.property.test.ts`   | 100        |
+| 2: Server Response Mapping | `customServerClient.property.test.ts`   | 100        |
+| 3: HTTP Error Code Mapping | `customServerClient.property.test.ts`   | 100        |
+| 4: URL Validation          | `customServerSettings.property.test.ts` | 100        |
+| 5: API Key Validation      | `customServerSettings.property.test.ts` | 100        |
+| 6: Device ID Format        | `customServerSettings.property.test.ts` | 100        |
+| 7: Backup List Sorting     | `customServerClient.property.test.ts`   | 100        |
 
 ### Unit Tests (Jest)
 
 **Location**: `__tests__/unit/services/backup/`
 
 Focus on:
+
 - Specific examples for each API operation (upload, download, delete)
 - Timeout behavior (mocked timers)
 - Configuration guard (NOT_CONFIGURED error)
@@ -510,6 +504,7 @@ Focus on:
 **Location**: `__tests__/integration/`
 
 Focus on:
+
 - Full backup flow: export → upload → verify response
 - Full restore flow: download → validate → restore
 - Settings persistence across mock restarts
@@ -520,6 +515,7 @@ Focus on:
 **Location**: `__tests__/component/`
 
 Focus on:
+
 - Custom server section renders correctly
 - Input validation feedback in UI
 - Connection test button behavior

@@ -84,6 +84,7 @@ graph TD
 ### New Components
 
 #### `WeeklyGroupItem`
+
 Collapsible row representing a weekly recurring expense group in the statement list.
 
 ```typescript
@@ -99,6 +100,7 @@ interface WeeklyGroupItemProps {
 ```
 
 #### `WeeklyParcelRow`
+
 Individual parcel row within an expanded `WeeklyGroupItem`.
 
 ```typescript
@@ -110,6 +112,7 @@ interface WeeklyParcelRowProps {
 ```
 
 #### `PaymentStatusToggle`
+
 Reusable toggle component for paid/pending status on any statement item.
 
 ```typescript
@@ -125,21 +128,25 @@ interface PaymentStatusToggleProps {
 ### Modified Components
 
 #### `FilterPanel`
+
 - Add "Pending only" toggle switch below existing filters
 - Update `countActiveFilters` to include `pendingOnly` in the badge count
 
 #### `TransactionsScreen`
+
 - Replace the inline weekly occurrences header section with `WeeklyGroupItem` components merged into the FlashList data
 - Add `PaymentStatusToggle` to each `TransactionCard`
 - Use new `useUnifiedStatementItems` hook for merged data
 
 #### `TransactionDetailView` (`transaction/[id].tsx`)
+
 - Add a `DetailRow` for payment status with tap-to-toggle behavior
 - Show "Paid" / "Pending" with appropriate icon
 
 ### New Hooks
 
 #### `useUnifiedStatementItems`
+
 Merges paginated transactions and weekly occurrences into a single sorted array.
 
 ```typescript
@@ -151,9 +158,7 @@ interface UseUnifiedStatementItemsParams {
   expandedGroupIds: Set<string>;
 }
 
-function useUnifiedStatementItems(
-  params: UseUnifiedStatementItemsParams
-): UnifiedStatementItem[];
+function useUnifiedStatementItems(params: UseUnifiedStatementItemsParams): UnifiedStatementItem[];
 ```
 
 ### Store Changes
@@ -209,6 +214,7 @@ interface WeeklyGroupHeaderData {
 ### Sorting Strategy
 
 All items are sorted by date descending (matching existing transaction sort order):
+
 - `transaction` items use their `date` field
 - `weeklyGroupHeader` items use the earliest occurrence date in the group for that month
 - `weeklyParcel` items appear immediately after their parent header when expanded, sorted by date ascending within the group
@@ -216,6 +222,7 @@ All items are sorted by date descending (matching existing transaction sort orde
 ### Database Schema (No Changes Required)
 
 The existing schema already supports this feature:
+
 - `transactions.isPaid` — already exists for regular transactions and installment parcels
 - `weeklyOccurrences.isPaid` — already exists for weekly parcels
 - `weeklyOccurrences.isValueEdited` — already exists for tracking edited amounts
@@ -236,53 +243,53 @@ For weekly occurrences, filtering is done client-side in `useUnifiedStatementIte
 
 ## Correctness Properties
 
-*A property is a characteristic or behavior that should hold true across all valid executions of a system — essentially, a formal statement about what the system should do. Properties serve as the bridge between human-readable specifications and machine-verifiable correctness guarantees.*
+_A property is a characteristic or behavior that should hold true across all valid executions of a system — essentially, a formal statement about what the system should do. Properties serve as the bridge between human-readable specifications and machine-verifiable correctness guarantees._
 
 ### Property 1: Unified list is sorted by date descending
 
-*For any* set of regular transactions and weekly group items with arbitrary dates within a month, the merged `UnifiedStatementItem[]` produced by `useUnifiedStatementItems` SHALL be sorted by date descending (most recent first), with weekly parcels appearing immediately after their group header in date-ascending order within the group.
+_For any_ set of regular transactions and weekly group items with arbitrary dates within a month, the merged `UnifiedStatementItem[]` produced by `useUnifiedStatementItems` SHALL be sorted by date descending (most recent first), with weekly parcels appearing immediately after their group header in date-ascending order within the group.
 
 **Validates: Requirements 1.1**
 
 ### Property 2: Weekly group monthly total equals sum of occurrence amounts
 
-*For any* weekly recurring group and any set of occurrences belonging to that group in a given month, the `monthlyTotal` displayed in the `WeeklyGroupHeaderData` SHALL equal the arithmetic sum of all occurrence `amount` values for that month.
+_For any_ weekly recurring group and any set of occurrences belonging to that group in a given month, the `monthlyTotal` displayed in the `WeeklyGroupHeaderData` SHALL equal the arithmetic sum of all occurrence `amount` values for that month.
 
 **Validates: Requirements 1.2, 2.3**
 
 ### Property 3: Payment status toggle is involutory (double-toggle restores state)
 
-*For any* item (regular transaction, installment parcel, or weekly occurrence) with an initial `isPaid` value, toggling the payment status once SHALL flip the boolean, and toggling it a second time SHALL restore the original value. Formally: `toggle(toggle(isPaid)) === isPaid`.
+_For any_ item (regular transaction, installment parcel, or weekly occurrence) with an initial `isPaid` value, toggling the payment status once SHALL flip the boolean, and toggling it a second time SHALL restore the original value. Formally: `toggle(toggle(isPaid)) === isPaid`.
 
 **Validates: Requirements 3.2, 3.3, 3.4, 5.2**
 
 ### Property 4: Invalid amounts are always rejected
 
-*For any* input value that is zero, negative, or non-numeric, the amount validation function SHALL reject it and return an error, leaving the occurrence amount unchanged.
+_For any_ input value that is zero, negative, or non-numeric, the amount validation function SHALL reject it and return an error, leaving the occurrence amount unchanged.
 
 **Validates: Requirements 2.4**
 
 ### Property 5: Pending filter returns only unpaid items
 
-*For any* set of `UnifiedStatementItem` with mixed `isPaid` states, when `pendingOnly` is true, the filtered output SHALL contain only items where `isPaid === false`. For weekly groups, a group SHALL appear in the filtered output if and only if it has at least one occurrence where `isPaid === false`.
+_For any_ set of `UnifiedStatementItem` with mixed `isPaid` states, when `pendingOnly` is true, the filtered output SHALL contain only items where `isPaid === false`. For weekly groups, a group SHALL appear in the filtered output if and only if it has at least one occurrence where `isPaid === false`.
 
 **Validates: Requirements 4.2, 4.3**
 
 ### Property 6: Pending group summary matches unpaid subset
 
-*For any* weekly group displayed under the "Pending only" filter, the `pendingCount` SHALL equal the number of occurrences where `isPaid === false`, and the pending total amount SHALL equal the sum of `amount` values for those unpaid occurrences.
+_For any_ weekly group displayed under the "Pending only" filter, the `pendingCount` SHALL equal the number of occurrences where `isPaid === false`, and the pending total amount SHALL equal the sum of `amount` values for those unpaid occurrences.
 
 **Validates: Requirements 4.4**
 
 ### Property 7: Active filter count includes all active filters
 
-*For any* `FilterState` object, the `getActiveFilterCount` function SHALL return the count of fields that are non-default (non-empty categoryIds, non-null amounts, non-null dates, and `pendingOnly === true`).
+_For any_ `FilterState` object, the `getActiveFilterCount` function SHALL return the count of fields that are non-default (non-empty categoryIds, non-null amounts, non-null dates, and `pendingOnly === true`).
 
 **Validates: Requirements 4.6**
 
 ### Property 8: Occurrence update persists amount and sets isValueEdited flag
 
-*For any* valid positive amount and any existing weekly occurrence, calling `updateOccurrence` with that amount SHALL persist the new amount value and set `isValueEdited` to `true` on the resulting record.
+_For any_ valid positive amount and any existing weekly occurrence, calling `updateOccurrence` with that amount SHALL persist the new amount value and set `isValueEdited` to `true` on the resulting record.
 
 **Validates: Requirements 2.2**
 
@@ -316,11 +323,13 @@ For weekly occurrences, filtering is done client-side in `useUnifiedStatementIte
 The project uses Jest as the test runner. Property-based tests will use the `fast-check` library with a minimum of 100 iterations per property.
 
 Each property test will be tagged with a comment referencing the design property:
+
 ```
 // Feature: statement-payment-integration, Property {N}: {property_text}
 ```
 
 **Properties to implement:**
+
 1. Unified list sorting (pure function, testable with generated data)
 2. Monthly total sum invariant (pure arithmetic, testable with generated amounts)
 3. Toggle involution (testable with mocked DB service)
@@ -360,4 +369,3 @@ src/components/__tests__/
   PaymentStatusToggle.test.tsx
   FilterPanel.test.tsx
 ```
-

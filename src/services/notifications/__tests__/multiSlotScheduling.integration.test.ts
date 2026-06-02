@@ -375,9 +375,7 @@ describe('Multi-Slot Scheduling Integration Tests', () => {
       const expectedTarget = new Date(beforeCall);
       expectedTarget.setDate(expectedTarget.getDate() + 1);
       expectedTarget.setHours(14, 30, 0, 0);
-      const expectedSeconds = Math.floor(
-        (expectedTarget.getTime() - beforeCall.getTime()) / 1000
-      );
+      const expectedSeconds = Math.floor((expectedTarget.getTime() - beforeCall.getTime()) / 1000);
 
       // Allow 5 seconds tolerance for test execution time
       expect(call.trigger.seconds).toBeGreaterThanOrEqual(expectedSeconds - 5);

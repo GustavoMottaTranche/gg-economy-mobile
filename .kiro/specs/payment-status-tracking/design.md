@@ -72,6 +72,7 @@ graph TD
 ### New Components
 
 #### `PendingSection` (React Native Component)
+
 ```typescript
 interface PendingSectionProps {
   items: PendingItem[];
@@ -80,10 +81,12 @@ interface PendingSectionProps {
   testID?: string;
 }
 ```
+
 Localização: `src/components/dashboard/PendingSection.tsx`
 Exibe a lista de contas pendentes na Home, entre o SummaryCard e os gráficos.
 
 #### `PaymentStatusSummary` (React Native Component)
+
 ```typescript
 interface PaymentStatusSummaryProps {
   predictedTotal: number;
@@ -92,10 +95,12 @@ interface PaymentStatusSummaryProps {
   testID?: string;
 }
 ```
+
 Localização: `src/components/dashboard/PaymentStatusSummary.tsx`
 Seção dentro do SummaryCard que exibe previsto vs. pago vs. pendente.
 
 #### `PaymentStatusOption` (React Native Component)
+
 ```typescript
 type PaymentStatusCreationOption = 'all_pending' | 'first_paid' | 'all_paid';
 
@@ -105,10 +110,12 @@ interface PaymentStatusOptionProps {
   testID?: string;
 }
 ```
+
 Localização: `src/components/weekly-recurring/PaymentStatusOption.tsx`
 Seção de seleção de status no formulário de criação.
 
 #### `OccurrenceStatusToggle` (React Native Component)
+
 ```typescript
 interface OccurrenceStatusToggleProps {
   isPaid: boolean;
@@ -117,12 +124,14 @@ interface OccurrenceStatusToggleProps {
   testID?: string;
 }
 ```
+
 Localização: `src/components/ui/OccurrenceStatusToggle.tsx`
 Controle reutilizável para alternar o status de pagamento (checkbox/toggle visual).
 
 ### New Services
 
 #### `PaymentStatusService`
+
 ```typescript
 interface IPaymentStatusService {
   toggleWeeklyOccurrence(occurrenceId: string): Promise<WeeklyOccurrence>;
@@ -151,11 +160,13 @@ interface GroupPaymentSummary {
   pendingCount: number;
 }
 ```
+
 Localização: `src/services/payment-status/PaymentStatusService.ts`
 
 ### Modified Interfaces
 
 #### `WeeklyOccurrence` (type update)
+
 ```typescript
 export interface WeeklyOccurrence {
   // ... existing fields
@@ -164,9 +175,11 @@ export interface WeeklyOccurrence {
 ```
 
 #### `TransactionRecord` (schema update)
+
 A tabela `transactions` ganha a coluna `is_paid` para transações vinculadas a `recurring_id`.
 
 #### `CreateWeeklyGroupDTO` (type update)
+
 ```typescript
 export interface CreateWeeklyGroupDTO {
   // ... existing fields
@@ -175,6 +188,7 @@ export interface CreateWeeklyGroupDTO {
 ```
 
 #### `CreateRecurringDTO` (type update)
+
 ```typescript
 export interface CreateRecurringDTO {
   // ... existing fields
@@ -185,6 +199,7 @@ export interface CreateRecurringDTO {
 ### New Store
 
 #### `paymentStatusStore`
+
 ```typescript
 interface PaymentStatusState {
   pendingItems: Record<string, PendingItem[]>; // keyed by month
@@ -200,6 +215,7 @@ interface PaymentStatusActions {
   bulkMarkAsPaid(groupId: string, type: 'weekly' | 'monthly'): Promise<BulkMarkResult>;
 }
 ```
+
 Localização: `src/stores/paymentStatusStore.ts`
 
 ## Data Models
@@ -216,11 +232,11 @@ ALTER TABLE weekly_occurrences ADD COLUMN is_paid INTEGER NOT NULL DEFAULT 0;
 ALTER TABLE transactions ADD COLUMN is_paid INTEGER NOT NULL DEFAULT 0;
 
 -- Index for efficient pending items query (month + is_paid)
-CREATE INDEX idx_weekly_occurrences_month_paid 
+CREATE INDEX idx_weekly_occurrences_month_paid
   ON weekly_occurrences(reference_month, is_paid);
 
 -- Index for efficient pending items query on transactions
-CREATE INDEX idx_transactions_month_paid_recurring 
+CREATE INDEX idx_transactions_month_paid_recurring
   ON transactions(reference_month, is_paid, recurring_id);
 ```
 
@@ -261,84 +277,89 @@ export type PaymentStatusCreationOption = 'all_pending' | 'first_paid' | 'all_pa
 
 ## Correctness Properties
 
-*A property is a characteristic or behavior that should hold true across all valid executions of a system — essentially, a formal statement about what the system should do. Properties serve as the bridge between human-readable specifications and machine-verifiable correctness guarantees.*
+_A property is a characteristic or behavior that should hold true across all valid executions of a system — essentially, a formal statement about what the system should do. Properties serve as the bridge between human-readable specifications and machine-verifiable correctness guarantees._
 
 ### Property 1: Toggle payment status inverts the boolean
 
-*For any* recurring occurrence (weekly or monthly) with any date (past, present, or future) and any initial payment status (true or false), calling togglePaymentStatus should produce an occurrence whose isPaid value is the logical negation of the original.
+_For any_ recurring occurrence (weekly or monthly) with any date (past, present, or future) and any initial payment status (true or false), calling togglePaymentStatus should produce an occurrence whose isPaid value is the logical negation of the original.
 
 **Validates: Requirements 1.1, 1.5**
 
 ### Property 2: Newly generated occurrences default to unpaid
 
-*For any* weekly group or monthly recurring transaction, when the occurrence generator creates new occurrences (regardless of the month or group configuration), all newly generated occurrences shall have isPaid equal to false.
+_For any_ weekly group or monthly recurring transaction, when the occurrence generator creates new occurrences (regardless of the month or group configuration), all newly generated occurrences shall have isPaid equal to false.
 
 **Validates: Requirements 1.6, 1.7, 7.4**
 
 ### Property 3: Payment totals computation correctness
 
-*For any* set of recurring occurrences (from both active and inactive groups) belonging to a given reference month, the Predicted_Total shall equal the sum of all occurrence amounts, the Paid_Total shall equal the sum of amounts where isPaid is true, and the Pending_Total shall equal Predicted_Total minus Paid_Total.
+_For any_ set of recurring occurrences (from both active and inactive groups) belonging to a given reference month, the Predicted_Total shall equal the sum of all occurrence amounts, the Paid_Total shall equal the sum of amounts where isPaid is true, and the Pending_Total shall equal Predicted_Total minus Paid_Total.
 
 **Validates: Requirements 1.4, 5.1, 5.5**
 
 ### Property 4: Mark first as paid identifies the correct occurrence
 
-*For any* group creation with the "mark first as paid" option, given a set of generated occurrences, exactly the occurrence with the minimum date within the earliest reference month shall have isPaid equal to true, and all other occurrences shall have isPaid equal to false.
+_For any_ group creation with the "mark first as paid" option, given a set of generated occurrences, exactly the occurrence with the minimum date within the earliest reference month shall have isPaid equal to true, and all other occurrences shall have isPaid equal to false.
 
 **Validates: Requirements 2.3, 2.7**
 
 ### Property 5: Mark all as paid sets all occurrences to paid
 
-*For any* group creation with the "mark all as paid" option, all generated occurrences shall have isPaid equal to true, regardless of their reference month or date.
+_For any_ group creation with the "mark all as paid" option, all generated occurrences shall have isPaid equal to true, regardless of their reference month or date.
 
 **Validates: Requirements 2.4**
 
 ### Property 6: Bulk mark sets all unpaid to paid and reports correct count
 
-*For any* recurring group with N occurrences where K have isPaid equal to false, executing bulk mark shall result in all N occurrences having isPaid equal to true, and the operation shall report exactly K as the count of newly marked items.
+_For any_ recurring group with N occurrences where K have isPaid equal to false, executing bulk mark shall result in all N occurrences having isPaid equal to true, and the operation shall report exactly K as the count of newly marked items.
 
 **Validates: Requirements 3.2, 3.3**
 
 ### Property 7: Pending section contains exactly unpaid items sorted by date
 
-*For any* reference month with a set of recurring occurrences, the pending items list shall contain exactly those occurrences where isPaid is false, and the list shall be sorted by date in ascending chronological order.
+_For any_ reference month with a set of recurring occurrences, the pending items list shall contain exactly those occurrences where isPaid is false, and the list shall be sorted by date in ascending chronological order.
 
 **Validates: Requirements 4.1**
 
 ### Property 8: Group mutations preserve payment status
 
-*For any* group edit operation (name, amount, day of week, category change) or soft delete, the isPaid value of all existing occurrences shall remain unchanged after the operation completes.
+_For any_ group edit operation (name, amount, day of week, category change) or soft delete, the isPaid value of all existing occurrences shall remain unchanged after the operation completes.
 
 **Validates: Requirements 7.1, 7.2, 7.3**
 
 ### Property 9: Paid and pending count computation
 
-*For any* recurring group with N total occurrences where P have isPaid equal to true, the group payment summary shall report paidCount equal to P and pendingCount equal to N minus P.
+_For any_ recurring group with N total occurrences where P have isPaid equal to true, the group payment summary shall report paidCount equal to P and pendingCount equal to N minus P.
 
 **Validates: Requirements 6.3**
 
 ## Error Handling
 
 ### Toggle Failure
+
 - Se a persistência do toggle falhar (erro de I/O no SQLite), o store reverte o estado otimista e exibe um toast de erro via `toastStore`.
 - O estado da UI não deve ficar inconsistente — se o toggle falhar, o controle visual retorna ao estado anterior.
 
 ### Bulk Mark Failure
+
 - A operação de bulk mark usa uma transação SQLite (`db.transaction()`).
 - Se qualquer UPDATE dentro da transação falhar, toda a transação é revertida automaticamente pelo SQLite.
 - O store exibe mensagem de erro indicando que a marcação não foi concluída.
 - Nenhuma ocorrência terá seu status alterado parcialmente.
 
 ### Creation with Status Option Failure
+
 - A criação do grupo + definição de status usa uma transação SQLite.
 - Se a criação falhar após gerar algumas ocorrências, o rollback garante que nenhum dado parcial persista.
 - O formulário permanece preenchido para que o usuário possa tentar novamente.
 
 ### Totals Recalculation Failure
+
 - Se o cálculo de totais falhar (query error), o store mantém os valores anteriores e registra o erro via `logger.error()`.
 - A UI exibe os últimos valores conhecidos até que um refresh bem-sucedido ocorra.
 
 ### Concurrent Access
+
 - Como o app é single-user local (SQLite), não há preocupação com concorrência real.
 - Operações assíncronas são serializadas pelo store (isLoading flag previne operações simultâneas).
 
@@ -349,6 +370,7 @@ export type PaymentStatusCreationOption = 'all_pending' | 'first_paid' | 'all_pa
 O projeto já utiliza `fast-check` (v4.7.0) como dependência de desenvolvimento. Cada propriedade do design será implementada como um teste property-based com mínimo de 100 iterações.
 
 **Testes property-based cobrirão:**
+
 - `PaymentStatusService.toggle()` — Property 1
 - `OccurrenceGenerator` com isPaid default — Property 2
 - `PaymentStatusService.getPaymentTotalsForMonth()` — Property 3
@@ -360,6 +382,7 @@ O projeto já utiliza `fast-check` (v4.7.0) como dependência de desenvolvimento
 - `PaymentStatusService.getGroupPaymentSummary()` — Property 9
 
 **Configuração:**
+
 - Mínimo 100 iterações por teste
 - Cada teste tagueado com: `Feature: payment-status-tracking, Property {N}: {description}`
 - Generators customizados para `WeeklyOccurrence` e `TransactionRecord` com campos aleatórios
@@ -367,6 +390,7 @@ O projeto já utiliza `fast-check` (v4.7.0) como dependência de desenvolvimento
 ### Unit Tests (Jest)
 
 **Testes example-based cobrirão:**
+
 - Renderização do `OccurrenceStatusToggle` com isPaid=true e isPaid=false (Req 1.2, 1.3)
 - Renderização do `PaymentStatusOption` com três opções (Req 2.1)
 - Visibilidade do `PendingSection` quando lista vazia vs. com itens (Req 4.3, 4.4)

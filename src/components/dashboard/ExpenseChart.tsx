@@ -96,7 +96,14 @@ function describeDonutSlice(
   if (angleDiff >= 359.99) {
     // Draw two half-circles instead
     const path1 = describeDonutSlice(x, y, outerRadius, innerRadius, startAngle, startAngle + 180);
-    const path2 = describeDonutSlice(x, y, outerRadius, innerRadius, startAngle + 180, startAngle + 359.99);
+    const path2 = describeDonutSlice(
+      x,
+      y,
+      outerRadius,
+      innerRadius,
+      startAngle + 180,
+      startAngle + 359.99
+    );
     return path1 + ' ' + path2;
   }
 

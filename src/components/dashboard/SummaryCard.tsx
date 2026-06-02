@@ -166,7 +166,7 @@ function SummaryCardComponent({
           letterSpacing: theme.typography.overline.letterSpacing,
         },
       }),
-    [theme],
+    [theme]
   );
 
   return (
@@ -222,7 +222,11 @@ function SummaryCardComponent({
       {weeklyExpensesTotal !== undefined && weeklyExpensesTotal > 0 && (
         <View style={styles.weeklyExpensesContainer} testID={`${testID}-weekly-expenses`}>
           <Text style={styles.weeklyExpensesLabel}>{t('dashboard.weeklyExpenses')}</Text>
-          <ExpenseAmount amount={-weeklyExpensesTotal} size="small" testID={`${testID}-weekly-expenses-amount`} />
+          <ExpenseAmount
+            amount={-weeklyExpensesTotal}
+            size="small"
+            testID={`${testID}-weekly-expenses-amount`}
+          />
         </View>
       )}
 

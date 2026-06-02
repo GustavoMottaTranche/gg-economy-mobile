@@ -28,7 +28,7 @@ graph TD
     end
 
     subgraph "Service Layer"
-        I[ValidationService] 
+        I[ValidationService]
         J[InstallmentCalculator]
         K[RecurringTransactionService]
         L[BatchSessionManager]
@@ -78,7 +78,7 @@ interface DescriptionValidationInput {
 interface StandardEntryValidationInput {
   title: string;
   description: string;
-  amount: number;        // cents
+  amount: number; // cents
   date: Date;
   categoryId: string | null;
   referenceMonth: string; // YYYY-MM
@@ -87,16 +87,16 @@ interface StandardEntryValidationInput {
 interface InstallmentEntryValidationInput {
   title: string;
   description: string;
-  totalAmount: number;   // cents
-  parcelCount: number;   // 2-48 or Infinity
-  startMonth: string;    // YYYY-MM
+  totalAmount: number; // cents
+  parcelCount: number; // 2-48 or Infinity
+  startMonth: string; // YYYY-MM
   categoryId: string | null;
   isInfinite: boolean;
 }
 
 interface BatchEntryValidationInput {
-  amount: number;        // cents
-  description: string;   // optional per-entry description
+  amount: number; // cents
+  description: string; // optional per-entry description
   date: Date;
   referenceMonth: string;
 }
@@ -120,10 +120,10 @@ function validateBatchEntry(input: BatchEntryValidationInput): ValidationResult;
 
 interface CreateRecurringDTO {
   title: string;
-  amount: number;          // cents
+  amount: number; // cents
   categoryId: string;
   categoryType: 'income' | 'expense';
-  startMonth: string;      // YYYY-MM
+  startMonth: string; // YYYY-MM
   description?: string;
   originId?: string;
 }
@@ -157,10 +157,10 @@ function getActiveRecurrings(): Promise<RecurringTransaction[]>;
 
 interface InstallmentCalculatorInput {
   totalAmount: number;
-  parcelCount: number;    // 2-48 for finite
+  parcelCount: number; // 2-48 for finite
   startMonth: string;
-  title: string;          // NEW: replaces description as primary
-  description?: string;   // NEW: optional detail
+  title: string; // NEW: replaces description as primary
+  description?: string; // NEW: optional detail
   categoryId: string;
   originId?: string;
 }
@@ -178,7 +178,7 @@ interface BatchSession {
   isActive: boolean;
   categoryId: string | null;
   categoryType: 'income' | 'expense' | null;
-  title: string | null;       // NEW: locked title for session
+  title: string | null; // NEW: locked title for session
   entryCount: number;
   maxEntries: number;
   totalValue: number;
@@ -199,13 +199,13 @@ interface BatchSessionActions {
 
 /**
  * Migration v2: Add title column, restructure description
- * 
+ *
  * Steps:
  * 1. ALTER TABLE transactions ADD COLUMN title TEXT NOT NULL DEFAULT ''
  * 2. UPDATE transactions SET title = description
  * 3. UPDATE transactions SET description = ''
  * 4. Update schema_version to new version
- * 
+ *
  * Rollback:
  * 1. UPDATE transactions SET description = title
  * 2. DROP COLUMN title (via table rebuild in SQLite)
@@ -359,86 +359,85 @@ export interface InstallmentCalculatorInput {
 }
 ```
 
-
 ## Correctness Properties
 
-*A property is a characteristic or behavior that should hold true across all valid executions of a system — essentially, a formal statement about what the system should do. Properties serve as the bridge between human-readable specifications and machine-verifiable correctness guarantees.*
+_A property is a characteristic or behavior that should hold true across all valid executions of a system — essentially, a formal statement about what the system should do. Properties serve as the bridge between human-readable specifications and machine-verifiable correctness guarantees._
 
 ### Property 1: Title Validation
 
-*For any* string, `validateTitle` SHALL accept it if and only if `string.trim().length` is between 1 and 100 (inclusive). Strings composed entirely of whitespace or exceeding 100 characters after trimming SHALL be rejected.
+_For any_ string, `validateTitle` SHALL accept it if and only if `string.trim().length` is between 1 and 100 (inclusive). Strings composed entirely of whitespace or exceeding 100 characters after trimming SHALL be rejected.
 
 **Validates: Requirements 1.2, 1.3, 7.1**
 
 ### Property 2: Description Validation
 
-*For any* string, `validateDescription` SHALL accept it if and only if `string.length` is at most 500. An empty string SHALL also be accepted (description is optional).
+_For any_ string, `validateDescription` SHALL accept it if and only if `string.length` is at most 500. An empty string SHALL also be accepted (description is optional).
 
 **Validates: Requirements 2.3, 7.2**
 
 ### Property 3: Transaction Field Persistence Round-Trip
 
-*For any* valid transaction with a random title (1-100 chars), description (0-500 chars), and datetime, creating the transaction and reading it back SHALL return the exact same title, description, and full datetime (including hour and minute) in ISO 8601 format.
+_For any_ valid transaction with a random title (1-100 chars), description (0-500 chars), and datetime, creating the transaction and reading it back SHALL return the exact same title, description, and full datetime (including hour and minute) in ISO 8601 format.
 
 **Validates: Requirements 1.4, 2.4, 3.3**
 
 ### Property 4: Date Formatting Matches Locale Pattern
 
-*For any* valid Date object, formatting it with locale "pt-BR" SHALL produce a string matching the pattern `dd/MM/yyyy HH:mm`, and formatting with locale "en" SHALL produce a string matching `MM/dd/yyyy hh:mm a`.
+_For any_ valid Date object, formatting it with locale "pt-BR" SHALL produce a string matching the pattern `dd/MM/yyyy HH:mm`, and formatting with locale "en" SHALL produce a string matching `MM/dd/yyyy hh:mm a`.
 
 **Validates: Requirements 3.4**
 
 ### Property 5: Reference Month Derivation
 
-*For any* valid Date, `deriveReferenceMonth(date)` SHALL return a string in YYYY-MM format where the year and month match the year and month of the input date.
+_For any_ valid Date, `deriveReferenceMonth(date)` SHALL return a string in YYYY-MM format where the year and month match the year and month of the input date.
 
 **Validates: Requirements 3.5, 4.5**
 
 ### Property 6: Batch Mode Title Propagation
 
-*For any* batch session started with a random valid title and category, every transaction created during that session SHALL have its `title` field equal to the session title, regardless of how many entries are added or what per-entry descriptions are provided.
+_For any_ batch session started with a random valid title and category, every transaction created during that session SHALL have its `title` field equal to the session title, regardless of how many entries are added or what per-entry descriptions are provided.
 
 **Validates: Requirements 5.2, 5.5**
 
 ### Property 7: Migration Data Transformation
 
-*For any* set of existing transactions with random description values, after executing the migration, each transaction's `title` field SHALL equal its original `description` value, and its `description` field SHALL be an empty string.
+_For any_ set of existing transactions with random description values, after executing the migration, each transaction's `title` field SHALL equal its original `description` value, and its `description` field SHALL be an empty string.
 
 **Validates: Requirements 6.2, 6.3**
 
 ### Property 8: Recurring Transaction Generation
 
-*For any* active recurring transaction with a given start month, calling `generateMonthlyTransactions(targetMonth)` for any month >= startMonth SHALL produce a transaction with the recurring's title, amount, and category. For any month < startMonth, no transaction SHALL be generated.
+_For any_ active recurring transaction with a given start month, calling `generateMonthlyTransactions(targetMonth)` for any month >= startMonth SHALL produce a transaction with the recurring's title, amount, and category. For any month < startMonth, no transaction SHALL be generated.
 
 **Validates: Requirements 9.2, 9.3**
 
 ### Property 9: Deactivation/Reactivation Lifecycle
 
-*For any* recurring transaction, after deactivation, `generateMonthlyTransactions` SHALL NOT create new transactions for any future month. After reactivation, `generateMonthlyTransactions` SHALL resume creating transactions for months >= the reactivation month.
+_For any_ recurring transaction, after deactivation, `generateMonthlyTransactions` SHALL NOT create new transactions for any future month. After reactivation, `generateMonthlyTransactions` SHALL resume creating transactions for months >= the reactivation month.
 
 **Validates: Requirements 9.5, 9.7**
 
 ### Property 10: Deactivation Preserves History
 
-*For any* recurring transaction that has generated N transactions before deactivation, after deactivation all N previously generated transactions SHALL remain in the database unchanged.
+_For any_ recurring transaction that has generated N transactions before deactivation, after deactivation all N previously generated transactions SHALL remain in the database unchanged.
 
 **Validates: Requirements 9.6**
 
 ### Property 11: Individual Parcel Edit Isolation
 
-*For any* installment group with N parcels, editing the amount of parcel K to a new random value SHALL result in only parcel K having the new amount, while all other N-1 parcels retain their original amounts.
+_For any_ installment group with N parcels, editing the amount of parcel K to a new random value SHALL result in only parcel K having the new amount, while all other N-1 parcels retain their original amounts.
 
 **Validates: Requirements 10.1, 10.2**
 
 ### Property 12: Recurring Amount Update Propagation
 
-*For any* active recurring transaction, when the user applies a value change to "all future occurrences", the recurring record's base amount SHALL equal the new value, and all subsequently generated transactions SHALL use the new amount.
+_For any_ active recurring transaction, when the user applies a value change to "all future occurrences", the recurring record's base amount SHALL equal the new value, and all subsequently generated transactions SHALL use the new amount.
 
 **Validates: Requirements 10.4**
 
 ### Property 13: Single Occurrence Edit Isolation
 
-*For any* active recurring transaction with base amount A, when the user edits a single occurrence to amount B, the recurring record's base amount SHALL remain A, and the next generated transaction SHALL use amount A (not B).
+_For any_ active recurring transaction with base amount A, when the user edits a single occurrence to amount B, the recurring record's base amount SHALL remain A, and the next generated transaction SHALL use amount A (not B).
 
 **Validates: Requirements 10.5**
 
@@ -446,30 +445,30 @@ export interface InstallmentCalculatorInput {
 
 ### Validation Errors
 
-| Cenário | Comportamento |
-|---------|---------------|
-| Título vazio/whitespace | Exibir erro "Título é obrigatório" abaixo do campo, impedir salvamento |
-| Título > 100 chars | Exibir erro "Título deve ter no máximo 100 caracteres" abaixo do campo |
-| Descrição > 500 chars | Exibir erro "Descrição deve ter no máximo 500 caracteres" abaixo do campo |
-| Data não selecionada | Exibir erro "Data e hora da compra são obrigatórias" abaixo do campo |
-| Categoria não selecionada | Exibir erro "Categoria é obrigatória" abaixo do campo |
-| Valor inválido | Manter comportamento existente de validação de valor |
+| Cenário                   | Comportamento                                                             |
+| ------------------------- | ------------------------------------------------------------------------- |
+| Título vazio/whitespace   | Exibir erro "Título é obrigatório" abaixo do campo, impedir salvamento    |
+| Título > 100 chars        | Exibir erro "Título deve ter no máximo 100 caracteres" abaixo do campo    |
+| Descrição > 500 chars     | Exibir erro "Descrição deve ter no máximo 500 caracteres" abaixo do campo |
+| Data não selecionada      | Exibir erro "Data e hora da compra são obrigatórias" abaixo do campo      |
+| Categoria não selecionada | Exibir erro "Categoria é obrigatória" abaixo do campo                     |
+| Valor inválido            | Manter comportamento existente de validação de valor                      |
 
 ### Migration Errors
 
-| Cenário | Comportamento |
-|---------|---------------|
-| Migração falha no ALTER TABLE | Reverter todas as alterações, exibir alerta ao usuário |
-| Migração falha no UPDATE | Reverter ALTER TABLE, exibir alerta com opção de retry |
-| Banco corrompido | Detectar na inicialização, oferecer restauração de backup |
+| Cenário                       | Comportamento                                             |
+| ----------------------------- | --------------------------------------------------------- |
+| Migração falha no ALTER TABLE | Reverter todas as alterações, exibir alerta ao usuário    |
+| Migração falha no UPDATE      | Reverter ALTER TABLE, exibir alerta com opção de retry    |
+| Banco corrompido              | Detectar na inicialização, oferecer restauração de backup |
 
 ### Recurring Transaction Errors
 
-| Cenário | Comportamento |
-|---------|---------------|
-| Geração falha para um mês | Logar erro, não gerar para aquele mês, tentar novamente na próxima abertura |
+| Cenário                           | Comportamento                                                                      |
+| --------------------------------- | ---------------------------------------------------------------------------------- |
+| Geração falha para um mês         | Logar erro, não gerar para aquele mês, tentar novamente na próxima abertura        |
 | Categoria da recorrência deletada | CASCADE delete remove a recorrência; lançamentos já gerados mantêm categoryId null |
-| Conflito de geração (já existe) | Verificar existência antes de gerar, pular se já existe para aquele mês |
+| Conflito de geração (já existe)   | Verificar existência antes de gerar, pular se já existe para aquele mês            |
 
 ### Form State Preservation
 

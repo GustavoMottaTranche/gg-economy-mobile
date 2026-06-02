@@ -23,12 +23,7 @@ describe('dateUtils', () => {
     it('returns 4 Fridays in February 2024 (leap year)', () => {
       // February 2024 (leap year, 29 days): Fri 2, 9, 16, 23 → 4 Fridays
       const result = getWeeklyDatesForMonth('2024-02', 5, '2024-01-01');
-      expect(result).toEqual([
-        '2024-02-02',
-        '2024-02-09',
-        '2024-02-16',
-        '2024-02-23',
-      ]);
+      expect(result).toEqual(['2024-02-02', '2024-02-09', '2024-02-16', '2024-02-23']);
       expect(result.length).toBe(4);
     });
 
@@ -72,12 +67,7 @@ describe('dateUtils', () => {
     it('handles December correctly', () => {
       // December 2024 Saturdays: 7, 14, 21, 28 → 4 Saturdays
       const result = getWeeklyDatesForMonth('2024-12', 6, '2024-01-01');
-      expect(result).toEqual([
-        '2024-12-07',
-        '2024-12-14',
-        '2024-12-21',
-        '2024-12-28',
-      ]);
+      expect(result).toEqual(['2024-12-07', '2024-12-14', '2024-12-21', '2024-12-28']);
     });
 
     it('handles Dec 31 boundary (5 Tuesdays including Dec 31)', () => {

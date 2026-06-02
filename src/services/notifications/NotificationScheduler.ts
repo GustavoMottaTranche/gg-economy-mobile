@@ -10,7 +10,11 @@
  * @module services/notifications/NotificationScheduler
  */
 
-import type { NotificationSettings, NotificationFrequency, TimeSlot } from '../../stores/notificationStore';
+import type {
+  NotificationSettings,
+  NotificationFrequency,
+  TimeSlot,
+} from '../../stores/notificationStore';
 import { useNotificationStore, timeSlotKey } from '../../stores/notificationStore';
 import { getCurrentLocale } from '../../i18n';
 import { getNotificationContent } from './NotificationContent';
@@ -110,10 +114,7 @@ export interface INotificationScheduler {
    * @param slotHour - The hour of the delivered time slot
    * @param slotMinute - The minute of the delivered time slot
    */
-  handleSlotNotificationReceived: (
-    slotHour: number,
-    slotMinute: number
-  ) => Promise<void>;
+  handleSlotNotificationReceived: (slotHour: number, slotMinute: number) => Promise<void>;
 }
 
 /**
@@ -367,10 +368,7 @@ export class NotificationScheduler implements INotificationScheduler {
         }
 
         // Calculate seconds until target, minimum 1
-        const seconds = Math.max(
-          1,
-          Math.floor((targetTime.getTime() - now.getTime()) / 1000)
-        );
+        const seconds = Math.max(1, Math.floor((targetTime.getTime() - now.getTime()) / 1000));
 
         const notificationId = await NotificationsModule.scheduleNotificationAsync({
           content: {
@@ -536,10 +534,7 @@ export class NotificationScheduler implements INotificationScheduler {
           targetTime.setDate(targetTime.getDate() + 1);
         }
 
-        const seconds = Math.max(
-          1,
-          Math.floor((targetTime.getTime() - now.getTime()) / 1000)
-        );
+        const seconds = Math.max(1, Math.floor((targetTime.getTime() - now.getTime()) / 1000));
 
         const notificationId = await NotificationsModule.scheduleNotificationAsync({
           content: {
@@ -586,10 +581,7 @@ export class NotificationScheduler implements INotificationScheduler {
    *
    * **Validates: Requirements 3.2, 3.4**
    */
-  async handleSlotNotificationReceived(
-    slotHour: number,
-    slotMinute: number
-  ): Promise<void> {
+  async handleSlotNotificationReceived(slotHour: number, slotMinute: number): Promise<void> {
     try {
       const NotificationsModule = await getNotifications();
       if (!NotificationsModule) {
@@ -604,10 +596,7 @@ export class NotificationScheduler implements INotificationScheduler {
       targetTime.setHours(slotHour, slotMinute, 0, 0);
 
       // Calculate seconds until target, minimum 1
-      const seconds = Math.max(
-        1,
-        Math.floor((targetTime.getTime() - now.getTime()) / 1000)
-      );
+      const seconds = Math.max(1, Math.floor((targetTime.getTime() - now.getTime()) / 1000));
 
       const locale = getCurrentLocale();
       const content = getNotificationContent(locale);

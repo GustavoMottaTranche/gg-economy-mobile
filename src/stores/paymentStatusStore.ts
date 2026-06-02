@@ -75,8 +75,7 @@ export const usePaymentStatusStore = create<PaymentStatusStore>()((set, get) => 
         error: null,
       }));
     } catch (error) {
-      const message =
-        error instanceof Error ? error.message : 'Failed to load pending items';
+      const message = error instanceof Error ? error.message : 'Failed to load pending items';
       logger.error('Failed to load pending items for month', { month, error: message });
       set({ error: message, isLoading: false });
     }
@@ -90,8 +89,7 @@ export const usePaymentStatusStore = create<PaymentStatusStore>()((set, get) => 
         error: null,
       }));
     } catch (error) {
-      const message =
-        error instanceof Error ? error.message : 'Failed to load payment totals';
+      const message = error instanceof Error ? error.message : 'Failed to load payment totals';
       logger.error('Failed to load payment totals for month', { month, error: message });
       set({ error: message });
     }
@@ -157,8 +155,7 @@ export const usePaymentStatusStore = create<PaymentStatusStore>()((set, get) => 
         set({ isLoading: false });
       }
     } catch (error) {
-      const message =
-        error instanceof Error ? error.message : 'Failed to toggle payment status';
+      const message = error instanceof Error ? error.message : 'Failed to toggle payment status';
       logger.error('Failed to toggle payment status', { id, type, error: message });
 
       // Revert optimistic state
@@ -174,10 +171,7 @@ export const usePaymentStatusStore = create<PaymentStatusStore>()((set, get) => 
     }
   },
 
-  bulkMarkAsPaid: async (
-    groupId: string,
-    type: 'weekly' | 'monthly'
-  ): Promise<BulkMarkResult> => {
+  bulkMarkAsPaid: async (groupId: string, type: 'weekly' | 'monthly'): Promise<BulkMarkResult> => {
     const { isLoading, pendingItems, paymentTotals } = get();
 
     // Prevent concurrent operations
@@ -241,8 +235,7 @@ export const usePaymentStatusStore = create<PaymentStatusStore>()((set, get) => 
 
       return result;
     } catch (error) {
-      const message =
-        error instanceof Error ? error.message : 'Failed to bulk mark as paid';
+      const message = error instanceof Error ? error.message : 'Failed to bulk mark as paid';
       logger.error('Failed to bulk mark as paid', { groupId, type, error: message });
 
       // Revert state

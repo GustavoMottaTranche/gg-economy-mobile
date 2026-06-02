@@ -83,9 +83,7 @@ describe('TransactionCard', () => {
       ...mockTransaction,
       description: '',
     };
-    const { getByText, queryByText } = render(
-      <TransactionCard transaction={transactionNoDesc} />
-    );
+    const { getByText, queryByText } = render(<TransactionCard transaction={transactionNoDesc} />);
     // Title should still be visible
     expect(getByText('Grocery Store')).toBeTruthy();
     // Description text should not be rendered
@@ -212,7 +210,9 @@ describe('TransactionCard', () => {
       <TransactionCard {...defaultProps} category={mockCategory} onPress={() => {}} />
     );
     // Should include title, description, date, type, amount, and category
-    const accessibleElement = getByLabelText(/Grocery Store.*Grocery Store Purchase.*01\/15\/2024.*Food/);
+    const accessibleElement = getByLabelText(
+      /Grocery Store.*Grocery Store Purchase.*01\/15\/2024.*Food/
+    );
     expect(accessibleElement).toBeTruthy();
   });
 

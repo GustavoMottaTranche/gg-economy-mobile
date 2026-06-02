@@ -32,9 +32,9 @@ describe('Property 6: Batch entry category and type derivation', () => {
 
           const state = useBatchSessionStore.getState();
           expect(state.categoryId).toBe(categoryId);
-        },
+        }
       ),
-      { numRuns: 100 },
+      { numRuns: 100 }
     );
   });
 
@@ -50,9 +50,9 @@ describe('Property 6: Batch entry category and type derivation', () => {
 
           const state = useBatchSessionStore.getState();
           expect(state.categoryType).toBe(categoryType);
-        },
+        }
       ),
-      { numRuns: 100 },
+      { numRuns: 100 }
     );
   });
 
@@ -71,9 +71,9 @@ describe('Property 6: Batch entry category and type derivation', () => {
           const state = useBatchSessionStore.getState();
           expect(state.categoryId).toBe(categoryId);
           expect(state.categoryType).toBe(categoryType);
-        },
+        }
       ),
-      { numRuns: 100 },
+      { numRuns: 100 }
     );
   });
 
@@ -95,9 +95,9 @@ describe('Property 6: Batch entry category and type derivation', () => {
           const state = useBatchSessionStore.getState();
           expect(state.categoryId).toBe(categoryId);
           expect(state.categoryType).toBe(categoryType);
-        },
+        }
       ),
-      { numRuns: 100 },
+      { numRuns: 100 }
     );
   });
 });

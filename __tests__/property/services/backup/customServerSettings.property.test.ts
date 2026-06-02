@@ -59,14 +59,11 @@ describe('Property 4: URL Validation', () => {
   const validUrlArb = fc
     .tuple(
       fc.constantFrom('http://', 'https://'),
-      fc.stringMatching(/^[a-z0-9][a-z0-9.-]{0,62}[a-z0-9]$/).filter(
-        (s) => s.length >= 1 && s.trim().length > 0
-      ),
+      fc
+        .stringMatching(/^[a-z0-9][a-z0-9.-]{0,62}[a-z0-9]$/)
+        .filter((s) => s.length >= 1 && s.trim().length > 0),
       fc.option(
-        fc.tuple(
-          fc.integer({ min: 1, max: 65535 }),
-          fc.stringMatching(/^(\/[a-z0-9._-]*){0,5}$/)
-        ),
+        fc.tuple(fc.integer({ min: 1, max: 65535 }), fc.stringMatching(/^(\/[a-z0-9._-]*){0,5}$/)),
         { nil: undefined }
       )
     )
@@ -83,12 +80,10 @@ describe('Property 4: URL Validation', () => {
   /**
    * Arbitrary: generates strings that do NOT start with http:// or https://
    */
-  const noSchemeArb = fc
-    .string({ minLength: 1, maxLength: 200 })
-    .filter((s) => {
-      const lower = s.toLowerCase();
-      return !lower.startsWith('http://') && !lower.startsWith('https://');
-    });
+  const noSchemeArb = fc.string({ minLength: 1, maxLength: 200 }).filter((s) => {
+    const lower = s.toLowerCase();
+    return !lower.startsWith('http://') && !lower.startsWith('https://');
+  });
 
   /**
    * Arbitrary: generates URLs with ftp:// scheme (invalid)

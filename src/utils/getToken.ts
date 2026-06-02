@@ -25,11 +25,7 @@
  * const missing = getToken(spacing, 'huge', 64); // returns 64 fallback + warns in __DEV__
  * ```
  */
-export function getToken<T>(
-  obj: Record<string, T>,
-  key: string,
-  fallback: T
-): T {
+export function getToken<T>(obj: Record<string, T>, key: string, fallback: T): T {
   if (key in obj) {
     return obj[key] as T;
   }

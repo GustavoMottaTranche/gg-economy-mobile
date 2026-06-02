@@ -97,9 +97,7 @@ export const useFilterStore = create<FilterStoreState>((set, get) => ({
     set((state) => {
       const current = state.filters.categoryIds;
       const exists = current.includes(id);
-      const categoryIds = exists
-        ? current.filter((cid) => cid !== id)
-        : [...current, id];
+      const categoryIds = exists ? current.filter((cid) => cid !== id) : [...current, id];
       return { filters: { ...state.filters, categoryIds } };
     });
   },

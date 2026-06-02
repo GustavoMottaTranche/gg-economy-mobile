@@ -207,9 +207,18 @@ describe('Property 3: Payment status toggle is involutory (double-toggle restore
       fc.assert(
         fc.property(
           fc.oneof(
-            regularTransactionArbitrary.map((t) => ({ type: 'transaction' as const, isPaid: t.isPaid })),
-            installmentParcelArbitrary.map((p) => ({ type: 'installmentParcel' as const, isPaid: p.isPaid })),
-            weeklyOccurrenceArbitrary.map((o) => ({ type: 'weeklyOccurrence' as const, isPaid: o.isPaid }))
+            regularTransactionArbitrary.map((t) => ({
+              type: 'transaction' as const,
+              isPaid: t.isPaid,
+            })),
+            installmentParcelArbitrary.map((p) => ({
+              type: 'installmentParcel' as const,
+              isPaid: p.isPaid,
+            })),
+            weeklyOccurrenceArbitrary.map((o) => ({
+              type: 'weeklyOccurrence' as const,
+              isPaid: o.isPaid,
+            }))
           ),
           (item) => {
             // Property: toggle(toggle(isPaid)) === isPaid regardless of item type

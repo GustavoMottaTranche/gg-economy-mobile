@@ -67,7 +67,7 @@ export type NotificationFrequency =
 
 // New TimeSlot type
 export interface TimeSlot {
-  hour: number;   // 0-23
+  hour: number; // 0-23
   minute: number; // 0, 15, 30, 45
 }
 
@@ -141,19 +141,13 @@ export interface INotificationScheduler {
   /**
    * Calculate the next notification time across all time slots
    */
-  calculateNextTimeMultiSlot: (
-    timeSlots: TimeSlot[],
-    fromTime?: Date
-  ) => Date | null;
+  calculateNextTimeMultiSlot: (timeSlots: TimeSlot[], fromTime?: Date) => Date | null;
 
   /**
    * Handle notification received for a specific time slot
    * Reschedules only the delivered slot for the next day
    */
-  handleSlotNotificationReceived: (
-    slotHour: number,
-    slotMinute: number
-  ) => Promise<void>;
+  handleSlotNotificationReceived: (slotHour: number, slotMinute: number) => Promise<void>;
 }
 ```
 
@@ -218,7 +212,7 @@ The `partialize` function is extended to include the new fields:
 partialize: (state) => ({
   settings: state.settings, // Already persists the full settings object
   permissionStatus: state.permissionStatus,
-})
+});
 ```
 
 Since `timeSlots` and `timeSlotNotificationIds` are part of `settings`, they are automatically persisted.
@@ -234,10 +228,12 @@ onRehydrateStorage: () => (state) => {
 
     // Backward compatibility: initialize timeSlots if missing
     if (!state.settings.timeSlots) {
-      state.settings.timeSlots = [{
-        hour: state.settings.preferredHour,
-        minute: state.settings.preferredMinute,
-      }];
+      state.settings.timeSlots = [
+        {
+          hour: state.settings.preferredHour,
+          minute: state.settings.preferredMinute,
+        },
+      ];
     }
 
     // Initialize mapping if missing
@@ -246,12 +242,23 @@ onRehydrateStorage: () => (state) => {
     }
 
     // Validate frequency - fallback to defaults if invalid
-    const validFrequencies = ['daily', 'every2days', 'every3days', 'weekly', 'disabled', 'multipleDaily'];
+    const validFrequencies = [
+      'daily',
+      'every2days',
+      'every3days',
+      'weekly',
+      'disabled',
+      'multipleDaily',
+    ];
     if (!validFrequencies.includes(state.settings.frequency)) {
-      state.settings = { ...DEFAULT_NOTIFICATION_SETTINGS, timeSlots: [], timeSlotNotificationIds: {} };
+      state.settings = {
+        ...DEFAULT_NOTIFICATION_SETTINGS,
+        timeSlots: [],
+        timeSlotNotificationIds: {},
+      };
     }
   }
-}
+};
 ```
 
 ### Notification Data Payload
@@ -279,93 +286,93 @@ Each scheduled notification includes slot identification:
 
 ## Correctness Properties
 
-*A property is a characteristic or behavior that should hold true across all valid executions of a system — essentially, a formal statement about what the system should do. Properties serve as the bridge between human-readable specifications and machine-verifiable correctness guarantees.*
+_A property is a characteristic or behavior that should hold true across all valid executions of a system — essentially, a formal statement about what the system should do. Properties serve as the bridge between human-readable specifications and machine-verifiable correctness guarantees._
 
 ### Property 1: Chronological Order Invariant
 
-*For any* time slot list and *for any* valid time slot added to it, the resulting list SHALL always be sorted in ascending chronological order (comparing hour first, then minute).
+_For any_ time slot list and _for any_ valid time slot added to it, the resulting list SHALL always be sorted in ascending chronological order (comparing hour first, then minute).
 
 **Validates: Requirements 1.2, 5.6**
 
 ### Property 2: Size Bounds Invariant
 
-*For any* sequence of add and remove operations on a time slot list, the list size SHALL always remain within the bounds [1, 5] inclusive. Add operations SHALL be rejected when size is 5, and remove operations SHALL be rejected when size is 1.
+_For any_ sequence of add and remove operations on a time slot list, the list size SHALL always remain within the bounds [1, 5] inclusive. Add operations SHALL be rejected when size is 5, and remove operations SHALL be rejected when size is 1.
 
 **Validates: Requirements 1.3, 1.6, 1.7**
 
 ### Property 3: Duplicate Rejection
 
-*For any* time slot list and *for any* time slot whose hour and minute match an existing entry in the list, the add operation SHALL return false and the list SHALL remain unchanged.
+_For any_ time slot list and _for any_ time slot whose hour and minute match an existing entry in the list, the add operation SHALL return false and the list SHALL remain unchanged.
 
 **Validates: Requirements 1.4**
 
 ### Property 4: Removal Correctness
 
-*For any* time slot list with more than 1 entry and *for any* valid slot key in that list, removing it SHALL decrease the list size by exactly 1 and the removed slot SHALL no longer appear in the list.
+_For any_ time slot list with more than 1 entry and _for any_ valid slot key in that list, removing it SHALL decrease the list size by exactly 1 and the removed slot SHALL no longer appear in the list.
 
 **Validates: Requirements 1.5**
 
 ### Property 5: Time Slot Preservation Round-Trip
 
-*For any* non-empty time slot list, switching frequency from "multipleDaily" to any other frequency and then back to "multipleDaily" SHALL result in the same time slot list without modification.
+_For any_ non-empty time slot list, switching frequency from "multipleDaily" to any other frequency and then back to "multipleDaily" SHALL result in the same time slot list without modification.
 
 **Validates: Requirements 2.3, 2.5**
 
 ### Property 6: One-to-One Scheduling Mapping
 
-*For any* time slot list with N entries, after scheduling all slots, the resulting notification ID mapping SHALL contain exactly N entries, one for each unique slot key, and each value SHALL be a non-empty string.
+_For any_ time slot list with N entries, after scheduling all slots, the resulting notification ID mapping SHALL contain exactly N entries, one for each unique slot key, and each value SHALL be a non-empty string.
 
 **Validates: Requirements 3.1, 4.2**
 
 ### Property 7: Next-Day Rescheduling After Delivery
 
-*For any* time slot with hour H and minute M, after a notification delivery is handled for that slot, the next scheduled notification for that slot SHALL target the same hour H and minute M on the next calendar day.
+_For any_ time slot with hour H and minute M, after a notification delivery is handled for that slot, the next scheduled notification for that slot SHALL target the same hour H and minute M on the next calendar day.
 
 **Validates: Requirements 3.2**
 
 ### Property 8: TIME_INTERVAL Seconds Calculation
 
-*For any* target time strictly in the future relative to a current time, the calculated trigger seconds SHALL equal `Math.floor((targetTime - currentTime) / 1000)` and SHALL always be at least 1.
+_For any_ target time strictly in the future relative to a current time, the calculated trigger seconds SHALL equal `Math.floor((targetTime - currentTime) / 1000)` and SHALL always be at least 1.
 
 **Validates: Requirements 3.3**
 
 ### Property 9: Error Isolation
 
-*For any* time slot list where scheduling or restoration fails for K slots (0 ≤ K < N), the remaining N-K slots SHALL still be successfully scheduled/restored with valid notification IDs.
+_For any_ time slot list where scheduling or restoration fails for K slots (0 ≤ K < N), the remaining N-K slots SHALL still be successfully scheduled/restored with valid notification IDs.
 
 **Validates: Requirements 3.5, 4.5**
 
 ### Property 10: Next Notification Time Calculation
 
-*For any* non-empty time slot list and *for any* current time, the calculated next notification time SHALL be the earliest time slot whose target time is strictly after the current time. If all slots are at or before the current time today, the result SHALL be the earliest slot's time on the next calendar day.
+_For any_ non-empty time slot list and _for any_ current time, the calculated next notification time SHALL be the earliest time slot whose target time is strictly after the current time. If all slots are at or before the current time today, the result SHALL be the earliest slot's time on the next calendar day.
 
 **Validates: Requirements 6.1, 6.2, 6.3**
 
 ### Property 11: Backward-Compatible Hydration
 
-*For any* valid preferredHour (0-23) and preferredMinute (0-59), when the store hydrates without a timeSlots field, the resulting timeSlots array SHALL contain exactly one entry with hour equal to preferredHour and minute equal to preferredMinute.
+_For any_ valid preferredHour (0-23) and preferredMinute (0-59), when the store hydrates without a timeSlots field, the resulting timeSlots array SHALL contain exactly one entry with hour equal to preferredHour and minute equal to preferredMinute.
 
 **Validates: Requirements 7.1**
 
 ### Property 12: Frequency Type Backward Compatibility
 
-*For any* previously valid frequency value ('daily', 'every2days', 'every3days', 'weekly', 'disabled'), the store SHALL accept it without error, and the scheduler SHALL use the single preferredHour/preferredMinute with the existing FREQUENCY_DAYS interval mapping.
+_For any_ previously valid frequency value ('daily', 'every2days', 'every3days', 'weekly', 'disabled'), the store SHALL accept it without error, and the scheduler SHALL use the single preferredHour/preferredMinute with the existing FREQUENCY_DAYS interval mapping.
 
 **Validates: Requirements 7.2, 7.3**
 
 ## Error Handling
 
-| Scenario | Handling Strategy |
-|----------|-------------------|
-| Scheduling fails for a single time slot | Log warning, store no ID for that slot, continue with remaining slots |
-| Restoration finds missing notification ID | Reschedule that slot, update mapping with new ID |
-| Rescheduling fails during restoration | Log warning, skip that slot, continue restoring others |
-| User adds duplicate time slot | Return false from `addTimeSlot`, UI shows validation message |
-| User tries to add when at max (5) | `addTimeSlot` returns false, UI disables add button |
-| User tries to remove last slot | `removeTimeSlot` returns false, UI hides delete button |
-| Hydration with missing timeSlots field | Initialize from preferredHour/preferredMinute |
-| Hydration with invalid frequency value | Reset to DEFAULT_NOTIFICATION_SETTINGS |
-| expo-notifications unavailable (Expo Go) | Return placeholder IDs, skip actual scheduling |
+| Scenario                                  | Handling Strategy                                                     |
+| ----------------------------------------- | --------------------------------------------------------------------- |
+| Scheduling fails for a single time slot   | Log warning, store no ID for that slot, continue with remaining slots |
+| Restoration finds missing notification ID | Reschedule that slot, update mapping with new ID                      |
+| Rescheduling fails during restoration     | Log warning, skip that slot, continue restoring others                |
+| User adds duplicate time slot             | Return false from `addTimeSlot`, UI shows validation message          |
+| User tries to add when at max (5)         | `addTimeSlot` returns false, UI disables add button                   |
+| User tries to remove last slot            | `removeTimeSlot` returns false, UI hides delete button                |
+| Hydration with missing timeSlots field    | Initialize from preferredHour/preferredMinute                         |
+| Hydration with invalid frequency value    | Reset to DEFAULT_NOTIFICATION_SETTINGS                                |
+| expo-notifications unavailable (Expo Go)  | Return placeholder IDs, skip actual scheduling                        |
 
 ## Testing Strategy
 
@@ -380,6 +387,7 @@ Each scheduled notification includes slot identification:
 ### Property-Based Tests
 
 This feature is well-suited for property-based testing because:
+
 - The time slot management logic (add, remove, sort, validate) operates on a clear input space (hours 0-23, minutes 0/15/30/45, lists of 1-5 slots)
 - The scheduling calculation (seconds until target time) is a pure function with a large input space
 - The next-notification-time algorithm has multiple branches (today vs tomorrow) that benefit from randomized input exploration
@@ -387,10 +395,12 @@ This feature is well-suited for property-based testing because:
 **Library**: [fast-check](https://github.com/dubzzz/fast-check) (already compatible with the project's Jest/TypeScript setup)
 
 **Configuration**:
+
 - Minimum 100 iterations per property test
 - Each test tagged with: `Feature: multiple-daily-notifications, Property {N}: {title}`
 
 **Properties to implement**:
+
 1. Chronological order invariant
 2. Size bounds invariant [1, 5]
 3. Duplicate rejection

@@ -29,9 +29,7 @@ import {
   Switch,
   Platform,
 } from 'react-native';
-import DateTimePicker, {
-  DateTimePickerEvent,
-} from '@react-native-community/datetimepicker';
+import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import { useTranslation } from 'react-i18next';
 import { useThemeColors } from '../../hooks/useThemeColors';
 import { spacing, typography, borderRadius } from '../../constants/theme';
@@ -66,10 +64,7 @@ function getDecimalSeparator(locale: 'pt-BR' | 'en'): string {
 /**
  * Format a cents value to a display string with locale-appropriate decimal separator
  */
-function formatAmountForDisplay(
-  cents: number | null,
-  locale: 'pt-BR' | 'en'
-): string {
+function formatAmountForDisplay(cents: number | null, locale: 'pt-BR' | 'en'): string {
   if (cents === null) return '';
   const value = cents / 100;
   const separator = getDecimalSeparator(locale);
@@ -81,15 +76,11 @@ function formatAmountForDisplay(
  * Parse a locale-aware amount string to cents (integer)
  * Returns null if the string is empty or invalid
  */
-function parseAmountToCents(
-  text: string,
-  locale: 'pt-BR' | 'en'
-): number | null {
+function parseAmountToCents(text: string, locale: 'pt-BR' | 'en'): number | null {
   if (!text.trim()) return null;
   const separator = getDecimalSeparator(locale);
   // Normalize to standard decimal point
-  const normalized =
-    separator === ',' ? text.replace(',', '.') : text;
+  const normalized = separator === ',' ? text.replace(',', '.') : text;
   const value = parseFloat(normalized);
   if (isNaN(value) || value < 0) return null;
   return Math.round(value * 100);
@@ -98,10 +89,7 @@ function parseAmountToCents(
 /**
  * Format a date for display based on locale
  */
-function formatDateForDisplay(
-  dateStr: string | null,
-  locale: 'pt-BR' | 'en'
-): string {
+function formatDateForDisplay(dateStr: string | null, locale: 'pt-BR' | 'en'): string {
   if (!dateStr) return '';
   const [year, month, day] = dateStr.split('-');
   if (locale === 'pt-BR') {
@@ -154,10 +142,7 @@ function FilterPanelComponent({
   const [showStartDatePicker, setShowStartDatePicker] = useState(false);
   const [showEndDatePicker, setShowEndDatePicker] = useState(false);
 
-  const activeFilterCount = useMemo(
-    () => countActiveFilters(filters),
-    [filters]
-  );
+  const activeFilterCount = useMemo(() => countActiveFilters(filters), [filters]);
 
   // ─── Category Chip Handlers ──────────────────────────────────────────────
 
@@ -176,21 +161,15 @@ function FilterPanelComponent({
 
   // ─── Amount Input Handlers ───────────────────────────────────────────────
 
-  const handleMinAmountChange = useCallback(
-    (text: string) => {
-      setMinAmountText(text);
-      setAmountError(null);
-    },
-    []
-  );
+  const handleMinAmountChange = useCallback((text: string) => {
+    setMinAmountText(text);
+    setAmountError(null);
+  }, []);
 
-  const handleMaxAmountChange = useCallback(
-    (text: string) => {
-      setMaxAmountText(text);
-      setAmountError(null);
-    },
-    []
-  );
+  const handleMaxAmountChange = useCallback((text: string) => {
+    setMaxAmountText(text);
+    setAmountError(null);
+  }, []);
 
   const handleMinAmountBlur = useCallback(() => {
     const minCents = parseAmountToCents(minAmountText, locale);
@@ -310,9 +289,7 @@ function FilterPanelComponent({
         onPress={onToggle}
         accessibilityRole="button"
         accessibilityLabel={
-          isExpanded
-            ? t('filters.title')
-            : t('filters.activeFilters', { count: activeFilterCount })
+          isExpanded ? t('filters.title') : t('filters.activeFilters', { count: activeFilterCount })
         }
         accessibilityState={{ expanded: isExpanded }}
         testID="filter-panel-toggle"
@@ -322,10 +299,7 @@ function FilterPanelComponent({
         </Text>
         {activeFilterCount > 0 && (
           <View
-            style={[
-              styles.badge,
-              { backgroundColor: colors.interactive.primary },
-            ]}
+            style={[styles.badge, { backgroundColor: colors.interactive.primary }]}
             accessibilityLabel={t('filters.activeFilters', {
               count: activeFilterCount,
             })}
@@ -345,9 +319,7 @@ function FilterPanelComponent({
         <View style={styles.content}>
           {/* Category Chips */}
           <View style={styles.section}>
-            <Text
-              style={[styles.sectionLabel, { color: colors.text.secondary }]}
-            >
+            <Text style={[styles.sectionLabel, { color: colors.text.secondary }]}>
               {t('filters.category')}
             </Text>
             <ScrollView
@@ -364,12 +336,8 @@ function FilterPanelComponent({
                     style={[
                       styles.chip,
                       {
-                        backgroundColor: isSelected
-                          ? category.color
-                          : colors.background.tertiary,
-                        borderColor: isSelected
-                          ? category.color
-                          : colors.border.default,
+                        backgroundColor: isSelected ? category.color : colors.background.tertiary,
+                        borderColor: isSelected ? category.color : colors.border.default,
                       },
                     ]}
                     onPress={() => handleCategoryToggle(category.id)}
@@ -383,9 +351,7 @@ function FilterPanelComponent({
                       style={[
                         styles.chipText,
                         {
-                          color: isSelected
-                            ? colors.text.inverse
-                            : colors.text.primary,
+                          color: isSelected ? colors.text.inverse : colors.text.primary,
                         },
                       ]}
                       numberOfLines={1}
@@ -400,9 +366,7 @@ function FilterPanelComponent({
 
           {/* Value Range Inputs */}
           <View style={styles.section}>
-            <Text
-              style={[styles.sectionLabel, { color: colors.text.secondary }]}
-            >
+            <Text style={[styles.sectionLabel, { color: colors.text.secondary }]}>
               {t('filters.minAmount')} / {t('filters.maxAmount')}
             </Text>
             <View style={styles.rangeRow}>
@@ -412,9 +376,7 @@ function FilterPanelComponent({
                   {
                     backgroundColor: colors.background.secondary,
                     color: colors.text.primary,
-                    borderColor: amountError
-                      ? colors.semantic.danger.base
-                      : colors.border.default,
+                    borderColor: amountError ? colors.semantic.danger.base : colors.border.default,
                   },
                 ]}
                 value={minAmountText}
@@ -432,9 +394,7 @@ function FilterPanelComponent({
                   {
                     backgroundColor: colors.background.secondary,
                     color: colors.text.primary,
-                    borderColor: amountError
-                      ? colors.semantic.danger.base
-                      : colors.border.default,
+                    borderColor: amountError ? colors.semantic.danger.base : colors.border.default,
                   },
                 ]}
                 value={maxAmountText}
@@ -460,9 +420,7 @@ function FilterPanelComponent({
 
           {/* Date Range Pickers */}
           <View style={styles.section}>
-            <Text
-              style={[styles.sectionLabel, { color: colors.text.secondary }]}
-            >
+            <Text style={[styles.sectionLabel, { color: colors.text.secondary }]}>
               {t('filters.startDate')} / {t('filters.endDate')}
             </Text>
             <View style={styles.rangeRow}>
@@ -471,9 +429,7 @@ function FilterPanelComponent({
                   styles.dateButton,
                   {
                     backgroundColor: colors.background.secondary,
-                    borderColor: dateError
-                      ? colors.semantic.danger.base
-                      : colors.border.default,
+                    borderColor: dateError ? colors.semantic.danger.base : colors.border.default,
                   },
                 ]}
                 onPress={() => setShowStartDatePicker(true)}
@@ -485,9 +441,7 @@ function FilterPanelComponent({
                   style={[
                     styles.dateButtonText,
                     {
-                      color: filters.startDate
-                        ? colors.text.primary
-                        : colors.text.tertiary,
+                      color: filters.startDate ? colors.text.primary : colors.text.tertiary,
                     },
                   ]}
                 >
@@ -501,9 +455,7 @@ function FilterPanelComponent({
                   styles.dateButton,
                   {
                     backgroundColor: colors.background.secondary,
-                    borderColor: dateError
-                      ? colors.semantic.danger.base
-                      : colors.border.default,
+                    borderColor: dateError ? colors.semantic.danger.base : colors.border.default,
                   },
                 ]}
                 onPress={() => setShowEndDatePicker(true)}
@@ -515,9 +467,7 @@ function FilterPanelComponent({
                   style={[
                     styles.dateButtonText,
                     {
-                      color: filters.endDate
-                        ? colors.text.primary
-                        : colors.text.tertiary,
+                      color: filters.endDate ? colors.text.primary : colors.text.tertiary,
                     },
                   ]}
                 >
@@ -540,9 +490,7 @@ function FilterPanelComponent({
 
           {/* Pending Only Toggle */}
           <View style={styles.pendingOnlyRow} testID="filter-pending-only-section">
-            <Text
-              style={[styles.pendingOnlyLabel, { color: colors.text.primary }]}
-            >
+            <Text style={[styles.pendingOnlyLabel, { color: colors.text.primary }]}>
               {t('filters.pendingOnly')}
             </Text>
             <Switch
@@ -560,11 +508,7 @@ function FilterPanelComponent({
           {/* Date Pickers (native) */}
           {showStartDatePicker && (
             <DateTimePicker
-              value={
-                filters.startDate
-                  ? new Date(filters.startDate + 'T00:00:00')
-                  : new Date()
-              }
+              value={filters.startDate ? new Date(filters.startDate + 'T00:00:00') : new Date()}
               mode="date"
               display={Platform.OS === 'ios' ? 'spinner' : 'default'}
               onChange={handleStartDateChange}
@@ -574,11 +518,7 @@ function FilterPanelComponent({
           )}
           {showEndDatePicker && (
             <DateTimePicker
-              value={
-                filters.endDate
-                  ? new Date(filters.endDate + 'T00:00:00')
-                  : new Date()
-              }
+              value={filters.endDate ? new Date(filters.endDate + 'T00:00:00') : new Date()}
               mode="date"
               display={Platform.OS === 'ios' ? 'spinner' : 'default'}
               onChange={handleEndDateChange}
@@ -590,21 +530,13 @@ function FilterPanelComponent({
           {/* Clear All Button */}
           {activeFilterCount > 0 && (
             <TouchableOpacity
-              style={[
-                styles.clearButton,
-                { borderColor: colors.semantic.danger.base },
-              ]}
+              style={[styles.clearButton, { borderColor: colors.semantic.danger.base }]}
               onPress={handleClearAll}
               accessibilityRole="button"
               accessibilityLabel={t('filters.clearFilters')}
               testID="filter-clear-all"
             >
-              <Text
-                style={[
-                  styles.clearButtonText,
-                  { color: colors.semantic.danger.base },
-                ]}
-              >
+              <Text style={[styles.clearButtonText, { color: colors.semantic.danger.base }]}>
                 {t('filters.clearFilters')}
               </Text>
             </TouchableOpacity>

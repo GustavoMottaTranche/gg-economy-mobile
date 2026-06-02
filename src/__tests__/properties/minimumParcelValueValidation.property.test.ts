@@ -22,14 +22,12 @@ describe('Property 10: Minimum parcel value validation', () => {
   it('should reject installment entries where floor(total/count) < 1', () => {
     fc.assert(
       fc.property(
-        fc
-          .integer({ min: 2, max: 48 })
-          .chain((parcelCount) =>
-            fc.record({
-              parcelCount: fc.constant(parcelCount),
-              totalAmount: fc.integer({ min: 1, max: parcelCount - 1 }),
-            })
-          ),
+        fc.integer({ min: 2, max: 48 }).chain((parcelCount) =>
+          fc.record({
+            parcelCount: fc.constant(parcelCount),
+            totalAmount: fc.integer({ min: 1, max: parcelCount - 1 }),
+          })
+        ),
         ({ parcelCount, totalAmount }) => {
           // Precondition: floor(total/count) < 1
           expect(Math.floor(totalAmount / parcelCount)).toBeLessThan(1);

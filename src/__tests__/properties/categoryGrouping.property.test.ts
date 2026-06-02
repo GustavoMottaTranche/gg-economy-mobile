@@ -51,9 +51,9 @@ describe('Property 1: Category grouping partitions by expenseGroup', () => {
           for (const item of result.fixed) {
             expect(item.expenseGroup).toBe('fixed');
           }
-        },
+        }
       ),
-      { numRuns: 100 },
+      { numRuns: 100 }
     );
   });
 
@@ -66,9 +66,9 @@ describe('Property 1: Category grouping partitions by expenseGroup', () => {
           for (const item of result.variable) {
             expect(item.expenseGroup).toBe('variable');
           }
-        },
+        }
       ),
-      { numRuns: 100 },
+      { numRuns: 100 }
     );
   });
 
@@ -82,9 +82,9 @@ describe('Property 1: Category grouping partitions by expenseGroup', () => {
           for (const item of allGrouped) {
             expect(item.expenseGroup).not.toBeNull();
           }
-        },
+        }
       ),
-      { numRuns: 100 },
+      { numRuns: 100 }
     );
   });
 
@@ -99,9 +99,9 @@ describe('Property 1: Category grouping partitions by expenseGroup', () => {
           for (const item of fixedFromInput) {
             expect(result.fixed).toContain(item);
           }
-        },
+        }
       ),
-      { numRuns: 100 },
+      { numRuns: 100 }
     );
   });
 
@@ -116,9 +116,9 @@ describe('Property 1: Category grouping partitions by expenseGroup', () => {
           for (const item of variableFromInput) {
             expect(result.variable).toContain(item);
           }
-        },
+        }
       ),
-      { numRuns: 100 },
+      { numRuns: 100 }
     );
   });
 
@@ -129,12 +129,10 @@ describe('Property 1: Category grouping partitions by expenseGroup', () => {
         (categories: CategoryBreakdownItem[]) => {
           const result = groupByExpenseGroup(categories);
           const nullCount = categories.filter((c) => c.expenseGroup === null).length;
-          expect(result.fixed.length + result.variable.length).toBe(
-            categories.length - nullCount,
-          );
-        },
+          expect(result.fixed.length + result.variable.length).toBe(categories.length - nullCount);
+        }
       ),
-      { numRuns: 100 },
+      { numRuns: 100 }
     );
   });
 });

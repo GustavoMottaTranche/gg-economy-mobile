@@ -79,11 +79,7 @@ function isValidCalendarDate(dateStr: string): boolean {
 
   // Create a date and check if it matches the input
   const date = new Date(year, month - 1, day);
-  return (
-    date.getFullYear() === year &&
-    date.getMonth() === month - 1 &&
-    date.getDate() === day
-  );
+  return date.getFullYear() === year && date.getMonth() === month - 1 && date.getDate() === day;
 }
 
 /**
@@ -154,7 +150,11 @@ export function validateWeeklyGroup(input: WeeklyGroupValidationInput): Validati
   }
 
   // Category validation
-  if (input.categoryId === null || input.categoryId === undefined || input.categoryId.trim() === '') {
+  if (
+    input.categoryId === null ||
+    input.categoryId === undefined ||
+    input.categoryId.trim() === ''
+  ) {
     errors.push('Category is required');
   }
 

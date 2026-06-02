@@ -39,17 +39,13 @@ const TAB_NAMES: TabBarIconProps['name'][] = ['dashboard', 'transactions', 'manu
 
 describe('TabBarIcon', () => {
   it('renders an SVG element with a Path', () => {
-    const { getByTestId } = render(
-      <TabBarIcon name="dashboard" focused={false} color="#000" />
-    );
+    const { getByTestId } = render(<TabBarIcon name="dashboard" focused={false} color="#000" />);
     expect(getByTestId('svg-root')).toBeTruthy();
     expect(getByTestId('svg-path')).toBeTruthy();
   });
 
   it('uses default size of 24', () => {
-    const { getByTestId } = render(
-      <TabBarIcon name="dashboard" focused={false} color="#000" />
-    );
+    const { getByTestId } = render(<TabBarIcon name="dashboard" focused={false} color="#000" />);
     const svg = getByTestId('svg-root');
     expect(svg.props.width).toBe(24);
     expect(svg.props.height).toBe(24);
@@ -65,17 +61,13 @@ describe('TabBarIcon', () => {
   });
 
   it('passes color as fill to Path', () => {
-    const { getByTestId } = render(
-      <TabBarIcon name="dashboard" focused={false} color="#3B82F6" />
-    );
+    const { getByTestId } = render(<TabBarIcon name="dashboard" focused={false} color="#3B82F6" />);
     const path = getByTestId('svg-path');
     expect(path.props.fill).toBe('#3B82F6');
   });
 
   it('uses viewBox of 0 0 24 24', () => {
-    const { getByTestId } = render(
-      <TabBarIcon name="dashboard" focused={false} color="#000" />
-    );
+    const { getByTestId } = render(<TabBarIcon name="dashboard" focused={false} color="#000" />);
     const svg = getByTestId('svg-root');
     expect(svg.props.viewBox).toBe('0 0 24 24');
   });
@@ -111,9 +103,7 @@ describe('TabBarIcon', () => {
   describe('renders all tab icons', () => {
     TAB_NAMES.forEach((name) => {
       it(`renders ${name} icon without error`, () => {
-        const { getByTestId } = render(
-          <TabBarIcon name={name} focused={false} color="#6B7280" />
-        );
+        const { getByTestId } = render(<TabBarIcon name={name} focused={false} color="#6B7280" />);
         expect(getByTestId('svg-path').props.d).toBeTruthy();
       });
     });

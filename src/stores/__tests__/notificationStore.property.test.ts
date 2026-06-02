@@ -560,7 +560,6 @@ describe('Property 1: Settings Persistence Round-Trip', () => {
   });
 });
 
-
 /**
  * Property-Based Test: Backward-Compatible Hydration (Property 11)
  *
@@ -1028,7 +1027,6 @@ describe('Property 5: Time Slot Preservation Round-Trip', () => {
   });
 });
 
-
 /**
  * Property-Based Tests: Time Slot Store Logic (Properties 1-4)
  *
@@ -1265,8 +1263,7 @@ describe('Feature: multiple-daily-notifications, Time Slot Store Logic', () => {
 
             // The removed slot should no longer appear in the list
             const remainingKeys = stateAfter.settings.timeSlots.map(
-              (s) =>
-                `${s.hour.toString().padStart(2, '0')}:${s.minute.toString().padStart(2, '0')}`
+              (s) => `${s.hour.toString().padStart(2, '0')}:${s.minute.toString().padStart(2, '0')}`
             );
             expect(remainingKeys).not.toContain(keyToRemove);
           }

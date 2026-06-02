@@ -40,25 +40,17 @@ export default function TabLayout() {
           styles.tabBar,
           {
             backgroundColor: colors.background.secondary,
-            borderTopColor: isDark
-              ? 'rgba(255, 255, 255, 0.15)'
-              : colors.border.default,
+            borderTopColor: isDark ? 'rgba(255, 255, 255, 0.15)' : colors.border.default,
             borderTopWidth: isDark ? 0.5 : 1,
             paddingBottom: insets.bottom,
           },
         ]),
-        tabBarLabelStyle: StyleSheet.flatten([
-          styles.tabBarLabel,
-          { color: colors.text.tertiary },
-        ]),
+        tabBarLabelStyle: StyleSheet.flatten([styles.tabBarLabel, { color: colors.text.tertiary }]),
         tabBarItemStyle: styles.tabBarItem,
         headerStyle: {
           backgroundColor: colors.background.primary,
         },
-        headerTitleStyle: StyleSheet.flatten([
-          styles.headerTitle,
-          { color: colors.text.primary },
-        ]),
+        headerTitleStyle: StyleSheet.flatten([styles.headerTitle, { color: colors.text.primary }]),
         headerShadowVisible: false,
       }}
     >

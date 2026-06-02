@@ -11,10 +11,7 @@ import {
   validateInstallmentEntry,
   validateStandardEntry,
 } from '../../validation/installmentValidation';
-import type {
-  InstallmentValidationInput,
-  StandardValidationInput,
-} from '../../types/validation';
+import type { InstallmentValidationInput, StandardValidationInput } from '../../types/validation';
 
 describe('Property 8: Amount validation rejects invalid values', () => {
   // Valid base inputs to isolate amount validation
@@ -35,34 +32,28 @@ describe('Property 8: Amount validation rejects invalid values', () => {
   describe('validateInstallmentEntry rejects invalid amounts', () => {
     it('should reject amounts ≤ 0 (zero and negative)', () => {
       fc.assert(
-        fc.property(
-          fc.integer({ max: 0 }),
-          (invalidAmount) => {
-            const input: InstallmentValidationInput = {
-              ...validInstallmentBase,
-              totalAmount: invalidAmount,
-            };
-            const result = validateInstallmentEntry(input);
-            return result.valid === false;
-          }
-        ),
+        fc.property(fc.integer({ max: 0 }), (invalidAmount) => {
+          const input: InstallmentValidationInput = {
+            ...validInstallmentBase,
+            totalAmount: invalidAmount,
+          };
+          const result = validateInstallmentEntry(input);
+          return result.valid === false;
+        }),
         { numRuns: 100 }
       );
     });
 
     it('should reject amounts > 99999999999', () => {
       fc.assert(
-        fc.property(
-          fc.integer({ min: 100000000000, max: 999999999999 }),
-          (invalidAmount) => {
-            const input: InstallmentValidationInput = {
-              ...validInstallmentBase,
-              totalAmount: invalidAmount,
-            };
-            const result = validateInstallmentEntry(input);
-            return result.valid === false;
-          }
-        ),
+        fc.property(fc.integer({ min: 100000000000, max: 999999999999 }), (invalidAmount) => {
+          const input: InstallmentValidationInput = {
+            ...validInstallmentBase,
+            totalAmount: invalidAmount,
+          };
+          const result = validateInstallmentEntry(input);
+          return result.valid === false;
+        }),
         { numRuns: 100 }
       );
     });
@@ -71,34 +62,28 @@ describe('Property 8: Amount validation rejects invalid values', () => {
   describe('validateStandardEntry rejects invalid amounts', () => {
     it('should reject amounts ≤ 0 (zero and negative)', () => {
       fc.assert(
-        fc.property(
-          fc.integer({ max: 0 }),
-          (invalidAmount) => {
-            const input: StandardValidationInput = {
-              ...validStandardBase,
-              amount: invalidAmount,
-            };
-            const result = validateStandardEntry(input);
-            return result.valid === false;
-          }
-        ),
+        fc.property(fc.integer({ max: 0 }), (invalidAmount) => {
+          const input: StandardValidationInput = {
+            ...validStandardBase,
+            amount: invalidAmount,
+          };
+          const result = validateStandardEntry(input);
+          return result.valid === false;
+        }),
         { numRuns: 100 }
       );
     });
 
     it('should reject amounts > 99999999999', () => {
       fc.assert(
-        fc.property(
-          fc.integer({ min: 100000000000, max: 999999999999 }),
-          (invalidAmount) => {
-            const input: StandardValidationInput = {
-              ...validStandardBase,
-              amount: invalidAmount,
-            };
-            const result = validateStandardEntry(input);
-            return result.valid === false;
-          }
-        ),
+        fc.property(fc.integer({ min: 100000000000, max: 999999999999 }), (invalidAmount) => {
+          const input: StandardValidationInput = {
+            ...validStandardBase,
+            amount: invalidAmount,
+          };
+          const result = validateStandardEntry(input);
+          return result.valid === false;
+        }),
         { numRuns: 100 }
       );
     });

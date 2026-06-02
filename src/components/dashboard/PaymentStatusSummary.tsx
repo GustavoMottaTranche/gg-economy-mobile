@@ -128,7 +128,7 @@ function PaymentStatusSummaryComponent({
           alignItems: 'center',
         },
       }),
-    [theme],
+    [theme]
   );
 
   return (

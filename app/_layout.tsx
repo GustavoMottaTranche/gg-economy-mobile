@@ -132,7 +132,9 @@ function AppContent() {
         // This triggers auto-rescheduling of the next notification
         // For multi-slot mode, detects slotHour/slotMinute in payload to reschedule the specific slot
         receivedSubscription = Notifications.addNotificationReceivedListener(
-          (notification: { request?: { content?: { data?: { slotHour?: number; slotMinute?: number } } } }) => {
+          (notification: {
+            request?: { content?: { data?: { slotHour?: number; slotMinute?: number } } };
+          }) => {
             const data = notification?.request?.content?.data;
             if (data && typeof data.slotHour === 'number' && typeof data.slotMinute === 'number') {
               notificationScheduler.handleSlotNotificationReceived(data.slotHour, data.slotMinute);

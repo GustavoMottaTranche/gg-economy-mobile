@@ -108,6 +108,7 @@ android {
     buildTypes {
         debug {
             signingConfig signingConfigs.debug
+            applicationIdSuffix ".dev"
         }
         release {
             // Caution! In production, you need to generate your own keystore file.
@@ -120,10 +121,6 @@ android {
             def enablePngCrunchInRelease = findProperty('android.enablePngCrunchInReleaseBuilds') ?: 'true'
             crunchPngs enablePngCrunchInRelease.toBoolean()
         }
-    }
-    lint {
-        abortOnError false
-        checkReleaseBuilds false
     }
     packagingOptions {
         jniLibs {

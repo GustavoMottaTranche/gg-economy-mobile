@@ -286,11 +286,7 @@ describe('Feature: payment-status-tracking, Property 2: Newly generated occurren
 
           // Generate across multiple months
           for (const month of months) {
-            const newOccurrences = simulateWeeklyOccurrenceGeneration(
-              group,
-              month,
-              allOccurrences
-            );
+            const newOccurrences = simulateWeeklyOccurrenceGeneration(group, month, allOccurrences);
 
             // Every newly generated occurrence must have isPaid = false
             for (const occurrence of newOccurrences) {
@@ -342,11 +338,7 @@ describe('Feature: payment-status-tracking, Property 2: Newly generated occurren
         monthArbitrary,
         (group, newDayOfWeek, targetMonth) => {
           // Simulate existing occurrences from original day of week
-          const existingOccurrences = simulateWeeklyOccurrenceGeneration(
-            group,
-            targetMonth,
-            []
-          );
+          const existingOccurrences = simulateWeeklyOccurrenceGeneration(group, targetMonth, []);
 
           // Change day of week (simulating group edit)
           const updatedGroup: WeeklyRecurringGroup = {

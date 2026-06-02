@@ -227,9 +227,10 @@ export function useDashboardData(): UseDashboardDataReturn {
   ]);
 
   // Live query for weekly occurrences breakdown
-  const { data: weeklyBreakdownData } = useLiveQuery(getWeeklyOccurrenceBreakdownQuery(selectedMonth), [
-    selectedMonth,
-  ]);
+  const { data: weeklyBreakdownData } = useLiveQuery(
+    getWeeklyOccurrenceBreakdownQuery(selectedMonth),
+    [selectedMonth]
+  );
 
   // Merge transaction breakdown with weekly occurrences breakdown
   const mergedBreakdownData = useMemo(() => {

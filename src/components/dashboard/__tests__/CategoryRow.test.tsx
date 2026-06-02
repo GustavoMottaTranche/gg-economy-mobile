@@ -123,13 +123,7 @@ describe('CategoryRow', () => {
       categoryName: 'Uncategorized',
     };
 
-    render(
-      <CategoryRow
-        {...defaultProps}
-        category={uncategorized}
-        isExpanded={true}
-      />
-    );
+    render(<CategoryRow {...defaultProps} category={uncategorized} isExpanded={true} />);
 
     expect(screen.queryByTestId('category-row-transactions')).toBeNull();
   });

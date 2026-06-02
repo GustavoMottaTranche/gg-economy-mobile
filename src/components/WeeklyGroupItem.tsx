@@ -158,13 +158,18 @@ function WeeklyGroupItemComponent({
 
   // Handle long-press on header to show edit/delete options
   const handleLongPress = useCallback(() => {
-    const buttons: Array<{ text: string; style?: 'cancel' | 'destructive'; onPress?: () => void }> = [];
+    const buttons: Array<{ text: string; style?: 'cancel' | 'destructive'; onPress?: () => void }> =
+      [];
 
     if (onEditGroup) {
       buttons.push({ text: 'Editar grupo', onPress: () => onEditGroup(group.id) });
     }
     if (onDeleteGroup) {
-      buttons.push({ text: 'Excluir grupo', style: 'destructive', onPress: () => onDeleteGroup(group.id) });
+      buttons.push({
+        text: 'Excluir grupo',
+        style: 'destructive',
+        onPress: () => onDeleteGroup(group.id),
+      });
     }
     buttons.push({ text: 'Cancelar', style: 'cancel' });
 
@@ -172,10 +177,7 @@ function WeeklyGroupItemComponent({
   }, [group.id, group.title, onEditGroup, onDeleteGroup]);
 
   return (
-    <View
-      style={[styles.container, { backgroundColor: colors.surface.card }]}
-      testID={testID}
-    >
+    <View style={[styles.container, { backgroundColor: colors.surface.card }]} testID={testID}>
       {/* Group Header */}
       <TouchableOpacity
         style={styles.header}
@@ -196,9 +198,7 @@ function WeeklyGroupItemComponent({
           ]}
           testID={testID ? `${testID}-icon` : undefined}
         >
-          <Text style={styles.categoryIconText}>
-            {category?.icon ?? '📅'}
-          </Text>
+          <Text style={styles.categoryIconText}>{category?.icon ?? '📅'}</Text>
         </View>
 
         {/* Title and Subtitle */}

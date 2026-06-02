@@ -45,10 +45,7 @@ const dateArb = fc
       .chain((month) =>
         fc
           .integer({ min: 1, max: 28 })
-          .map(
-            (day) =>
-              `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`
-          )
+          .map((day) => `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`)
       )
   );
 

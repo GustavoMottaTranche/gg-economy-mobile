@@ -147,7 +147,10 @@ export async function generateMonthlyTransactions(targetMonth: string): Promise<
     .select()
     .from(recurringTransactions)
     .where(
-      and(eq(recurringTransactions.isActive, true), lte(recurringTransactions.startMonth, targetMonth))
+      and(
+        eq(recurringTransactions.isActive, true),
+        lte(recurringTransactions.startMonth, targetMonth)
+      )
     );
 
   for (const recurring of activeRecurrings) {

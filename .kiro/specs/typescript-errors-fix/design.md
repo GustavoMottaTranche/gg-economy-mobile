@@ -21,11 +21,12 @@ The project has 173 TypeScript compilation errors across 44 files caused by stri
 The bug manifests when `npx tsc --noEmit` is run against the codebase with strict TypeScript settings enabled. The compiler reports 173 errors across 44 files because code was written without accounting for `noUncheckedIndexedAccess`, `noUnusedLocals`, `noUnusedParameters`, and updated interface requirements (new required fields like `title`, `installmentGroupId`, `recurringId`, `expenseGroup`).
 
 **Formal Specification:**
+
 ```
 FUNCTION isBugCondition(input)
   INPUT: input of type SourceFile
   OUTPUT: boolean
-  
+
   RETURN hasUnsafeArrayAccess(input)
          OR hasUnusedVariables(input)
          OR hasMissingRequiredFields(input)
@@ -60,6 +61,7 @@ WHERE:
 ### Preservation Requirements
 
 **Unchanged Behaviors:**
+
 - All property-based tests must continue to pass with correct assertions after adding null checks
 - CategoryBreakdown component must continue to render correctly with complete data
 - Hooks (`usePaginatedTransactions`, `useReviewQueue`) must continue to return correctly shaped data to all consumers
@@ -69,6 +71,7 @@ WHERE:
 
 **Scope:**
 All runtime behavior should be completely unaffected by this fix. The changes are purely compile-time corrections:
+
 - Adding null checks/assertions that guard already-safe runtime paths
 - Removing or prefixing unused variables (no runtime effect)
 - Adding default values for new required fields that match existing runtime behavior
@@ -111,6 +114,7 @@ Assuming our root cause analysis is correct:
 **Files**: Property test files in `src/__tests__/properties/*.property.test.ts`, `src/services/installment/InstallmentCalculator.ts`
 
 **Specific Changes**:
+
 1. **Add non-null assertions where test controls input**: For property tests where the test generator guarantees non-empty arrays, use `array[0]!` or add explicit checks like `if (item !== undefined)`.
 2. **Add fallback values for split results**: Replace `str.split('/')[0]` with `str.split('/')[0] ?? ''` or use destructuring with defaults.
 3. **Add type narrowing guards**: For production code (InstallmentCalculator), add proper `if` checks before accessing array elements to handle edge cases safely.
@@ -119,24 +123,19 @@ Assuming our root cause analysis is correct:
 
 **Files**: Various test files across `src/__tests__/`
 
-**Specific Changes**:
-4. **Prefix with underscore**: Rename unused variables to `_variableName` to signal intentional non-use.
-5. **Remove unused declarations**: Where variables serve no purpose, remove them entirely.
+**Specific Changes**: 4. **Prefix with underscore**: Rename unused variables to `_variableName` to signal intentional non-use. 5. **Remove unused declarations**: Where variables serve no purpose, remove them entirely.
 
 **Category 3: Missing Required Fields (TS2741, TS2739)**
 
 **Files**: `src/__tests__/components/` (CategoryBreakdown tests), `src/hooks/usePaginatedTransactions.ts`, `src/hooks/useReviewQueue.ts`
 
-**Specific Changes**:
-6. **Add `expenseGroup` to test data**: Include `expenseGroup: 'test-group'` or appropriate default in CategoryBreakdown test fixtures.
-7. **Add missing fields to hook return types**: Include `title: ''`, `installmentGroupId: null`, `recurringId: null` (or appropriate defaults matching the interface) in hook return objects.
+**Specific Changes**: 6. **Add `expenseGroup` to test data**: Include `expenseGroup: 'test-group'` or appropriate default in CategoryBreakdown test fixtures. 7. **Add missing fields to hook return types**: Include `title: ''`, `installmentGroupId: null`, `recurringId: null` (or appropriate defaults matching the interface) in hook return objects.
 
 **Category 4: Type Assignment Mismatches (TS2322)**
 
 **Files**: `src/services/import/ImportOrchestrator.ts`, `src/services/import/ImportService.ts`
 
-**Specific Changes**:
-8. **Add `title` field to CreateTransactionDTO construction**: Derive `title` from the transaction description or use an empty string default when creating DTOs in import services.
+**Specific Changes**: 8. **Add `title` field to CreateTransactionDTO construction**: Derive `title` from the transaction description or use an empty string default when creating DTOs in import services.
 
 ## Testing Strategy
 
@@ -151,12 +150,14 @@ The testing strategy follows a two-phase approach: first, confirm the errors exi
 **Test Plan**: Run `npx tsc --noEmit` on the unfixed codebase and verify the error count and categories match the bug report.
 
 **Test Cases**:
+
 1. **Array Access Errors**: Verify TS2532/TS18048 errors in property test files (will fail on unfixed code)
 2. **Unused Variable Errors**: Verify TS6133 errors in test files (will fail on unfixed code)
 3. **Missing Field Errors**: Verify TS2741/TS2739 errors in component tests and hooks (will fail on unfixed code)
 4. **Type Mismatch Errors**: Verify TS2322 errors in import services (will fail on unfixed code)
 
 **Expected Counterexamples**:
+
 - `npx tsc --noEmit` reports 173 errors across 44 files
 - Errors cluster in property test files (array access), hooks (missing fields), and import services (type mismatches)
 
@@ -165,6 +166,7 @@ The testing strategy follows a two-phase approach: first, confirm the errors exi
 **Goal**: Verify that for all files where the bug condition holds, the fixed code compiles without TypeScript errors.
 
 **Pseudocode:**
+
 ```
 FOR ALL file WHERE isBugCondition(file) DO
   result := tsc_check(file)
@@ -177,6 +179,7 @@ END FOR
 **Goal**: Verify that for all runtime behavior paths, the fixed code produces the same results as the original code.
 
 **Pseudocode:**
+
 ```
 FOR ALL testSuite WHERE NOT isBugCondition(testSuite.runtimeBehavior) DO
   ASSERT runTests(testSuite, originalCode) == runTests(testSuite, fixedCode)
@@ -184,6 +187,7 @@ END FOR
 ```
 
 **Testing Approach**: Property-based testing is recommended for preservation checking because:
+
 - The property tests already generate many random inputs covering edge cases
 - Running the existing test suite confirms no behavioral regression
 - Type-only changes (null assertions, unused variable removal) have no runtime effect by definition
@@ -191,6 +195,7 @@ END FOR
 **Test Plan**: Run the full test suite on unfixed code to establish baseline, then run on fixed code to verify identical results.
 
 **Test Cases**:
+
 1. **Property Test Preservation**: Run all `*.property.test.ts` files — all assertions must pass identically before and after fix
 2. **Component Test Preservation**: Run CategoryBreakdown tests — rendering must be identical with added `expenseGroup` field
 3. **Hook Test Preservation**: Run hook tests — returned data shape must satisfy all consumers

@@ -56,7 +56,6 @@ function formatOccurrenceDate(dateStr: string, locale: 'pt-BR' | 'en'): string {
   }
 }
 
-
 /**
  * Detail Row Component for displaying occurrence information
  */
@@ -434,15 +433,15 @@ export default function ParcelDetailScreen(): React.ReactElement {
   const paymentStatusLabel = isPaid
     ? t('paymentStatus.paid', { defaultValue: 'Pago' })
     : t('paymentStatus.pending', { defaultValue: 'Pendente' });
-  const paymentStatusColor = isPaid
-    ? colors.semantic.success.dark
-    : colors.semantic.warning.dark;
+  const paymentStatusColor = isPaid ? colors.semantic.success.dark : colors.semantic.warning.dark;
 
   return (
     <SafeAreaView style={styles.container} testID="parcel-detail-screen">
       <Stack.Screen
         options={{
-          title: group?.title ?? t('weeklyRecurring.parcelDetail', { defaultValue: 'Detalhe da Parcela' }),
+          title:
+            group?.title ??
+            t('weeklyRecurring.parcelDetail', { defaultValue: 'Detalhe da Parcela' }),
         }}
       />
       <KeyboardAvoidingView

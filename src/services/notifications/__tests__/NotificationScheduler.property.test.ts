@@ -2262,30 +2262,24 @@ describe('Property 8: TIME_INTERVAL Seconds Calculation', () => {
        * and SHALL always be at least 1.
        */
       fc.assert(
-        fc.property(
-          arbitraryCurrentTime,
-          arbitraryPositiveOffsetMs,
-          (currentTime, offsetMs) => {
-            const targetTime = new Date(currentTime.getTime() + offsetMs);
+        fc.property(arbitraryCurrentTime, arbitraryPositiveOffsetMs, (currentTime, offsetMs) => {
+          const targetTime = new Date(currentTime.getTime() + offsetMs);
 
-            // Calculate expected seconds using the formula from the spec
-            const expectedSeconds = Math.floor(
-              (targetTime.getTime() - currentTime.getTime()) / 1000
-            );
+          // Calculate expected seconds using the formula from the spec
+          const expectedSeconds = Math.floor((targetTime.getTime() - currentTime.getTime()) / 1000);
 
-            // The actual calculation: Math.max(1, Math.floor((target - now) / 1000))
-            const actualSeconds = Math.max(
-              1,
-              Math.floor((targetTime.getTime() - currentTime.getTime()) / 1000)
-            );
+          // The actual calculation: Math.max(1, Math.floor((target - now) / 1000))
+          const actualSeconds = Math.max(
+            1,
+            Math.floor((targetTime.getTime() - currentTime.getTime()) / 1000)
+          );
 
-            // Property: seconds equals the expected formula
-            expect(actualSeconds).toBe(Math.max(1, expectedSeconds));
+          // Property: seconds equals the expected formula
+          expect(actualSeconds).toBe(Math.max(1, expectedSeconds));
 
-            // Property: seconds is always at least 1
-            expect(actualSeconds).toBeGreaterThanOrEqual(1);
-          }
-        ),
+          // Property: seconds is always at least 1
+          expect(actualSeconds).toBeGreaterThanOrEqual(1);
+        }),
         { numRuns: 100 }
       );
     });
@@ -2300,26 +2294,20 @@ describe('Property 8: TIME_INTERVAL Seconds Calculation', () => {
       const arbitrarySmallOffsetMs = fc.integer({ min: 1, max: 999 });
 
       fc.assert(
-        fc.property(
-          arbitraryCurrentTime,
-          arbitrarySmallOffsetMs,
-          (currentTime, offsetMs) => {
-            const targetTime = new Date(currentTime.getTime() + offsetMs);
+        fc.property(arbitraryCurrentTime, arbitrarySmallOffsetMs, (currentTime, offsetMs) => {
+          const targetTime = new Date(currentTime.getTime() + offsetMs);
 
-            // Math.floor of sub-second difference would be 0, but we clamp to 1
-            const rawSeconds = Math.floor(
-              (targetTime.getTime() - currentTime.getTime()) / 1000
-            );
-            expect(rawSeconds).toBe(0); // Confirms the raw calculation would be 0
+          // Math.floor of sub-second difference would be 0, but we clamp to 1
+          const rawSeconds = Math.floor((targetTime.getTime() - currentTime.getTime()) / 1000);
+          expect(rawSeconds).toBe(0); // Confirms the raw calculation would be 0
 
-            // The actual calculation must clamp to at least 1
-            const actualSeconds = Math.max(
-              1,
-              Math.floor((targetTime.getTime() - currentTime.getTime()) / 1000)
-            );
-            expect(actualSeconds).toBe(1);
-          }
-        ),
+          // The actual calculation must clamp to at least 1
+          const actualSeconds = Math.max(
+            1,
+            Math.floor((targetTime.getTime() - currentTime.getTime()) / 1000)
+          );
+          expect(actualSeconds).toBe(1);
+        }),
         { numRuns: 100 }
       );
     });
@@ -2411,12 +2399,14 @@ describe('Property 10: Next Notification Time Calculation', () => {
   /**
    * Arbitrary for a non-empty list of unique time slots (1-5 entries)
    */
-  const arbitraryNonEmptyTimeSlotList: fc.Arbitrary<TimeSlot[]> = fc
-    .uniqueArray(arbitraryTimeSlot, {
+  const arbitraryNonEmptyTimeSlotList: fc.Arbitrary<TimeSlot[]> = fc.uniqueArray(
+    arbitraryTimeSlot,
+    {
       minLength: 1,
       maxLength: 5,
       comparator: (a, b) => a.hour === b.hour && a.minute === b.minute,
-    });
+    }
+  );
 
   /**
    * Arbitrary for a "current time" date within a reasonable range
@@ -2442,19 +2432,15 @@ describe('Property 10: Next Notification Time Calculation', () => {
        * calculateNextTimeMultiSlot SHALL return a time strictly after fromTime.
        */
       fc.assert(
-        fc.property(
-          arbitraryNonEmptyTimeSlotList,
-          arbitraryFromTime,
-          (timeSlots, fromTime) => {
-            const result = scheduler.calculateNextTimeMultiSlot(timeSlots, fromTime);
+        fc.property(arbitraryNonEmptyTimeSlotList, arbitraryFromTime, (timeSlots, fromTime) => {
+          const result = scheduler.calculateNextTimeMultiSlot(timeSlots, fromTime);
 
-            // Should not be null for non-empty list
-            expect(result).not.toBeNull();
+          // Should not be null for non-empty list
+          expect(result).not.toBeNull();
 
-            // Must be strictly in the future
-            expect(result!.getTime()).toBeGreaterThan(fromTime.getTime());
-          }
-        ),
+          // Must be strictly in the future
+          expect(result!.getTime()).toBeGreaterThan(fromTime.getTime());
+        }),
         { numRuns: 100 }
       );
     });
@@ -2467,26 +2453,21 @@ describe('Property 10: Next Notification Time Calculation', () => {
        * the result's hour and minute SHALL correspond to one of the time slots in the list.
        */
       fc.assert(
-        fc.property(
-          arbitraryNonEmptyTimeSlotList,
-          arbitraryFromTime,
-          (timeSlots, fromTime) => {
-            const result = scheduler.calculateNextTimeMultiSlot(timeSlots, fromTime);
+        fc.property(arbitraryNonEmptyTimeSlotList, arbitraryFromTime, (timeSlots, fromTime) => {
+          const result = scheduler.calculateNextTimeMultiSlot(timeSlots, fromTime);
 
-            expect(result).not.toBeNull();
+          expect(result).not.toBeNull();
 
-            // The result's hour:minute must match one of the input slots
-            const matchesSlot = timeSlots.some(
-              (slot) =>
-                slot.hour === result!.getHours() && slot.minute === result!.getMinutes()
-            );
-            expect(matchesSlot).toBe(true);
+          // The result's hour:minute must match one of the input slots
+          const matchesSlot = timeSlots.some(
+            (slot) => slot.hour === result!.getHours() && slot.minute === result!.getMinutes()
+          );
+          expect(matchesSlot).toBe(true);
 
-            // Seconds and milliseconds should be zeroed
-            expect(result!.getSeconds()).toBe(0);
-            expect(result!.getMilliseconds()).toBe(0);
-          }
-        ),
+          // Seconds and milliseconds should be zeroed
+          expect(result!.getSeconds()).toBe(0);
+          expect(result!.getMilliseconds()).toBe(0);
+        }),
         { numRuns: 100 }
       );
     });
@@ -2501,44 +2482,40 @@ describe('Property 10: Next Notification Time Calculation', () => {
        * the result SHALL be the earliest slot's time on the next calendar day.
        */
       fc.assert(
-        fc.property(
-          arbitraryNonEmptyTimeSlotList,
-          arbitraryFromTime,
-          (timeSlots, fromTime) => {
-            const result = scheduler.calculateNextTimeMultiSlot(timeSlots, fromTime);
-            expect(result).not.toBeNull();
+        fc.property(arbitraryNonEmptyTimeSlotList, arbitraryFromTime, (timeSlots, fromTime) => {
+          const result = scheduler.calculateNextTimeMultiSlot(timeSlots, fromTime);
+          expect(result).not.toBeNull();
 
-            // Sort slots chronologically
-            const sortedSlots = [...timeSlots].sort((a, b) => {
-              if (a.hour !== b.hour) return a.hour - b.hour;
-              return a.minute - b.minute;
-            });
+          // Sort slots chronologically
+          const sortedSlots = [...timeSlots].sort((a, b) => {
+            if (a.hour !== b.hour) return a.hour - b.hour;
+            return a.minute - b.minute;
+          });
 
-            // Find slots that are strictly after fromTime today
-            const futureSlotsToday: Date[] = [];
-            for (const slot of sortedSlots) {
-              const targetTime = new Date(fromTime);
-              targetTime.setHours(slot.hour, slot.minute, 0, 0);
-              if (targetTime.getTime() > fromTime.getTime()) {
-                futureSlotsToday.push(targetTime);
-              }
-            }
-
-            if (futureSlotsToday.length > 0) {
-              // The result should be the earliest future slot today
-              const expectedTime = futureSlotsToday[0];
-              expect(result!.getTime()).toBe(expectedTime.getTime());
-            } else {
-              // All slots are at or before current time today
-              // Result should be the earliest slot's time on the next day
-              const earliestSlot = sortedSlots[0];
-              const expectedTime = new Date(fromTime);
-              expectedTime.setDate(expectedTime.getDate() + 1);
-              expectedTime.setHours(earliestSlot.hour, earliestSlot.minute, 0, 0);
-              expect(result!.getTime()).toBe(expectedTime.getTime());
+          // Find slots that are strictly after fromTime today
+          const futureSlotsToday: Date[] = [];
+          for (const slot of sortedSlots) {
+            const targetTime = new Date(fromTime);
+            targetTime.setHours(slot.hour, slot.minute, 0, 0);
+            if (targetTime.getTime() > fromTime.getTime()) {
+              futureSlotsToday.push(targetTime);
             }
           }
-        ),
+
+          if (futureSlotsToday.length > 0) {
+            // The result should be the earliest future slot today
+            const expectedTime = futureSlotsToday[0];
+            expect(result!.getTime()).toBe(expectedTime.getTime());
+          } else {
+            // All slots are at or before current time today
+            // Result should be the earliest slot's time on the next day
+            const earliestSlot = sortedSlots[0];
+            const expectedTime = new Date(fromTime);
+            expectedTime.setDate(expectedTime.getDate() + 1);
+            expectedTime.setHours(earliestSlot.hour, earliestSlot.minute, 0, 0);
+            expect(result!.getTime()).toBe(expectedTime.getTime());
+          }
+        }),
         { numRuns: 100 }
       );
     });
@@ -2569,7 +2546,8 @@ describe('Property 10: Next Notification Time Calculation', () => {
       fc.assert(
         fc.property(
           arbitraryNonEmptyTimeSlotList,
-          fc.date({ min: new Date('2020-01-01'), max: new Date('2030-12-31'), noInvalidDate: true })
+          fc
+            .date({ min: new Date('2020-01-01'), max: new Date('2030-12-31'), noInvalidDate: true })
             .filter((d) => !isNaN(d.getTime())),
           (timeSlots, baseDate) => {
             // Set fromTime to 23:59:59.999 so all slots are in the past
@@ -2607,32 +2585,27 @@ describe('Property 10: Next Notification Time Calculation', () => {
        * but strictly before the result.
        */
       fc.assert(
-        fc.property(
-          arbitraryNonEmptyTimeSlotList,
-          arbitraryFromTime,
-          (timeSlots, fromTime) => {
-            const result = scheduler.calculateNextTimeMultiSlot(timeSlots, fromTime);
-            expect(result).not.toBeNull();
+        fc.property(arbitraryNonEmptyTimeSlotList, arbitraryFromTime, (timeSlots, fromTime) => {
+          const result = scheduler.calculateNextTimeMultiSlot(timeSlots, fromTime);
+          expect(result).not.toBeNull();
 
-            // Check that no slot has a target time between fromTime and result
-            for (const slot of timeSlots) {
-              const targetTime = new Date(fromTime);
-              targetTime.setHours(slot.hour, slot.minute, 0, 0);
+          // Check that no slot has a target time between fromTime and result
+          for (const slot of timeSlots) {
+            const targetTime = new Date(fromTime);
+            targetTime.setHours(slot.hour, slot.minute, 0, 0);
 
-              // If this slot's time today is strictly after fromTime
-              if (targetTime.getTime() > fromTime.getTime()) {
-                // It should not be before the result
-                expect(targetTime.getTime()).toBeGreaterThanOrEqual(result!.getTime());
-              }
+            // If this slot's time today is strictly after fromTime
+            if (targetTime.getTime() > fromTime.getTime()) {
+              // It should not be before the result
+              expect(targetTime.getTime()).toBeGreaterThanOrEqual(result!.getTime());
             }
           }
-        ),
+        }),
         { numRuns: 100 }
       );
     });
   });
 });
-
 
 /**
  * Property-Based Test: One-to-One Scheduling Mapping (Property 6)
@@ -2671,12 +2644,11 @@ describe('Property 6: One-to-One Scheduling Mapping', () => {
   /**
    * Arbitrary for a list of 1-5 unique time slots
    */
-  const arbitraryUniqueTimeSlots: fc.Arbitrary<TimeSlot[]> = fc
-    .uniqueArray(arbitraryTimeSlot, {
-      minLength: 1,
-      maxLength: 5,
-      comparator: (a, b) => a.hour === b.hour && a.minute === b.minute,
-    });
+  const arbitraryUniqueTimeSlots: fc.Arbitrary<TimeSlot[]> = fc.uniqueArray(arbitraryTimeSlot, {
+    minLength: 1,
+    maxLength: 5,
+    comparator: (a, b) => a.hour === b.hour && a.minute === b.minute,
+  });
 
   /**
    * Arbitrary for NotificationSettings in multipleDaily mode
@@ -3043,12 +3015,11 @@ describe('Property 9: Error Isolation', () => {
   /**
    * Arbitrary for a list of 2-5 unique time slots (need at least 2 to have failures + successes)
    */
-  const arbitraryUniqueTimeSlots: fc.Arbitrary<TimeSlot[]> = fc
-    .uniqueArray(arbitraryTimeSlot, {
-      minLength: 2,
-      maxLength: 5,
-      comparator: (a, b) => a.hour === b.hour && a.minute === b.minute,
-    });
+  const arbitraryUniqueTimeSlots: fc.Arbitrary<TimeSlot[]> = fc.uniqueArray(arbitraryTimeSlot, {
+    minLength: 2,
+    maxLength: 5,
+    comparator: (a, b) => a.hour === b.hour && a.minute === b.minute,
+  });
 
   /**
    * Arbitrary for NotificationSettings in multipleDaily mode

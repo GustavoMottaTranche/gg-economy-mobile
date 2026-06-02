@@ -118,7 +118,8 @@ export class WeeklyRecurringService implements IWeeklyRecurringService {
 
     const today = getTodayBoundary();
     const currentMonth = deriveReferenceMonth(today);
-    const paymentStatusOption: PaymentStatusCreationOption = dto.paymentStatusOption ?? 'all_pending';
+    const paymentStatusOption: PaymentStatusCreationOption =
+      dto.paymentStatusOption ?? 'all_pending';
 
     // Step 3: Wrap creation + occurrence generation + status assignment in a single transaction
     const group = await withTransaction(async () => {
@@ -138,7 +139,11 @@ export class WeeklyRecurringService implements IWeeklyRecurringService {
 
       // Step 3b: Generate occurrences for current month + 11 months ahead (12 total)
       for (let i = 0; i < 12; i++) {
-        const targetDate = new Date(parseInt(currentMonth.split('-')[0]!), parseInt(currentMonth.split('-')[1]!) - 1 + i, 1);
+        const targetDate = new Date(
+          parseInt(currentMonth.split('-')[0]!),
+          parseInt(currentMonth.split('-')[1]!) - 1 + i,
+          1
+        );
         const targetMonth = `${targetDate.getFullYear()}-${String(targetDate.getMonth() + 1).padStart(2, '0')}`;
         await this.generator.generateForGroup(createdGroup.id, targetMonth);
       }
@@ -192,9 +197,7 @@ export class WeeklyRecurringService implements IWeeklyRecurringService {
       );
 
       // Filter occurrences in the first month and find the one with the minimum date
-      const firstMonthOccurrences = occurrences.filter(
-        (occ) => occ.referenceMonth === firstMonth
-      );
+      const firstMonthOccurrences = occurrences.filter((occ) => occ.referenceMonth === firstMonth);
 
       const firstOccurrence = firstMonthOccurrences.reduce(
         (min, occ) => (occ.date < min.date ? occ : min),
@@ -262,7 +265,8 @@ export class WeeklyRecurringService implements IWeeklyRecurringService {
 
     // Step 3: Determine what changed
     const amountChanged = dto.amount !== undefined && dto.amount !== existingGroup.amount;
-    const dayOfWeekChanged = dto.dayOfWeek !== undefined && dto.dayOfWeek !== existingGroup.dayOfWeek;
+    const dayOfWeekChanged =
+      dto.dayOfWeek !== undefined && dto.dayOfWeek !== existingGroup.dayOfWeek;
 
     const today = getTodayBoundary();
 

@@ -2,17 +2,15 @@
  * ScheduledBackupService - Background backup scheduling
  *
  * Implements scheduled backups using expo-background-fetch.
- * This is an optional feature that runs backups in the background.
- *
- * **Validates: Requirements 9**
+ * Uses the custom server for backup storage.
  *
  * @module services/backup/ScheduledBackupService
  */
 
 import * as BackgroundFetch from 'expo-background-fetch';
 import * as TaskManager from 'expo-task-manager';
-import { backupService } from './BackupService';
-import { oAuthService } from './OAuthService';
+import { customServerSettingsStore } from './CustomServerSettingsStore';
+import { createCustomServerBackup } from './CustomServerIntegration';
 import { useBackupStore } from '../../stores/backupStore';
 import { logger } from '../logging';
 
@@ -39,25 +37,31 @@ export function registerBackupTask(): void {
         return BackgroundFetch.BackgroundFetchResult.NoData;
       }
 
-      // Check if user is authenticated
-      const isSignedIn = await oAuthService.isSignedIn();
-      if (!isSignedIn) {
+      // Check if custom server is configured
+      const isConfigured = await customServerSettingsStore.isConfigured();
+      if (!isConfigured) {
+        return BackgroundFetch.BackgroundFetchResult.NoData;
+      }
+
+      // Get config for backup
+      const settings = await customServerSettingsStore.getSettings();
+      const deviceId = await customServerSettingsStore.getOrCreateDeviceId();
+
+      if (!settings.serverUrl || !settings.apiKey) {
         return BackgroundFetch.BackgroundFetchResult.NoData;
       }
 
       // Perform backup
-      const result = await backupService.createBackup();
+      await createCustomServerBackup({
+        serverUrl: settings.serverUrl,
+        apiKey: settings.apiKey,
+        deviceId,
+      });
 
-      if (result.success) {
-        // Update store with success
-        store.setOperationComplete(true);
-        store.markScheduledBackupRun();
-        return BackgroundFetch.BackgroundFetchResult.NewData;
-      } else {
-        // Update store with failure
-        store.setOperationComplete(false, result.errorMessage);
-        return BackgroundFetch.BackgroundFetchResult.Failed;
-      }
+      // Update store with success
+      store.setOperationComplete(true);
+      store.markScheduledBackupRun();
+      return BackgroundFetch.BackgroundFetchResult.NewData;
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       useBackupStore.getState().setOperationComplete(false, errorMessage);
@@ -177,7 +181,9 @@ export class ScheduledBackupService {
 
     // Check if scheduled backups should be enabled based on store state
     const store = useBackupStore.getState();
-    if (store.scheduledBackup.frequency !== 'disabled' && store.isConnected) {
+    const isConfigured = await customServerSettingsStore.isConfigured();
+
+    if (store.scheduledBackup.frequency !== 'disabled' && isConfigured) {
       logger.debug('Enabling scheduled backups on initialization', {
         frequency: store.scheduledBackup.frequency,
       });
@@ -213,24 +219,35 @@ export class ScheduledBackupService {
       return false;
     }
 
-    const isSignedIn = await oAuthService.isSignedIn();
-    if (!isSignedIn) {
+    const isConfigured = await customServerSettingsStore.isConfigured();
+    if (!isConfigured) {
+      return false;
+    }
+
+    const settings = await customServerSettingsStore.getSettings();
+    const deviceId = await customServerSettingsStore.getOrCreateDeviceId();
+
+    if (!settings.serverUrl || !settings.apiKey) {
       return false;
     }
 
     // Run backup
     store.setOperationInProgress('exporting', 0, 'Starting scheduled backup...');
 
-    const result = await backupService.createBackup((progress) => {
-      store.setOperationInProgress(progress.stage, progress.progress, progress.message);
-    });
+    try {
+      await createCustomServerBackup(
+        { serverUrl: settings.serverUrl, apiKey: settings.apiKey, deviceId },
+        (progress) => {
+          store.setOperationInProgress(progress.stage, progress.progress, progress.message);
+        }
+      );
 
-    if (result.success) {
       store.setOperationComplete(true);
       store.markScheduledBackupRun();
       return true;
-    } else {
-      store.setOperationComplete(false, result.errorMessage);
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Backup failed';
+      store.setOperationComplete(false, errorMessage);
       return false;
     }
   }

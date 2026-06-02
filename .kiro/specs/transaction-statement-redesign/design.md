@@ -57,11 +57,11 @@ graph TD
 
 ```typescript
 interface FilterState {
-  categoryIds: string[];        // Selected category IDs (OR logic)
-  minAmount: number | null;     // Minimum absolute amount in cents
-  maxAmount: number | null;     // Maximum absolute amount in cents
-  startDate: string | null;     // ISO date string (YYYY-MM-DD)
-  endDate: string | null;       // ISO date string (YYYY-MM-DD)
+  categoryIds: string[]; // Selected category IDs (OR logic)
+  minAmount: number | null; // Minimum absolute amount in cents
+  maxAmount: number | null; // Maximum absolute amount in cents
+  startDate: string | null; // ISO date string (YYYY-MM-DD)
+  endDate: string | null; // ISO date string (YYYY-MM-DD)
 }
 
 interface FilterPanelProps {
@@ -75,6 +75,7 @@ interface FilterPanelProps {
 ```
 
 The `FilterPanel` is a collapsible section rendered above the transaction list. It contains:
+
 - **Category chips**: Horizontal scroll of category chips with multi-select
 - **Value range inputs**: Two `TextInput` fields for min/max with locale-aware numeric keyboard
 - **Date range pickers**: Two date picker buttons using `@react-native-community/datetimepicker`
@@ -135,6 +136,7 @@ interface FilteredSummary {
 ```
 
 The hook accepts `PaginationFilters` and:
+
 1. Builds WHERE conditions from all active filters
 2. Runs a live count query for `totalCount`
 3. Runs a live aggregate query for `summary` (with same filters, no cursor)
@@ -187,6 +189,7 @@ interface CategoryEditState {
 ```
 
 Flow:
+
 1. User taps category row → `setCategoryEditOpen(true)`
 2. Bottom sheet renders `CategorySelector` with `selectedCategoryId` pre-set
 3. User selects category → if installment group, show scope Alert
@@ -201,10 +204,10 @@ Flow:
 ```typescript
 interface FilterState {
   categoryIds: string[];
-  minAmount: number | null;    // In cents (absolute value)
-  maxAmount: number | null;    // In cents (absolute value)
-  startDate: string | null;    // YYYY-MM-DD
-  endDate: string | null;      // YYYY-MM-DD
+  minAmount: number | null; // In cents (absolute value)
+  maxAmount: number | null; // In cents (absolute value)
+  startDate: string | null; // YYYY-MM-DD
+  endDate: string | null; // YYYY-MM-DD
 }
 ```
 
@@ -212,8 +215,8 @@ interface FilterState {
 
 ```typescript
 interface PaginationCursor {
-  lastDate: string;   // ISO date of last loaded item
-  lastId: string;     // ID of last loaded item
+  lastDate: string; // ISO date of last loaded item
+  lastId: string; // ID of last loaded item
 }
 ```
 
@@ -228,6 +231,7 @@ LIMIT 20
 ### Database Indexes (Existing)
 
 The schema already has all necessary indexes:
+
 - `idx_transactions_reference_month` — month filtering
 - `idx_transactions_category_id` — category filtering
 - `idx_transactions_date_id` — cursor pagination
@@ -238,80 +242,81 @@ No new indexes are required.
 
 ### Validation Rules
 
-| Rule | Condition | Behavior |
-|------|-----------|----------|
-| Value range | minAmount > maxAmount | Show error, retain previous state |
-| Date range | startDate > endDate | Show error, retain previous state |
-| Amount input | Non-numeric input | Reject input (numeric keyboard) |
-| Category filter | Empty selection | No filter applied (show all) |
+| Rule            | Condition             | Behavior                          |
+| --------------- | --------------------- | --------------------------------- |
+| Value range     | minAmount > maxAmount | Show error, retain previous state |
+| Date range      | startDate > endDate   | Show error, retain previous state |
+| Amount input    | Non-numeric input     | Reject input (numeric keyboard)   |
+| Category filter | Empty selection       | No filter applied (show all)      |
 
 ## Correctness Properties
 
-*A property is a characteristic or behavior that should hold true across all valid executions of a system — essentially, a formal statement about what the system should do. Properties serve as the bridge between human-readable specifications and machine-verifiable correctness guarantees.*
+_A property is a characteristic or behavior that should hold true across all valid executions of a system — essentially, a formal statement about what the system should do. Properties serve as the bridge between human-readable specifications and machine-verifiable correctness guarantees._
 
 ### Property 1: Amount Color Assignment
 
-*For any* transaction amount (positive or negative), the color assigned to the amount display SHALL be the success/green semantic color when amount > 0, and the danger/red semantic color when amount < 0.
+_For any_ transaction amount (positive or negative), the color assigned to the amount display SHALL be the success/green semantic color when amount > 0, and the danger/red semantic color when amount < 0.
 
 **Validates: Requirements 1.3, 2.1**
 
 ### Property 2: Category Filter Correctness
 
-*For any* list of transactions and any non-empty subset of category IDs used as a filter, the filtered result SHALL contain exactly those transactions whose `categoryId` is a member of the selected category ID set (OR logic).
+_For any_ list of transactions and any non-empty subset of category IDs used as a filter, the filtered result SHALL contain exactly those transactions whose `categoryId` is a member of the selected category ID set (OR logic).
 
 **Validates: Requirements 4.3, 4.5**
 
 ### Property 3: Summary Recalculation from Filtered Data
 
-*For any* set of transactions and any combination of active filters (category, value range, date range), the computed summary totals (totalIncome, totalExpenses, balance) SHALL equal the aggregation computed from only the transactions that pass all active filter conditions.
+_For any_ set of transactions and any combination of active filters (category, value range, date range), the computed summary totals (totalIncome, totalExpenses, balance) SHALL equal the aggregation computed from only the transactions that pass all active filter conditions.
 
 **Validates: Requirements 4.6, 5.6, 8.6**
 
 ### Property 4: Value Range Filter Correctness
 
-*For any* list of transactions and any valid value range [minAmount, maxAmount] where minAmount ≤ maxAmount, the filtered result SHALL contain exactly those transactions where `abs(amount) >= minAmount AND abs(amount) <= maxAmount`.
+_For any_ list of transactions and any valid value range [minAmount, maxAmount] where minAmount ≤ maxAmount, the filtered result SHALL contain exactly those transactions where `abs(amount) >= minAmount AND abs(amount) <= maxAmount`.
 
 **Validates: Requirements 5.2, 5.3, 5.4**
 
 ### Property 5: Date Range Filter Correctness
 
-*For any* list of transactions and any valid date range [startDate, endDate] where startDate ≤ endDate, the filtered result SHALL contain exactly those transactions where `date >= startDate AND date <= endDate`.
+_For any_ list of transactions and any valid date range [startDate, endDate] where startDate ≤ endDate, the filtered result SHALL contain exactly those transactions where `date >= startDate AND date <= endDate`.
 
 **Validates: Requirements 8.2, 8.3, 8.4**
 
 ### Property 6: Combined Filter Query Builder
 
-*For any* combination of filter parameters (categoryIds, minAmount, maxAmount, startDate, endDate, referenceMonth), the query builder function SHALL produce a SQL condition that is the logical AND of all individual non-null filter conditions, such that applying the built condition to a dataset produces the same result as applying each filter sequentially.
+_For any_ combination of filter parameters (categoryIds, minAmount, maxAmount, startDate, endDate, referenceMonth), the query builder function SHALL produce a SQL condition that is the logical AND of all individual non-null filter conditions, such that applying the built condition to a dataset produces the same result as applying each filter sequentially.
 
 **Validates: Requirements 7.1, 7.3**
 
 ### Property 7: Cursor Pagination Ordering Consistency
 
-*For any* sequence of paginated results across multiple pages, the concatenation of all pages SHALL be strictly ordered by (date DESC, id DESC) with no duplicate transactions and no gaps (every transaction matching the filters appears exactly once across all pages).
+_For any_ sequence of paginated results across multiple pages, the concatenation of all pages SHALL be strictly ordered by (date DESC, id DESC) with no duplicate transactions and no gaps (every transaction matching the filters appears exactly once across all pages).
 
 **Validates: Requirements 6.5, 6.4**
 
 ### Property 8: Currency Locale Round-Trip
 
-*For any* numeric value representing an amount, formatting it as a currency string using the current locale's decimal separator and then parsing it back SHALL produce the original numeric value (within floating-point precision of 1 cent).
+_For any_ numeric value representing an amount, formatting it as a currency string using the current locale's decimal separator and then parsing it back SHALL produce the original numeric value (within floating-point precision of 1 cent).
 
 **Validates: Requirements 5.7, 9.3**
 
 ## Error Handling
 
-| Scenario | Handling |
-|----------|----------|
-| Category update fails | Show Alert with i18n error message, retain previous category value |
-| Pagination load fails | Log error, set `isLoadingMore = false`, allow retry on next scroll |
-| Invalid value range (min > max) | Show inline validation error below inputs, do not apply filter |
-| Invalid date range (start > end) | Show inline validation error below pickers, do not apply filter |
-| Database query error | Show EmptyState with error icon and message |
-| Network timeout on category update | Same as category update failure |
-| Empty filter results | Show EmptyState with "no results" message and suggestion to adjust filters |
+| Scenario                           | Handling                                                                   |
+| ---------------------------------- | -------------------------------------------------------------------------- |
+| Category update fails              | Show Alert with i18n error message, retain previous category value         |
+| Pagination load fails              | Log error, set `isLoadingMore = false`, allow retry on next scroll         |
+| Invalid value range (min > max)    | Show inline validation error below inputs, do not apply filter             |
+| Invalid date range (start > end)   | Show inline validation error below pickers, do not apply filter            |
+| Database query error               | Show EmptyState with error icon and message                                |
+| Network timeout on category update | Same as category update failure                                            |
+| Empty filter results               | Show EmptyState with "no results" message and suggestion to adjust filters |
 
 ### Validation Strategy
 
 Validation is performed at the UI layer before updating the filter store:
+
 - **Value range**: Compare parsed min/max before calling `setMinAmount`/`setMaxAmount`
 - **Date range**: Compare dates before calling `setStartDate`/`setEndDate`
 - **Amount parsing**: Use locale-aware parser that handles both `.` and `,` as decimal separators

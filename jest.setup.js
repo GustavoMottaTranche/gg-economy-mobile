@@ -51,26 +51,9 @@ jest.mock('expo-localization', () => ({
 // Mock expo-crypto for testing
 jest.mock('expo-crypto', () => ({
   randomUUID: jest.fn(() => '123e4567-e89b-12d3-a456-426614174000'),
-}));
-
-// Mock expo-auth-session for testing
-jest.mock('expo-auth-session', () => ({
-  makeRedirectUri: jest.fn(() => 'gg-economy://oauth'),
-  AuthRequest: jest.fn().mockImplementation(() => ({
-    promptAsync: jest.fn(),
-    codeVerifier: 'test-code-verifier',
-  })),
-  exchangeCodeAsync: jest.fn(),
-  refreshAsync: jest.fn(),
-  revokeAsync: jest.fn(),
-  ResponseType: {
-    Code: 'code',
-  },
-}));
-
-// Mock expo-web-browser for testing
-jest.mock('expo-web-browser', () => ({
-  maybeCompleteAuthSession: jest.fn(),
+  digestStringAsync: jest.fn(async () => 'abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789'),
+  CryptoDigestAlgorithm: { SHA256: 'SHA-256' },
+  getRandomBytesAsync: jest.fn(async (length) => new Uint8Array(length).fill(0xab)),
 }));
 
 // Note: expo-file-system mock is handled by moduleNameMapper in jest.config.js

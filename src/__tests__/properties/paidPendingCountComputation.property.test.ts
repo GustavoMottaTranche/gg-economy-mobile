@@ -106,9 +106,9 @@ describe('Feature: payment-status-tracking, Property 9: Paid and pending count c
   it('totalCount equals N (the total number of occurrences in the group)', () => {
     fc.assert(
       fc.property(
-        fc.uuid().chain((groupId) =>
-          occurrencesArbitrary(groupId).map((occs) => ({ groupId, occs }))
-        ),
+        fc
+          .uuid()
+          .chain((groupId) => occurrencesArbitrary(groupId).map((occs) => ({ groupId, occs }))),
         ({ occs }) => {
           const summary = getGroupPaymentSummary(occs);
 
@@ -122,9 +122,9 @@ describe('Feature: payment-status-tracking, Property 9: Paid and pending count c
   it('paidCount equals P (the number of occurrences with isPaid=true)', () => {
     fc.assert(
       fc.property(
-        fc.uuid().chain((groupId) =>
-          occurrencesArbitrary(groupId).map((occs) => ({ groupId, occs }))
-        ),
+        fc
+          .uuid()
+          .chain((groupId) => occurrencesArbitrary(groupId).map((occs) => ({ groupId, occs }))),
         ({ occs }) => {
           const summary = getGroupPaymentSummary(occs);
           const expectedPaidCount = occs.filter((o) => o.isPaid).length;
@@ -139,9 +139,9 @@ describe('Feature: payment-status-tracking, Property 9: Paid and pending count c
   it('pendingCount equals N minus P (totalCount - paidCount)', () => {
     fc.assert(
       fc.property(
-        fc.uuid().chain((groupId) =>
-          occurrencesArbitrary(groupId).map((occs) => ({ groupId, occs }))
-        ),
+        fc
+          .uuid()
+          .chain((groupId) => occurrencesArbitrary(groupId).map((occs) => ({ groupId, occs }))),
         ({ occs }) => {
           const summary = getGroupPaymentSummary(occs);
 
@@ -155,9 +155,9 @@ describe('Feature: payment-status-tracking, Property 9: Paid and pending count c
   it('paidCount + pendingCount always equals totalCount', () => {
     fc.assert(
       fc.property(
-        fc.uuid().chain((groupId) =>
-          occurrencesArbitrary(groupId).map((occs) => ({ groupId, occs }))
-        ),
+        fc
+          .uuid()
+          .chain((groupId) => occurrencesArbitrary(groupId).map((occs) => ({ groupId, occs }))),
         ({ occs }) => {
           const summary = getGroupPaymentSummary(occs);
 
@@ -237,9 +237,9 @@ describe('Feature: payment-status-tracking, Property 9: Paid and pending count c
   it('counts are non-negative for any input', () => {
     fc.assert(
       fc.property(
-        fc.uuid().chain((groupId) =>
-          occurrencesArbitrary(groupId).map((occs) => ({ groupId, occs }))
-        ),
+        fc
+          .uuid()
+          .chain((groupId) => occurrencesArbitrary(groupId).map((occs) => ({ groupId, occs }))),
         ({ occs }) => {
           const summary = getGroupPaymentSummary(occs);
 

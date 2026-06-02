@@ -475,9 +475,9 @@ describe('notificationStore', () => {
 
       store.setTimeSlotNotificationId('09:00', 'notif-123');
 
-      expect(
-        useNotificationStore.getState().settings.timeSlotNotificationIds
-      ).toEqual({ '09:00': 'notif-123' });
+      expect(useNotificationStore.getState().settings.timeSlotNotificationIds).toEqual({
+        '09:00': 'notif-123',
+      });
     });
 
     it('removes a notification ID when id is null', () => {
@@ -486,9 +486,7 @@ describe('notificationStore', () => {
       store.setTimeSlotNotificationId('09:00', 'notif-123');
       store.setTimeSlotNotificationId('09:00', null);
 
-      expect(
-        useNotificationStore.getState().settings.timeSlotNotificationIds
-      ).toEqual({});
+      expect(useNotificationStore.getState().settings.timeSlotNotificationIds).toEqual({});
     });
 
     it('updates an existing notification ID', () => {
@@ -497,9 +495,9 @@ describe('notificationStore', () => {
       store.setTimeSlotNotificationId('09:00', 'notif-123');
       store.setTimeSlotNotificationId('09:00', 'notif-456');
 
-      expect(
-        useNotificationStore.getState().settings.timeSlotNotificationIds
-      ).toEqual({ '09:00': 'notif-456' });
+      expect(useNotificationStore.getState().settings.timeSlotNotificationIds).toEqual({
+        '09:00': 'notif-456',
+      });
     });
   });
 
@@ -514,9 +512,7 @@ describe('notificationStore', () => {
       const newIds = { '08:00': 'id-1', '12:30': 'id-2', '18:00': 'id-3' };
       store.setTimeSlotNotificationIds(newIds);
 
-      expect(
-        useNotificationStore.getState().settings.timeSlotNotificationIds
-      ).toEqual(newIds);
+      expect(useNotificationStore.getState().settings.timeSlotNotificationIds).toEqual(newIds);
     });
 
     it('replaces with empty mapping', () => {
@@ -525,9 +521,7 @@ describe('notificationStore', () => {
       store.setTimeSlotNotificationId('09:00', 'notif-123');
       store.setTimeSlotNotificationIds({});
 
-      expect(
-        useNotificationStore.getState().settings.timeSlotNotificationIds
-      ).toEqual({});
+      expect(useNotificationStore.getState().settings.timeSlotNotificationIds).toEqual({});
     });
   });
 });

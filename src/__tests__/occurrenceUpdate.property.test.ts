@@ -64,9 +64,7 @@ const positiveAmountArb = fc.integer({ min: 1, max: 9999999 }).map((n) => n / 10
 const referenceMonthArb = fc
   .integer({ min: 2020, max: 2030 })
   .chain((year) =>
-    fc
-      .integer({ min: 1, max: 12 })
-      .map((month) => `${year}-${String(month).padStart(2, '0')}`)
+    fc.integer({ min: 1, max: 12 }).map((month) => `${year}-${String(month).padStart(2, '0')}`)
   );
 
 /** Generates a valid date string (YYYY-MM-DD) within a given month */
@@ -81,10 +79,7 @@ const dateInMonthArb = (refMonth: string): fc.Arbitrary<string> => {
 };
 
 /** Generates a WeeklyOccurrence for a given id and month */
-const weeklyOccurrenceArb = (
-  occId: string,
-  refMonth: string
-): fc.Arbitrary<WeeklyOccurrence> =>
+const weeklyOccurrenceArb = (occId: string, refMonth: string): fc.Arbitrary<WeeklyOccurrence> =>
   fc.record({
     id: fc.constant(occId),
     weeklyGroupId: uuidArb,
@@ -120,10 +115,7 @@ describe('Feature: statement-payment-integration, Property 8: Occurrence update 
         uuidArb.chain((occId) =>
           referenceMonthArb.chain((refMonth) =>
             fc
-              .tuple(
-                weeklyOccurrenceArb(occId, refMonth),
-                positiveAmountArb
-              )
+              .tuple(weeklyOccurrenceArb(occId, refMonth), positiveAmountArb)
               .map(([occurrence, newAmount]) => ({ occurrence, newAmount, refMonth }))
           )
         ),
@@ -212,10 +204,7 @@ describe('Feature: statement-payment-integration, Property 8: Occurrence update 
         uuidArb.chain((occId) =>
           referenceMonthArb.chain((refMonth) =>
             fc
-              .tuple(
-                weeklyOccurrenceArb(occId, refMonth),
-                positiveAmountArb
-              )
+              .tuple(weeklyOccurrenceArb(occId, refMonth), positiveAmountArb)
               .map(([occurrence, newAmount]) => ({ occurrence, newAmount, refMonth }))
           )
         ),

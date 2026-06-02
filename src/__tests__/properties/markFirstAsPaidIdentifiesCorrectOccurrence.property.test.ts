@@ -42,9 +42,7 @@ function applyFirstPaidOption(occurrences: OccurrenceWithStatus[]): OccurrenceWi
   );
 
   // Filter occurrences in the first month
-  const firstMonthOccurrences = occurrences.filter(
-    (occ) => occ.referenceMonth === firstMonth
-  );
+  const firstMonthOccurrences = occurrences.filter((occ) => occ.referenceMonth === firstMonth);
 
   // Find the occurrence with the minimum date in the first month
   const firstOccurrence = firstMonthOccurrences.reduce(
@@ -77,9 +75,9 @@ function dateInMonth(referenceMonth: string): fc.Arbitrary<string> {
   const month = parseInt(referenceMonth.split('-')[1] ?? '1', 10);
   const daysInMonth = new Date(year, month, 0).getDate();
 
-  return fc.integer({ min: 1, max: daysInMonth }).map(
-    (day) => `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`
-  );
+  return fc
+    .integer({ min: 1, max: daysInMonth })
+    .map((day) => `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`);
 }
 
 /**
@@ -219,9 +217,7 @@ describe('Feature: payment-status-tracking, Property 4: Mark first as paid ident
         );
 
         // All occurrences NOT in the earliest month must be unpaid
-        const laterMonthOccurrences = result.filter(
-          (occ) => occ.referenceMonth !== earliestMonth
-        );
+        const laterMonthOccurrences = result.filter((occ) => occ.referenceMonth !== earliestMonth);
 
         for (const occ of laterMonthOccurrences) {
           expect(occ.isPaid).toBe(false);

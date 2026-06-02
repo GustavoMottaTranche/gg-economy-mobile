@@ -127,19 +127,13 @@ describe('CustomServerSettingsStore', () => {
         '@gg-economy/custom-server-url',
         'https://backup.example.com'
       );
-      expect(SecureStore.setItemAsync).toHaveBeenCalledWith(
-        'custom-server-api-key',
-        'my-api-key'
-      );
+      expect(SecureStore.setItemAsync).toHaveBeenCalledWith('custom-server-api-key', 'my-api-key');
     });
 
     it('should trim the API key before saving', async () => {
       await store.saveSettings('https://example.com', '  my-key  ');
 
-      expect(SecureStore.setItemAsync).toHaveBeenCalledWith(
-        'custom-server-api-key',
-        'my-key'
-      );
+      expect(SecureStore.setItemAsync).toHaveBeenCalledWith('custom-server-api-key', 'my-key');
     });
 
     it('should throw if server URL is invalid', async () => {
@@ -167,7 +161,8 @@ describe('CustomServerSettingsStore', () => {
       (AsyncStorage.getItem as jest.Mock).mockResolvedValue(serverUrl);
       (SecureStore.getItemAsync as jest.Mock).mockImplementation((key: string) => {
         if (key === 'custom-server-api-key') return Promise.resolve(apiKey);
-        if (key === 'custom-server-device-id') return Promise.resolve('abcdef1234567890abcdef1234567890');
+        if (key === 'custom-server-device-id')
+          return Promise.resolve('abcdef1234567890abcdef1234567890');
         return Promise.resolve(null);
       });
 
@@ -195,7 +190,8 @@ describe('CustomServerSettingsStore', () => {
       (AsyncStorage.getItem as jest.Mock).mockResolvedValue('https://example.com');
       (SecureStore.getItemAsync as jest.Mock).mockImplementation((key: string) => {
         if (key === 'custom-server-api-key') return Promise.resolve('my-key');
-        if (key === 'custom-server-device-id') return Promise.resolve('aabbccdd11223344aabbccdd11223344');
+        if (key === 'custom-server-device-id')
+          return Promise.resolve('aabbccdd11223344aabbccdd11223344');
         return Promise.resolve(null);
       });
 
@@ -229,8 +225,8 @@ describe('CustomServerSettingsStore', () => {
 
       // Mock getRandomBytesAsync to return 16 known bytes
       const mockBytes = new Uint8Array([
-        0xab, 0xcd, 0xef, 0x01, 0x23, 0x45, 0x67, 0x89,
-        0xab, 0xcd, 0xef, 0x01, 0x23, 0x45, 0x67, 0x89,
+        0xab, 0xcd, 0xef, 0x01, 0x23, 0x45, 0x67, 0x89, 0xab, 0xcd, 0xef, 0x01, 0x23, 0x45, 0x67,
+        0x89,
       ]);
       (Crypto as any).getRandomBytesAsync = jest.fn().mockResolvedValue(mockBytes);
 
@@ -249,8 +245,8 @@ describe('CustomServerSettingsStore', () => {
       (SecureStore.getItemAsync as jest.Mock).mockResolvedValueOnce(null);
 
       const mockBytes = new Uint8Array([
-        0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88,
-        0x99, 0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff, 0x00,
+        0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88, 0x99, 0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff,
+        0x00,
       ]);
       (Crypto as any).getRandomBytesAsync = jest.fn().mockResolvedValue(mockBytes);
 
@@ -270,8 +266,8 @@ describe('CustomServerSettingsStore', () => {
       (SecureStore.getItemAsync as jest.Mock).mockResolvedValue(null);
 
       const mockBytes = new Uint8Array([
-        0x0a, 0x1b, 0x2c, 0x3d, 0x4e, 0x5f, 0x60, 0x71,
-        0x82, 0x93, 0xa4, 0xb5, 0xc6, 0xd7, 0xe8, 0xf9,
+        0x0a, 0x1b, 0x2c, 0x3d, 0x4e, 0x5f, 0x60, 0x71, 0x82, 0x93, 0xa4, 0xb5, 0xc6, 0xd7, 0xe8,
+        0xf9,
       ]);
       (Crypto as any).getRandomBytesAsync = jest.fn().mockResolvedValue(mockBytes);
 
@@ -314,7 +310,8 @@ describe('CustomServerSettingsStore', () => {
       (AsyncStorage.getItem as jest.Mock).mockResolvedValue('https://example.com');
       (SecureStore.getItemAsync as jest.Mock).mockImplementation((key: string) => {
         if (key === 'custom-server-api-key') return Promise.resolve('my-key');
-        if (key === 'custom-server-device-id') return Promise.resolve('aabbccdd11223344aabbccdd11223344');
+        if (key === 'custom-server-device-id')
+          return Promise.resolve('aabbccdd11223344aabbccdd11223344');
         return Promise.resolve(null);
       });
 
@@ -326,7 +323,8 @@ describe('CustomServerSettingsStore', () => {
       (AsyncStorage.getItem as jest.Mock).mockResolvedValue(null);
       (SecureStore.getItemAsync as jest.Mock).mockImplementation((key: string) => {
         if (key === 'custom-server-api-key') return Promise.resolve('my-key');
-        if (key === 'custom-server-device-id') return Promise.resolve('aabbccdd11223344aabbccdd11223344');
+        if (key === 'custom-server-device-id')
+          return Promise.resolve('aabbccdd11223344aabbccdd11223344');
         return Promise.resolve(null);
       });
 
@@ -338,7 +336,8 @@ describe('CustomServerSettingsStore', () => {
       (AsyncStorage.getItem as jest.Mock).mockResolvedValue('https://example.com');
       (SecureStore.getItemAsync as jest.Mock).mockImplementation((key: string) => {
         if (key === 'custom-server-api-key') return Promise.resolve(null);
-        if (key === 'custom-server-device-id') return Promise.resolve('aabbccdd11223344aabbccdd11223344');
+        if (key === 'custom-server-device-id')
+          return Promise.resolve('aabbccdd11223344aabbccdd11223344');
         return Promise.resolve(null);
       });
 
@@ -362,7 +361,8 @@ describe('CustomServerSettingsStore', () => {
       (AsyncStorage.getItem as jest.Mock).mockResolvedValue('');
       (SecureStore.getItemAsync as jest.Mock).mockImplementation((key: string) => {
         if (key === 'custom-server-api-key') return Promise.resolve('my-key');
-        if (key === 'custom-server-device-id') return Promise.resolve('aabbccdd11223344aabbccdd11223344');
+        if (key === 'custom-server-device-id')
+          return Promise.resolve('aabbccdd11223344aabbccdd11223344');
         return Promise.resolve(null);
       });
 
@@ -374,7 +374,8 @@ describe('CustomServerSettingsStore', () => {
       (AsyncStorage.getItem as jest.Mock).mockResolvedValue('https://example.com');
       (SecureStore.getItemAsync as jest.Mock).mockImplementation((key: string) => {
         if (key === 'custom-server-api-key') return Promise.resolve('');
-        if (key === 'custom-server-device-id') return Promise.resolve('aabbccdd11223344aabbccdd11223344');
+        if (key === 'custom-server-device-id')
+          return Promise.resolve('aabbccdd11223344aabbccdd11223344');
         return Promise.resolve(null);
       });
 

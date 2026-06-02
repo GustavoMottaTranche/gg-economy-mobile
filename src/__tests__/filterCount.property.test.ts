@@ -46,19 +46,13 @@ const dateStringArb = fc
       .chain((month) =>
         fc
           .integer({ min: 1, max: 28 })
-          .map(
-            (day) =>
-              `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`
-          )
+          .map((day) => `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`)
       )
   );
 
 const nullableDateArb = fc.oneof(dateStringArb, fc.constant(null));
 
-const nullableAmountArb = fc.oneof(
-  fc.integer({ min: 1, max: 9999999 }),
-  fc.constant(null)
-);
+const nullableAmountArb = fc.oneof(fc.integer({ min: 1, max: 9999999 }), fc.constant(null));
 
 const filterStateArb: fc.Arbitrary<FilterState> = fc.record({
   categoryIds: fc.array(categoryIdArb, { minLength: 0, maxLength: 5 }),
@@ -115,7 +109,14 @@ describe('Property 7: Active filter count includes all active filters', () => {
           hasEndDate: fc.boolean(),
           hasPendingOnly: fc.boolean(),
         }),
-        ({ hasCategoryIds, hasMinAmount, hasMaxAmount, hasStartDate, hasEndDate, hasPendingOnly }) => {
+        ({
+          hasCategoryIds,
+          hasMinAmount,
+          hasMaxAmount,
+          hasStartDate,
+          hasEndDate,
+          hasPendingOnly,
+        }) => {
           const filters: FilterState = {
             categoryIds: hasCategoryIds ? ['some-category-id'] : [],
             minAmount: hasMinAmount ? 1000 : null,

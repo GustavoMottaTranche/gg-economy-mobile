@@ -40,12 +40,10 @@ describe('Property 4: Installment group homogeneity', () => {
         const result = calculateInstallments(input);
 
         const totalParcelsValues = result.map((r) => r.totalParcels);
-        const allSame = totalParcelsValues.every(
-          (v) => v === input.parcelCount,
-        );
+        const allSame = totalParcelsValues.every((v) => v === input.parcelCount);
         expect(allSame).toBe(true);
       }),
-      { numRuns: 100 },
+      { numRuns: 100 }
     );
   });
 
@@ -58,7 +56,7 @@ describe('Property 4: Installment group homogeneity', () => {
           expect(result[i]!.index).toBe(i + 1);
         }
       }),
-      { numRuns: 100 },
+      { numRuns: 100 }
     );
   });
 
@@ -68,7 +66,7 @@ describe('Property 4: Installment group homogeneity', () => {
         const result = calculateInstallments(input);
         expect(result.length).toBe(input.parcelCount);
       }),
-      { numRuns: 100 },
+      { numRuns: 100 }
     );
   });
 
@@ -87,11 +85,11 @@ describe('Property 4: Installment group homogeneity', () => {
           expect(result[i]!.totalParcels).toBe(input.parcelCount);
           expect(result[i]!.index).toBe(i + 1);
           expect(result[i]!.descriptionSuffix).toBe(
-            `${input.title} (${i + 1}/${input.parcelCount})`,
+            `${input.title} (${i + 1}/${input.parcelCount})`
           );
         }
       }),
-      { numRuns: 100 },
+      { numRuns: 100 }
     );
   });
 });

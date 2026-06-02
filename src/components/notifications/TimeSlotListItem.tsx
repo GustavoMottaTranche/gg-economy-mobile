@@ -7,7 +7,7 @@
  *
  * **Validates: Requirements 5.1, 5.2, 5.3**
  */
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { type TimeSlot, timeSlotKey } from '../../stores/notificationStore';
 import { useThemeColors } from '../../hooks/useThemeColors';
@@ -35,10 +35,7 @@ export function TimeSlotListItem({ slot, canDelete, onDelete, onEdit }: TimeSlot
 
   return (
     <TouchableOpacity
-      style={[
-        styles.container,
-        { borderBottomColor: colors.border.subtle },
-      ]}
+      style={[styles.container, { borderBottomColor: colors.border.subtle }]}
       testID={`time-slot-item-${key}`}
       onPress={() => onEdit?.(slot)}
       accessibilityRole="button"

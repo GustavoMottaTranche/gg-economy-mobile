@@ -99,8 +99,10 @@ export function DatabaseProvider({
       // Generate recurring occurrences for the next 12 months on startup
       // This ensures future months always have projected data
       try {
-        const { occurrenceGenerator } = await import('../services/weekly-recurring/OccurrenceGenerator');
-        const { generateMonthlyTransactions } = await import('../services/recurring/RecurringTransactionService');
+        const { occurrenceGenerator } =
+          await import('../services/weekly-recurring/OccurrenceGenerator');
+        const { generateMonthlyTransactions } =
+          await import('../services/recurring/RecurringTransactionService');
         const now = new Date();
         for (let i = 0; i < 12; i++) {
           const targetDate = new Date(now.getFullYear(), now.getMonth() + i, 1);

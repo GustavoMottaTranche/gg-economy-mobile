@@ -275,18 +275,26 @@ function CategoryPickerComponent({
   const ListEmptyComponent = useCallback(
     () => (
       <View style={styles.emptyContainer}>
-        <Text style={[styles.emptyText, { color: colors.text.secondary }]}>{t('categories.noCategories')}</Text>
+        <Text style={[styles.emptyText, { color: colors.text.secondary }]}>
+          {t('categories.noCategories')}
+        </Text>
       </View>
     ),
     [t, colors]
   );
 
   const content = (
-    <View style={[styles.container, { backgroundColor: colors.surface.card }, style]} testID={testID}>
+    <View
+      style={[styles.container, { backgroundColor: colors.surface.card }, style]}
+      testID={testID}
+    >
       {/* Search Input */}
       <View style={[styles.searchContainer, { borderBottomColor: colors.border.default }]}>
         <TextInput
-          style={[styles.searchInput, { backgroundColor: colors.background.tertiary, color: colors.text.primary }]}
+          style={[
+            styles.searchInput,
+            { backgroundColor: colors.background.tertiary, color: colors.text.primary },
+          ]}
           placeholder={searchPlaceholder || t('common.search')}
           placeholderTextColor={colors.text.tertiary}
           value={searchQuery}
@@ -341,7 +349,9 @@ function CategoryPickerComponent({
           >
             {/* Modal Header */}
             <View style={[styles.modalHeader, { borderBottomColor: colors.border.default }]}>
-              <Text style={[styles.modalTitle, { color: colors.text.primary }]}>{t('manual.selectCategory')}</Text>
+              <Text style={[styles.modalTitle, { color: colors.text.primary }]}>
+                {t('manual.selectCategory')}
+              </Text>
               {onClose && (
                 <TouchableOpacity
                   onPress={onClose}
@@ -349,7 +359,9 @@ function CategoryPickerComponent({
                   accessibilityRole="button"
                   accessibilityLabel={t('common.close')}
                 >
-                  <Text style={[styles.closeButtonText, { color: colors.interactive.primary }]}>{t('common.close')}</Text>
+                  <Text style={[styles.closeButtonText, { color: colors.interactive.primary }]}>
+                    {t('common.close')}
+                  </Text>
                 </TouchableOpacity>
               )}
             </View>

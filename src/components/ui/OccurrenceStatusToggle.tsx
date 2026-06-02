@@ -98,14 +98,7 @@ export function OccurrenceStatusToggle({
           fill="none"
           testID={testID ? `${testID}-empty-icon` : undefined}
         >
-          <Circle
-            cx="12"
-            cy="12"
-            r="9"
-            stroke={colors.border.strong}
-            strokeWidth="2"
-            fill="none"
-          />
+          <Circle cx="12" cy="12" r="9" stroke={colors.border.strong} strokeWidth="2" fill="none" />
         </Svg>
       )}
     </TouchableOpacity>

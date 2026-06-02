@@ -116,14 +116,23 @@ function LoadingIndicatorComponent({
         accessibilityLiveRegion="polite"
         testID={testID}
       >
-        <View style={[styles.fullScreenContent, { backgroundColor: themeColors.surface.card, shadowColor: '#000' }]}>
+        <View
+          style={[
+            styles.fullScreenContent,
+            { backgroundColor: themeColors.surface.card, shadowColor: '#000' },
+          ]}
+        >
           <ActivityIndicator
             size={spinnerSize}
             color={spinnerColor}
             style={{ transform: [{ scale: size === 'large' ? 1.5 : 1 }] }}
           />
           {message !== undefined && (
-            <Text style={[styles.fullScreenMessage, { color: themeColors.text.primary }, messageStyle]}>{displayMessage}</Text>
+            <Text
+              style={[styles.fullScreenMessage, { color: themeColors.text.primary }, messageStyle]}
+            >
+              {displayMessage}
+            </Text>
           )}
         </View>
       </View>
@@ -145,7 +154,9 @@ function LoadingIndicatorComponent({
         style={{ transform: [{ scale: size === 'large' ? 1.3 : 1 }] }}
       />
       {message !== undefined && (
-        <Text style={[styles.message, { color: themeColors.text.secondary }, messageStyle]}>{displayMessage}</Text>
+        <Text style={[styles.message, { color: themeColors.text.secondary }, messageStyle]}>
+          {displayMessage}
+        </Text>
       )}
     </View>
   );

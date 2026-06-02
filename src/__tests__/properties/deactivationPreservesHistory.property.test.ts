@@ -203,7 +203,9 @@ describe('Feature: entry-title-and-dates, Property 10: Deactivation Preserves Hi
           );
 
           for (let i = 0; i < transactionCount; i++) {
-            expect(afterDeactivation[i]!.referenceMonth).toBe(generatedTransactions[i]!.referenceMonth);
+            expect(afterDeactivation[i]!.referenceMonth).toBe(
+              generatedTransactions[i]!.referenceMonth
+            );
             expect(afterDeactivation[i]!.recurringId).toBe(generatedTransactions[i]!.recurringId);
           }
         }

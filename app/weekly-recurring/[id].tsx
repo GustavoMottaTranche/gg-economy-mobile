@@ -72,9 +72,7 @@ export default function WeeklyRecurringDetailScreen() {
         if (groupData) {
           const groupOccurrences = await weeklyOccurrenceRepository.getByGroupId(id);
           // Sort chronologically
-          const sorted = [...groupOccurrences].sort(
-            (a, b) => a.date.localeCompare(b.date)
-          );
+          const sorted = [...groupOccurrences].sort((a, b) => a.date.localeCompare(b.date));
           setOccurrences(sorted);
 
           // Load payment summary

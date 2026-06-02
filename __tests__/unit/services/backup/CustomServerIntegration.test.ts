@@ -94,13 +94,11 @@ describe('createCustomServerBackup', () => {
     };
 
     mockExportDatabase.mockResolvedValueOnce(tempPath);
-    mockGetInfoAsync.mockResolvedValueOnce({ exists: true, size: 2048, isDirectory: false, uri: tempPath, modificationTime: 0 } as any);
     mockUpload.mockResolvedValueOnce(serverResponse);
 
     const result = await createCustomServerBackup(validConfig);
 
     expect(mockExportDatabase).toHaveBeenCalledTimes(1);
-    expect(mockGetInfoAsync).toHaveBeenCalledWith(tempPath);
     expect(mockUpload).toHaveBeenCalledWith(tempPath, validConfig, undefined);
     expect(mockDeleteAsync).toHaveBeenCalledWith(tempPath, { idempotent: true });
     expect(result).toEqual(serverResponse);
@@ -128,27 +126,30 @@ describe('createCustomServerBackup', () => {
     });
   });
 
-  it('should throw DATABASE_NOT_FOUND when exported file does not exist', async () => {
-    const tempPath = '/mock/cache/gg-economy-backup-20250115-143022.db';
-    mockExportDatabase.mockResolvedValueOnce(tempPath);
-    mockGetInfoAsync.mockResolvedValueOnce({ exists: false, isDirectory: false, uri: tempPath } as any);
+  it('should throw DATABASE_NOT_FOUND when export returns error with DATABASE_NOT_FOUND code', async () => {
+    const { BackupError: MockedBackupError } = jest.requireMock(
+      '../../../../src/services/backup/BackupService'
+    );
+    mockExportDatabase.mockRejectedValueOnce(
+      new MockedBackupError('Database file not found after export', 'DATABASE_NOT_FOUND')
+    );
 
     await expect(createCustomServerBackup(validConfig)).rejects.toMatchObject({
       code: 'DATABASE_NOT_FOUND',
-      message: 'Database file not found after export',
     });
-
-    // Temp file should still be cleaned up
-    expect(mockDeleteAsync).toHaveBeenCalledWith(tempPath, { idempotent: true });
   });
 
   it('should cleanup temp file when upload fails', async () => {
     const tempPath = '/mock/cache/gg-economy-backup-20250115-143022.db';
     mockExportDatabase.mockResolvedValueOnce(tempPath);
-    mockGetInfoAsync.mockResolvedValueOnce({ exists: true, size: 2048, isDirectory: false, uri: tempPath, modificationTime: 0 } as any);
-    mockUpload.mockRejectedValueOnce(
-      new CustomServerError('Upload failed', 'UPLOAD_FAILED', 500)
-    );
+    mockGetInfoAsync.mockResolvedValueOnce({
+      exists: true,
+      size: 2048,
+      isDirectory: false,
+      uri: tempPath,
+      modificationTime: 0,
+    } as any);
+    mockUpload.mockRejectedValueOnce(new CustomServerError('Upload failed', 'UPLOAD_FAILED', 500));
 
     await expect(createCustomServerBackup(validConfig)).rejects.toMatchObject({
       code: 'UPLOAD_FAILED',
@@ -179,7 +180,13 @@ describe('createCustomServerBackup', () => {
     };
 
     mockExportDatabase.mockResolvedValueOnce(tempPath);
-    mockGetInfoAsync.mockResolvedValueOnce({ exists: true, size: 2048, isDirectory: false, uri: tempPath, modificationTime: 0 } as any);
+    mockGetInfoAsync.mockResolvedValueOnce({
+      exists: true,
+      size: 2048,
+      isDirectory: false,
+      uri: tempPath,
+      modificationTime: 0,
+    } as any);
     mockUpload.mockResolvedValueOnce(serverResponse);
 
     const onProgress = jest.fn();
@@ -213,7 +220,13 @@ describe('createCustomServerBackup', () => {
     };
 
     mockExportDatabase.mockResolvedValueOnce(tempPath);
-    mockGetInfoAsync.mockResolvedValueOnce({ exists: true, size: 2048, isDirectory: false, uri: tempPath, modificationTime: 0 } as any);
+    mockGetInfoAsync.mockResolvedValueOnce({
+      exists: true,
+      size: 2048,
+      isDirectory: false,
+      uri: tempPath,
+      modificationTime: 0,
+    } as any);
     mockUpload.mockResolvedValueOnce(serverResponse);
 
     const onProgress = jest.fn();
@@ -232,7 +245,13 @@ describe('createCustomServerBackup', () => {
     };
 
     mockExportDatabase.mockResolvedValueOnce(tempPath);
-    mockGetInfoAsync.mockResolvedValueOnce({ exists: true, size: 2048, isDirectory: false, uri: tempPath, modificationTime: 0 } as any);
+    mockGetInfoAsync.mockResolvedValueOnce({
+      exists: true,
+      size: 2048,
+      isDirectory: false,
+      uri: tempPath,
+      modificationTime: 0,
+    } as any);
     mockUpload.mockResolvedValueOnce(serverResponse);
     mockDeleteAsync.mockRejectedValueOnce(new Error('Permission denied'));
 
@@ -272,9 +291,7 @@ describe('restoreFromCustomServer', () => {
     const downloadError = new CustomServerError('Backup not found', 'NOT_FOUND', 404);
     mockDownload.mockRejectedValueOnce(downloadError);
 
-    await expect(
-      restoreFromCustomServer('missing.db', validConfig)
-    ).rejects.toBe(downloadError);
+    await expect(restoreFromCustomServer('missing.db', validConfig)).rejects.toBe(downloadError);
 
     // No temp file to clean since download failed before returning a path
     expect(mockDeleteAsync).not.toHaveBeenCalled();
@@ -288,9 +305,9 @@ describe('restoreFromCustomServer', () => {
     mockValidateBackup.mockResolvedValueOnce(true);
     mockRestoreDatabase.mockRejectedValueOnce(new Error('Restore failed'));
 
-    await expect(
-      restoreFromCustomServer('test-backup.db', validConfig)
-    ).rejects.toThrow('Restore failed');
+    await expect(restoreFromCustomServer('test-backup.db', validConfig)).rejects.toThrow(
+      'Restore failed'
+    );
 
     // Temp file should be cleaned up
     expect(mockDeleteAsync).toHaveBeenCalledWith(tempPath, { idempotent: true });
@@ -301,9 +318,9 @@ describe('restoreFromCustomServer', () => {
     mockDownload.mockResolvedValueOnce(tempPath);
     mockValidateBackup.mockRejectedValueOnce(new Error('Backup file is empty'));
 
-    await expect(
-      restoreFromCustomServer('test-backup.db', validConfig)
-    ).rejects.toThrow('Backup file is empty');
+    await expect(restoreFromCustomServer('test-backup.db', validConfig)).rejects.toThrow(
+      'Backup file is empty'
+    );
 
     // Temp file should be cleaned up
     expect(mockDeleteAsync).toHaveBeenCalledWith(tempPath, { idempotent: true });

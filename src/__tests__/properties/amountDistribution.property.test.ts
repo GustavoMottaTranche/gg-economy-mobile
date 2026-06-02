@@ -22,9 +22,9 @@ describe('Property 1: Amount distribution invariant', () => {
           const result = distributeAmount(total, count);
           const sum = result.reduce((acc, val) => acc + val, 0);
           expect(sum).toBe(total);
-        },
+        }
       ),
-      { numRuns: 100 },
+      { numRuns: 100 }
     );
   });
 
@@ -38,9 +38,9 @@ describe('Property 1: Amount distribution invariant', () => {
           const base = Math.floor(total / count);
           const remainder = total % count;
           expect(result[0]).toBe(base + remainder);
-        },
+        }
       ),
-      { numRuns: 100 },
+      { numRuns: 100 }
     );
   });
 
@@ -55,9 +55,9 @@ describe('Property 1: Amount distribution invariant', () => {
           for (let i = 1; i < result.length; i++) {
             expect(result[i]).toBe(base);
           }
-        },
+        }
       ),
-      { numRuns: 100 },
+      { numRuns: 100 }
     );
   });
 });

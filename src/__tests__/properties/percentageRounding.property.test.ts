@@ -19,9 +19,9 @@ describe('Property 4: Percentage rounding invariant — sum equals 100', () => {
           const result = roundPercentages(values, total);
           const sum = result.reduce((acc, v) => acc + v, 0);
           expect(sum).toBe(100);
-        },
+        }
       ),
-      { numRuns: 100 },
+      { numRuns: 100 }
     );
   });
 
@@ -36,9 +36,9 @@ describe('Property 4: Percentage rounding invariant — sum equals 100', () => {
             expect(Number.isInteger(pct)).toBe(true);
             expect(pct).toBeGreaterThanOrEqual(0);
           }
-        },
+        }
       ),
-      { numRuns: 100 },
+      { numRuns: 100 }
     );
   });
 
@@ -50,9 +50,9 @@ describe('Property 4: Percentage rounding invariant — sum equals 100', () => {
           const total = values.reduce((sum, v) => sum + v, 0);
           const result = roundPercentages(values, total);
           expect(result.length).toBe(values.length);
-        },
+        }
       ),
-      { numRuns: 100 },
+      { numRuns: 100 }
     );
   });
 });

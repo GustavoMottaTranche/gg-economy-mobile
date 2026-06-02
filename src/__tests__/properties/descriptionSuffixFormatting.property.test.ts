@@ -57,9 +57,9 @@ describe('Feature: manual-entry-installments, Property 3: Description suffix for
             const expectedSuffix = `${title} (${i + 1}/${parcelCount})`;
             expect(installments[i]!.descriptionSuffix).toBe(expectedSuffix);
           }
-        },
+        }
       ),
-      { numRuns: 100 },
+      { numRuns: 100 }
     );
   });
 
@@ -87,11 +87,11 @@ describe('Feature: manual-entry-installments, Property 3: Description suffix for
 
           // Last installment suffix should be "title (N/N)"
           expect(installments[parcelCount - 1]!.descriptionSuffix).toBe(
-            `${title} (${parcelCount}/${parcelCount})`,
+            `${title} (${parcelCount}/${parcelCount})`
           );
-        },
+        }
       ),
-      { numRuns: 100 },
+      { numRuns: 100 }
     );
   });
 });

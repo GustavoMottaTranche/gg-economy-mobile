@@ -44,7 +44,12 @@ import { LoadingIndicator } from '../../src/components/ui/LoadingIndicator';
 import { getCurrentLocale, parseNumberLocale } from '../../src/i18n';
 import { calculateInstallments } from '../../src/services/installment/InstallmentCalculator';
 import { validateInstallmentEntry } from '../../src/validation/installmentValidation';
-import { validateDescription, validateTitle, DESCRIPTION_MAX_LENGTH, TITLE_MAX_LENGTH } from '../../src/validation/entryValidation';
+import {
+  validateDescription,
+  validateTitle,
+  DESCRIPTION_MAX_LENGTH,
+  TITLE_MAX_LENGTH,
+} from '../../src/validation/entryValidation';
 import { randomUUID } from 'expo-crypto';
 import { useBatchSessionStore } from '../../src/services/batch/BatchSessionManager';
 import { validateBatchEntry } from '../../src/validation/installmentValidation';
@@ -188,7 +193,8 @@ export default function ManualEntryScreen() {
   const [weeklyDayOfWeek, setWeeklyDayOfWeek] = useState<number>(new Date().getDay());
   const [parcelCount, setParcelCount] = useState<string>('2');
   const [installmentStartMonth, setInstallmentStartMonth] = useState<string>(getCurrentMonth());
-  const [paymentStatusOption, setPaymentStatusOption] = useState<PaymentStatusCreationOption>('all_pending');
+  const [paymentStatusOption, setPaymentStatusOption] =
+    useState<PaymentStatusCreationOption>('all_pending');
 
   // Batch session store (for mutual exclusivity)
   const batchIsActive = useBatchSessionStore((state) => state.isActive);
@@ -282,9 +288,8 @@ export default function ManualEntryScreen() {
 
     installmentPreviewTimerRef.current = setTimeout(() => {
       const parsedAmount = parseNumberLocale(amount, locale);
-      const amountInCents = !isNaN(parsedAmount) && parsedAmount > 0
-        ? Math.round(parsedAmount * 100)
-        : 0;
+      const amountInCents =
+        !isNaN(parsedAmount) && parsedAmount > 0 ? Math.round(parsedAmount * 100) : 0;
 
       const preview = calculateInstallments({
         totalAmount: amountInCents * parsedParcelCount,
@@ -302,7 +307,16 @@ export default function ManualEntryScreen() {
         clearTimeout(installmentPreviewTimerRef.current);
       }
     };
-  }, [installmentMode, amount, parcelCount, installmentStartMonth, title, description, categoryId, locale]);
+  }, [
+    installmentMode,
+    amount,
+    parcelCount,
+    installmentStartMonth,
+    title,
+    description,
+    categoryId,
+    locale,
+  ]);
 
   // Handle transaction type change
   const handleTypeChange = useCallback(
@@ -345,12 +359,15 @@ export default function ManualEntryScreen() {
   }, []);
 
   // Handle date change - auto-derive referenceMonth if not manually changed
-  const handleDateChange = useCallback((newDate: Date) => {
-    setDate(newDate);
-    if (!referenceMonthManuallyChanged) {
-      setReferenceMonth(deriveReferenceMonth(newDate));
-    }
-  }, [referenceMonthManuallyChanged]);
+  const handleDateChange = useCallback(
+    (newDate: Date) => {
+      setDate(newDate);
+      if (!referenceMonthManuallyChanged) {
+        setReferenceMonth(deriveReferenceMonth(newDate));
+      }
+    },
+    [referenceMonthManuallyChanged]
+  );
 
   // Handle amount change
   const handleAmountChange = useCallback(
@@ -389,7 +406,10 @@ export default function ManualEntryScreen() {
       // Validate description length (max 500 chars)
       const descResult = validateDescription(text);
       if (!descResult.valid) {
-        setErrors((prev) => ({ ...prev, description: t('validation.maxLength', { max: DESCRIPTION_MAX_LENGTH }) }));
+        setErrors((prev) => ({
+          ...prev,
+          description: t('validation.maxLength', { max: DESCRIPTION_MAX_LENGTH }),
+        }));
       } else if (errors.description) {
         setErrors((prev) => ({ ...prev, description: undefined }));
       }
@@ -429,17 +449,14 @@ export default function ManualEntryScreen() {
   );
 
   // Handle batch category selection
-  const handleBatchCategorySelect = useCallback(
-    (category: Category) => {
-      // Store the selected category and show title input step
-      setPendingBatchCategory(category);
-      setShowBatchCategoryPicker(false);
-      setBatchTitleInput('');
-      setBatchTitleError(null);
-      setShowBatchTitleInput(true);
-    },
-    []
-  );
+  const handleBatchCategorySelect = useCallback((category: Category) => {
+    // Store the selected category and show title input step
+    setPendingBatchCategory(category);
+    setShowBatchCategoryPicker(false);
+    setBatchTitleInput('');
+    setBatchTitleError(null);
+    setShowBatchTitleInput(true);
+  }, []);
 
   // Handle batch title confirmation â€” starts the session
   const handleBatchTitleConfirm = useCallback(() => {
@@ -503,7 +520,9 @@ export default function ManualEntryScreen() {
     }
 
     const amountInCents = Math.round(parsedAmount * 100);
-    const effectiveReferenceMonth = referenceMonthManuallyChanged ? referenceMonth : deriveReferenceMonth(date);
+    const effectiveReferenceMonth = referenceMonthManuallyChanged
+      ? referenceMonth
+      : deriveReferenceMonth(date);
 
     // Validate using validateBatchEntry (no categoryId needed â€” it comes from session)
     const validationResult = validateBatchEntry({
@@ -514,7 +533,10 @@ export default function ManualEntryScreen() {
     });
 
     if (!validationResult.valid) {
-      Alert.alert(t('common.error'), validationResult.errors?.join('\n') ?? t('manual.validationError'));
+      Alert.alert(
+        t('common.error'),
+        validationResult.errors?.join('\n') ?? t('manual.validationError')
+      );
       return;
     }
 
@@ -623,9 +645,8 @@ export default function ManualEntryScreen() {
   // Handle infinite installment submission (creates a recurring transaction)
   const handleInfiniteInstallmentSubmit = useCallback(async () => {
     const parsedAmount = parseNumberLocale(amount, locale);
-    const amountInCents = !isNaN(parsedAmount) && parsedAmount > 0
-      ? Math.round(parsedAmount * 100)
-      : 0;
+    const amountInCents =
+      !isNaN(parsedAmount) && parsedAmount > 0 ? Math.round(parsedAmount * 100) : 0;
 
     // Validate title
     const titleResult = validateTitle(title);
@@ -727,9 +748,8 @@ export default function ManualEntryScreen() {
     }
 
     const parsedAmount = parseNumberLocale(amount, locale);
-    const amountInCents = !isNaN(parsedAmount) && parsedAmount > 0
-      ? Math.round(parsedAmount * 100)
-      : 0;
+    const amountInCents =
+      !isNaN(parsedAmount) && parsedAmount > 0 ? Math.round(parsedAmount * 100) : 0;
     const parsedParcelCount = parseInt(parcelCount, 10);
 
     // Validate using EntryValidationService
@@ -742,7 +762,8 @@ export default function ManualEntryScreen() {
     });
 
     if (!validationResult.valid) {
-      const errorMessage = validationResult.errors?.join('\n') || t('manual.installment.validationError');
+      const errorMessage =
+        validationResult.errors?.join('\n') || t('manual.installment.validationError');
       Alert.alert(t('manual.installment.errorTitle'), errorMessage);
       return;
     }
@@ -789,7 +810,8 @@ export default function ManualEntryScreen() {
 
       // Format start and end months for the success message
       const startMonthFormatted = formatReferenceMonth(installmentStartMonth, locale);
-      const endMonth = installments[installments.length - 1]?.referenceMonth || installmentStartMonth;
+      const endMonth =
+        installments[installments.length - 1]?.referenceMonth || installmentStartMonth;
       const endMonthFormatted = formatReferenceMonth(endMonth, locale);
 
       // Show success confirmation with parcel count and period
@@ -964,8 +986,13 @@ export default function ManualEntryScreen() {
                   value={batchIsActive}
                   onValueChange={handleBatchModeToggle}
                   disabled={installmentMode}
-                  trackColor={{ false: colors.border.default, true: colors.semantic.primary.scale[300] }}
-                  thumbColor={batchIsActive ? colors.interactive.primary : colors.background.primary}
+                  trackColor={{
+                    false: colors.border.default,
+                    true: colors.semantic.primary.scale[300],
+                  }}
+                  thumbColor={
+                    batchIsActive ? colors.interactive.primary : colors.background.primary
+                  }
                   accessibilityRole="switch"
                   accessibilityLabel={t('manual.batch.toggle')}
                   accessibilityState={{ checked: batchIsActive }}
@@ -998,7 +1025,10 @@ export default function ManualEntryScreen() {
                 {batchSelectedCategory && (
                   <View style={styles.batchCategoryInfo}>
                     <View
-                      style={[styles.categoryIcon, { backgroundColor: batchSelectedCategory.color }]}
+                      style={[
+                        styles.categoryIcon,
+                        { backgroundColor: batchSelectedCategory.color },
+                      ]}
                     >
                       <Text style={styles.categoryIconText}>{batchSelectedCategory.icon}</Text>
                     </View>
@@ -1008,7 +1038,10 @@ export default function ManualEntryScreen() {
                   </View>
                 )}
                 <Text style={styles.batchCounter} testID="batch-session-counter">
-                  {t('manual.batch.sessionCounter', { count: batchEntryCount, max: batchMaxEntries })}
+                  {t('manual.batch.sessionCounter', {
+                    count: batchEntryCount,
+                    max: batchMaxEntries,
+                  })}
                 </Text>
                 {batchEntryCount >= batchMaxEntries && (
                   <Text style={styles.batchLimitMessage} testID="batch-limit-message">
@@ -1020,49 +1053,49 @@ export default function ManualEntryScreen() {
 
             {/* Transaction Type Toggle - hidden in batch mode */}
             {!batchIsActive && (
-            <View style={styles.section}>
-              <Text style={styles.label}>{t('manual.transactionType')}</Text>
-              <View style={styles.typeToggle} testID="type-toggle">
-                <TouchableOpacity
-                  style={[
-                    styles.typeButton,
-                    transactionType === 'expense' && styles.typeButtonActiveExpense,
-                  ]}
-                  onPress={() => handleTypeChange('expense')}
-                  accessibilityRole="button"
-                  accessibilityState={{ selected: transactionType === 'expense' }}
-                  testID="type-expense"
-                >
-                  <Text
+              <View style={styles.section}>
+                <Text style={styles.label}>{t('manual.transactionType')}</Text>
+                <View style={styles.typeToggle} testID="type-toggle">
+                  <TouchableOpacity
                     style={[
-                      styles.typeButtonText,
-                      transactionType === 'expense' && styles.typeButtonTextActive,
+                      styles.typeButton,
+                      transactionType === 'expense' && styles.typeButtonActiveExpense,
                     ]}
+                    onPress={() => handleTypeChange('expense')}
+                    accessibilityRole="button"
+                    accessibilityState={{ selected: transactionType === 'expense' }}
+                    testID="type-expense"
                   >
-                    {t('manual.expense')}
-                  </Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[
-                    styles.typeButton,
-                    transactionType === 'income' && styles.typeButtonActiveIncome,
-                  ]}
-                  onPress={() => handleTypeChange('income')}
-                  accessibilityRole="button"
-                  accessibilityState={{ selected: transactionType === 'income' }}
-                  testID="type-income"
-                >
-                  <Text
+                    <Text
+                      style={[
+                        styles.typeButtonText,
+                        transactionType === 'expense' && styles.typeButtonTextActive,
+                      ]}
+                    >
+                      {t('manual.expense')}
+                    </Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
                     style={[
-                      styles.typeButtonText,
-                      transactionType === 'income' && styles.typeButtonTextActive,
+                      styles.typeButton,
+                      transactionType === 'income' && styles.typeButtonActiveIncome,
                     ]}
+                    onPress={() => handleTypeChange('income')}
+                    accessibilityRole="button"
+                    accessibilityState={{ selected: transactionType === 'income' }}
+                    testID="type-income"
                   >
-                    {t('manual.income')}
-                  </Text>
-                </TouchableOpacity>
+                    <Text
+                      style={[
+                        styles.typeButtonText,
+                        transactionType === 'income' && styles.typeButtonTextActive,
+                      ]}
+                    >
+                      {t('manual.income')}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
               </View>
-            </View>
             )}
 
             {/* Amount Input */}
@@ -1129,19 +1162,28 @@ export default function ManualEntryScreen() {
             {/* Description Input */}
             <View style={styles.section}>
               <Text style={styles.label}>
-                {t('transactions.description')}{batchIsActive ? ` (${t('common.optional')})` : ''}
+                {t('transactions.description')}
+                {batchIsActive ? ` (${t('common.optional')})` : ''}
               </Text>
               <TextInput
                 style={[styles.input, styles.textArea, errors.description && styles.inputError]}
                 value={description}
                 onChangeText={handleDescriptionChange}
-                placeholder={batchIsActive ? t('manual.batch.descriptionPlaceholder') : t('manual.enterDescription')}
+                placeholder={
+                  batchIsActive
+                    ? t('manual.batch.descriptionPlaceholder')
+                    : t('manual.enterDescription')
+                }
                 placeholderTextColor={colors.text.tertiary}
                 multiline={true}
                 numberOfLines={3}
                 textAlignVertical="top"
                 accessibilityLabel={t('transactions.description')}
-                accessibilityHint={batchIsActive ? t('manual.batch.descriptionPlaceholder') : t('manual.enterDescription')}
+                accessibilityHint={
+                  batchIsActive
+                    ? t('manual.batch.descriptionPlaceholder')
+                    : t('manual.enterDescription')
+                }
                 returnKeyType="done"
                 blurOnSubmit={true}
                 testID="description-input"
@@ -1167,30 +1209,30 @@ export default function ManualEntryScreen() {
 
             {/* Category Selector - hidden in batch mode */}
             {!batchIsActive && (
-            <View style={styles.section}>
-              <Text style={styles.label}>{t('transactions.category')}</Text>
-              <TouchableOpacity
-                style={styles.selector}
-                onPress={() => setShowCategoryPicker(true)}
-                accessibilityRole="button"
-                accessibilityLabel={t('manual.selectCategory')}
-                testID="category-selector"
-              >
-                {selectedCategory ? (
-                  <View style={styles.selectedCategory}>
-                    <View
-                      style={[styles.categoryIcon, { backgroundColor: selectedCategory.color }]}
-                    >
-                      <Text style={styles.categoryIconText}>{selectedCategory.icon}</Text>
+              <View style={styles.section}>
+                <Text style={styles.label}>{t('transactions.category')}</Text>
+                <TouchableOpacity
+                  style={styles.selector}
+                  onPress={() => setShowCategoryPicker(true)}
+                  accessibilityRole="button"
+                  accessibilityLabel={t('manual.selectCategory')}
+                  testID="category-selector"
+                >
+                  {selectedCategory ? (
+                    <View style={styles.selectedCategory}>
+                      <View
+                        style={[styles.categoryIcon, { backgroundColor: selectedCategory.color }]}
+                      >
+                        <Text style={styles.categoryIconText}>{selectedCategory.icon}</Text>
+                      </View>
+                      <Text style={styles.selectorText}>{selectedCategory.name}</Text>
                     </View>
-                    <Text style={styles.selectorText}>{selectedCategory.name}</Text>
-                  </View>
-                ) : (
-                  <Text style={styles.selectorPlaceholder}>{t('manual.selectCategory')}</Text>
-                )}
-                <Text style={styles.selectorArrow}>▼</Text>
-              </TouchableOpacity>
-            </View>
+                  ) : (
+                    <Text style={styles.selectorPlaceholder}>{t('manual.selectCategory')}</Text>
+                  )}
+                  <Text style={styles.selectorArrow}>▼</Text>
+                </TouchableOpacity>
+              </View>
             )}
 
             {/* Reference Month Selector (Mês de Referência) */}
@@ -1250,7 +1292,10 @@ export default function ManualEntryScreen() {
                     <Switch
                       value={isInfiniteInstallment}
                       onValueChange={setIsInfiniteInstallment}
-                      trackColor={{ false: colors.border.default, true: colors.interactive.primary }}
+                      trackColor={{
+                        false: colors.border.default,
+                        true: colors.interactive.primary,
+                      }}
                       thumbColor={colors.background.primary}
                       accessibilityRole="switch"
                       accessibilityLabel={t('manual.installment.infiniteToggle')}
@@ -1265,7 +1310,9 @@ export default function ManualEntryScreen() {
                   <View style={styles.section} testID="infinite-installment-indicator">
                     <View style={styles.infiniteIndicator}>
                       <Text style={styles.infiniteSymbol}>∞</Text>
-                      <Text style={styles.infiniteText}>{t('manual.installment.infiniteIndicator')}</Text>
+                      <Text style={styles.infiniteText}>
+                        {t('manual.installment.infiniteIndicator')}
+                      </Text>
                     </View>
                     <Text style={styles.hintText}>{t('manual.installment.infinitePreview')}</Text>
                   </View>
@@ -1284,7 +1331,12 @@ export default function ManualEntryScreen() {
                         onPress={() => setRecurringFrequency('monthly')}
                         testID="frequency-monthly"
                       >
-                        <Text style={[styles.typeButtonText, recurringFrequency === 'monthly' && styles.typeButtonTextActive]}>
+                        <Text
+                          style={[
+                            styles.typeButtonText,
+                            recurringFrequency === 'monthly' && styles.typeButtonTextActive,
+                          ]}
+                        >
                           Mensal
                         </Text>
                       </TouchableOpacity>
@@ -1296,7 +1348,12 @@ export default function ManualEntryScreen() {
                         onPress={() => setRecurringFrequency('weekly')}
                         testID="frequency-weekly"
                       >
-                        <Text style={[styles.typeButtonText, recurringFrequency === 'weekly' && styles.typeButtonTextActive]}>
+                        <Text
+                          style={[
+                            styles.typeButtonText,
+                            recurringFrequency === 'weekly' && styles.typeButtonTextActive,
+                          ]}
+                        >
                           Semanal
                         </Text>
                       </TouchableOpacity>
@@ -1313,13 +1370,32 @@ export default function ManualEntryScreen() {
                         <TouchableOpacity
                           key={index}
                           style={[
-                            { paddingHorizontal: 10, paddingVertical: 8, borderRadius: 20, alignItems: 'center' as const },
-                            { backgroundColor: weeklyDayOfWeek === index ? colors.interactive.primary : colors.background.tertiary },
+                            {
+                              paddingHorizontal: 10,
+                              paddingVertical: 8,
+                              borderRadius: 20,
+                              alignItems: 'center' as const,
+                            },
+                            {
+                              backgroundColor:
+                                weeklyDayOfWeek === index
+                                  ? colors.interactive.primary
+                                  : colors.background.tertiary,
+                            },
                           ]}
                           onPress={() => setWeeklyDayOfWeek(index)}
                           testID={`day-${index}`}
                         >
-                          <Text style={{ fontSize: 12, fontWeight: '600', color: weeklyDayOfWeek === index ? colors.text.inverse : colors.text.primary }}>
+                          <Text
+                            style={{
+                              fontSize: 12,
+                              fontWeight: '600',
+                              color:
+                                weeklyDayOfWeek === index
+                                  ? colors.text.inverse
+                                  : colors.text.primary,
+                            }}
+                          >
                             {day}
                           </Text>
                         </TouchableOpacity>
@@ -1391,7 +1467,12 @@ export default function ManualEntryScreen() {
             {/* Action Buttons */}
             <View style={styles.actions}>
               <TouchableOpacity
-                style={[styles.button, styles.submitButton, (isSubmitting || (batchIsActive && batchEntryCount >= batchMaxEntries)) && styles.submitButtonDisabled]}
+                style={[
+                  styles.button,
+                  styles.submitButton,
+                  (isSubmitting || (batchIsActive && batchEntryCount >= batchMaxEntries)) &&
+                    styles.submitButtonDisabled,
+                ]}
                 onPress={batchIsActive ? handleBatchSubmit : handleSubmit}
                 disabled={isSubmitting || (batchIsActive && batchEntryCount >= batchMaxEntries)}
                 accessibilityRole="button"
@@ -1431,17 +1512,13 @@ export default function ManualEntryScreen() {
           >
             <SafeAreaView style={{ flex: 1, backgroundColor: colors.background.primary }}>
               <View style={styles.modalHeader}>
-                <Text style={styles.modalHeaderTitle}>
-                  {t('manual.selectCategory')}
-                </Text>
+                <Text style={styles.modalHeaderTitle}>{t('manual.selectCategory')}</Text>
                 <TouchableOpacity
                   onPress={() => setShowCategoryPicker(false)}
                   accessibilityRole="button"
                   accessibilityLabel={t('common.close')}
                 >
-                  <Text style={styles.modalHeaderAction}>
-                    {t('common.close')}
-                  </Text>
+                  <Text style={styles.modalHeaderAction}>{t('common.close')}</Text>
                 </TouchableOpacity>
               </View>
               <CategorySelector
@@ -1473,10 +1550,7 @@ export default function ManualEntryScreen() {
                   <Text style={styles.monthPickerClose}>{t('common.close')}</Text>
                 </TouchableOpacity>
               </View>
-              <ScrollView
-                style={styles.monthList}
-                contentOffset={{ x: 0, y: nextMonthIndex * 49 }}
-              >
+              <ScrollView style={styles.monthList} contentOffset={{ x: 0, y: nextMonthIndex * 49 }}>
                 {referenceMonths.map((month) => (
                   <TouchableOpacity
                     key={month}
@@ -1511,18 +1585,14 @@ export default function ManualEntryScreen() {
           >
             <SafeAreaView style={{ flex: 1, backgroundColor: colors.background.primary }}>
               <View style={styles.modalHeader}>
-                <Text style={styles.modalHeaderTitle}>
-                  {t('manual.batch.selectCategory')}
-                </Text>
+                <Text style={styles.modalHeaderTitle}>{t('manual.batch.selectCategory')}</Text>
                 <TouchableOpacity
                   onPress={() => setShowBatchCategoryPicker(false)}
                   accessibilityRole="button"
                   accessibilityLabel={t('common.close')}
                   testID="batch-category-picker-close"
                 >
-                  <Text style={styles.modalHeaderAction}>
-                    {t('common.close')}
-                  </Text>
+                  <Text style={styles.modalHeaderAction}>{t('common.close')}</Text>
                 </TouchableOpacity>
               </View>
               <CategorySelector
@@ -1551,7 +1621,10 @@ export default function ManualEntryScreen() {
                   {pendingBatchCategory && (
                     <View style={styles.batchTitleCategoryPreview}>
                       <View
-                        style={[styles.categoryIcon, { backgroundColor: pendingBatchCategory.color }]}
+                        style={[
+                          styles.categoryIcon,
+                          { backgroundColor: pendingBatchCategory.color },
+                        ]}
                       >
                         <Text style={styles.categoryIconText}>{pendingBatchCategory.icon}</Text>
                       </View>
@@ -1628,7 +1701,10 @@ export default function ManualEntryScreen() {
                 {installmentStartMonths.map((month) => (
                   <TouchableOpacity
                     key={month}
-                    style={[styles.monthItem, month === installmentStartMonth && styles.monthItemSelected]}
+                    style={[
+                      styles.monthItem,
+                      month === installmentStartMonth && styles.monthItemSelected,
+                    ]}
                     onPress={() => handleInstallmentMonthSelect(month)}
                     testID={`installment-month-option-${month}`}
                   >
@@ -1640,7 +1716,9 @@ export default function ManualEntryScreen() {
                     >
                       {formatReferenceMonth(month, locale)}
                     </Text>
-                    {month === installmentStartMonth && <Text style={styles.monthItemCheck}>✔</Text>}
+                    {month === installmentStartMonth && (
+                      <Text style={styles.monthItemCheck}>✔</Text>
+                    )}
                   </TouchableOpacity>
                 ))}
               </ScrollView>

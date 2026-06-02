@@ -29,13 +29,10 @@ describe('Property 4: Invalid amounts are always rejected', () => {
 
     it('should return { valid: false } for any negative integer', () => {
       fc.assert(
-        fc.property(
-          fc.integer({ min: -1000000, max: -1 }),
-          (negativeInt) => {
-            const result = validateParcelAmount(negativeInt);
-            return result.valid === false;
-          }
-        ),
+        fc.property(fc.integer({ min: -1000000, max: -1 }), (negativeInt) => {
+          const result = validateParcelAmount(negativeInt);
+          return result.valid === false;
+        }),
         { numRuns: 100 }
       );
     });
@@ -69,13 +66,10 @@ describe('Property 4: Invalid amounts are always rejected', () => {
 
     it('should return { valid: true, amount } for any positive integer', () => {
       fc.assert(
-        fc.property(
-          fc.integer({ min: 1, max: 1000000 }),
-          (positiveInt) => {
-            const result = validateParcelAmount(positiveInt);
-            return result.valid === true && result.amount === positiveInt;
-          }
-        ),
+        fc.property(fc.integer({ min: 1, max: 1000000 }), (positiveInt) => {
+          const result = validateParcelAmount(positiveInt);
+          return result.valid === true && result.amount === positiveInt;
+        }),
         { numRuns: 100 }
       );
     });
@@ -115,13 +109,10 @@ describe('Property 4: Invalid amounts are always rejected', () => {
 
     it('should return { valid: false } for objects', () => {
       fc.assert(
-        fc.property(
-          fc.object(),
-          (obj) => {
-            const result = validateParcelAmount(obj);
-            return result.valid === false;
-          }
-        ),
+        fc.property(fc.object(), (obj) => {
+          const result = validateParcelAmount(obj);
+          return result.valid === false;
+        }),
         { numRuns: 100 }
       );
     });
@@ -139,26 +130,20 @@ describe('Property 4: Invalid amounts are always rejected', () => {
 
     it('should return { valid: false } for boolean values', () => {
       fc.assert(
-        fc.property(
-          fc.boolean(),
-          (boolVal) => {
-            const result = validateParcelAmount(boolVal);
-            return result.valid === false;
-          }
-        ),
+        fc.property(fc.boolean(), (boolVal) => {
+          const result = validateParcelAmount(boolVal);
+          return result.valid === false;
+        }),
         { numRuns: 100 }
       );
     });
 
     it('should return { valid: false } for arrays', () => {
       fc.assert(
-        fc.property(
-          fc.array(fc.anything()),
-          (arr) => {
-            const result = validateParcelAmount(arr);
-            return result.valid === false;
-          }
-        ),
+        fc.property(fc.array(fc.anything()), (arr) => {
+          const result = validateParcelAmount(arr);
+          return result.valid === false;
+        }),
         { numRuns: 100 }
       );
     });

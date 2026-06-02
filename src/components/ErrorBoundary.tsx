@@ -167,16 +167,31 @@ function ErrorFallback({
       <View style={styles.content}>
         <Text style={styles.icon}>⚠️</Text>
         <Text style={[styles.title, { color: colors.text.primary }]}>{t('common.error')}</Text>
-        <Text style={[styles.message, { color: colors.text.secondary }]}>{t('errors.generic')}</Text>
+        <Text style={[styles.message, { color: colors.text.secondary }]}>
+          {t('errors.generic')}
+        </Text>
 
         {showDetails && (
-          <ScrollView style={[styles.detailsContainer, { backgroundColor: colors.surface.card, borderColor: colors.border.default }]}>
-            <Text style={[styles.detailsTitle, { color: colors.text.primary }]}>Error Details:</Text>
-            <Text style={[styles.detailsText, { color: colors.text.secondary }]}>{error.message}</Text>
+          <ScrollView
+            style={[
+              styles.detailsContainer,
+              { backgroundColor: colors.surface.card, borderColor: colors.border.default },
+            ]}
+          >
+            <Text style={[styles.detailsTitle, { color: colors.text.primary }]}>
+              Error Details:
+            </Text>
+            <Text style={[styles.detailsText, { color: colors.text.secondary }]}>
+              {error.message}
+            </Text>
             {errorInfo?.componentStack && (
               <>
-                <Text style={[styles.detailsTitle, { color: colors.text.primary }]}>Component Stack:</Text>
-                <Text style={[styles.detailsText, { color: colors.text.secondary }]}>{errorInfo.componentStack}</Text>
+                <Text style={[styles.detailsTitle, { color: colors.text.primary }]}>
+                  Component Stack:
+                </Text>
+                <Text style={[styles.detailsText, { color: colors.text.secondary }]}>
+                  {errorInfo.componentStack}
+                </Text>
               </>
             )}
           </ScrollView>
@@ -188,7 +203,9 @@ function ErrorFallback({
           accessibilityRole="button"
           accessibilityLabel={t('common.retry')}
         >
-          <Text style={[styles.buttonText, { color: colors.text.inverse }]}>{t('common.retry')}</Text>
+          <Text style={[styles.buttonText, { color: colors.text.inverse }]}>
+            {t('common.retry')}
+          </Text>
         </TouchableOpacity>
       </View>
     </View>

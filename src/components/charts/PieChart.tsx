@@ -95,7 +95,14 @@ function describePieSlice(
   const angleDiff = endAngle - startAngle;
   if (angleDiff >= 359.99) {
     const path1 = describePieSlice(x, y, outerRadius, innerRadius, startAngle, startAngle + 180);
-    const path2 = describePieSlice(x, y, outerRadius, innerRadius, startAngle + 180, startAngle + 359.99);
+    const path2 = describePieSlice(
+      x,
+      y,
+      outerRadius,
+      innerRadius,
+      startAngle + 180,
+      startAngle + 359.99
+    );
     return path1 + ' ' + path2;
   }
 
@@ -177,10 +184,7 @@ const LegendItem = memo(function LegendItem({
 
   return (
     <TouchableOpacity
-      style={[
-        styles.legendItem,
-        isSelected && { backgroundColor: colors.background.tertiary },
-      ]}
+      style={[styles.legendItem, isSelected && { backgroundColor: colors.background.tertiary }]}
       onPress={onPress}
       accessibilityRole="button"
       accessibilityLabel={`${item.label}: ${formattedValue}, ${formattedPercent}`}
@@ -282,8 +286,15 @@ function PieChartComponent({
         accessibilityRole="none"
         accessibilityLabel={t('charts.noData')}
       >
-        <View style={[styles.emptyChart, { width: chartSize, height: chartSize, backgroundColor: colors.background.secondary }]}>
-          <Text style={[styles.emptyText, { color: colors.text.tertiary }]}>{t('charts.noData')}</Text>
+        <View
+          style={[
+            styles.emptyChart,
+            { width: chartSize, height: chartSize, backgroundColor: colors.background.secondary },
+          ]}
+        >
+          <Text style={[styles.emptyText, { color: colors.text.tertiary }]}>
+            {t('charts.noData')}
+          </Text>
         </View>
       </View>
     );
@@ -306,7 +317,9 @@ function PieChartComponent({
               onPress={() => handleSegmentPress(segment)}
             />
           ))}
-          {donut && <Circle cx={center} cy={center} r={innerRadius - 2} fill={colors.surface.card} />}
+          {donut && (
+            <Circle cx={center} cy={center} r={innerRadius - 2} fill={colors.surface.card} />
+          )}
         </G>
       </Svg>
       {donut && (centerLabel || centerSublabel) && (
@@ -322,7 +335,10 @@ function PieChartComponent({
             </Text>
           )}
           {centerSublabel && (
-            <Text style={[styles.centerSublabel, { color: colors.text.secondary }]} numberOfLines={1}>
+            <Text
+              style={[styles.centerSublabel, { color: colors.text.secondary }]}
+              numberOfLines={1}
+            >
               {centerSublabel}
             </Text>
           )}

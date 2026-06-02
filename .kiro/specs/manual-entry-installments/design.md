@@ -25,7 +25,7 @@ graph TD
     end
 
     subgraph Logic Layer
-        F[InstallmentCalculator] 
+        F[InstallmentCalculator]
         G[BatchSessionManager]
         H[EntryValidationService]
     end
@@ -72,17 +72,17 @@ sequenceDiagram
 
 ```typescript
 interface InstallmentDetail {
-  index: number;           // 1-based parcel number
-  totalParcels: number;    // total N
-  amount: number;          // value in cents for this parcel
-  referenceMonth: string;  // YYYY-MM
+  index: number; // 1-based parcel number
+  totalParcels: number; // total N
+  amount: number; // value in cents for this parcel
+  referenceMonth: string; // YYYY-MM
   descriptionSuffix: string; // " (X/N)"
 }
 
 interface InstallmentCalculatorInput {
-  totalAmount: number;     // total value in cents
-  parcelCount: number;     // 2-48
-  startMonth: string;      // YYYY-MM
+  totalAmount: number; // total value in cents
+  parcelCount: number; // 2-48
+  startMonth: string; // YYYY-MM
   description: string;
   categoryId: string;
   originId?: string;
@@ -146,6 +146,7 @@ function validateBatchEntry(input: Omit<StandardValidationInput, 'categoryId'>):
 ### Updated Navigation (Tabs Layout)
 
 The tab layout reduces from 5 tabs to 4:
+
 - Dashboard (index)
 - Transactions
 - Manual Entry (with installment/batch modes)
@@ -161,10 +162,9 @@ A new column `installmentGroupId` is added to the `transactions` table to link i
 
 ```typescript
 // Addition to existing transactions table schema
-installmentGroupId: text('installment_group_id'), // UUID linking parcels of same installment
-
-// New index for efficient group queries
-index('idx_transactions_installment_group').on(table.installmentGroupId)
+installmentGroupId: (text('installment_group_id'), // UUID linking parcels of same installment
+  // New index for efficient group queries
+  index('idx_transactions_installment_group').on(table.installmentGroupId));
 ```
 
 ### Installment Group Identification
@@ -178,9 +178,9 @@ index('idx_transactions_installment_group').on(table.installmentGroupId)
 ```typescript
 // Extended DTO for installment creation
 interface CreateInstallmentDTO {
-  totalAmount: number;        // cents
-  parcelCount: number;        // 2-48
-  startMonth: string;         // YYYY-MM
+  totalAmount: number; // cents
+  parcelCount: number; // 2-48
+  startMonth: string; // YYYY-MM
   description: string;
   categoryId: string;
   categoryType: 'income' | 'expense';
@@ -190,7 +190,7 @@ interface CreateInstallmentDTO {
 
 // Batch entry DTO (simplified - category comes from session)
 interface CreateBatchEntryDTO {
-  amount: number;             // cents
+  amount: number; // cents
   description: string;
   date: Date;
 }
@@ -216,65 +216,65 @@ totalAmount = 1000 (R$ 10,00), parcelCount = 3
 
 ## Correctness Properties
 
-*A property is a characteristic or behavior that should hold true across all valid executions of a system — essentially, a formal statement about what the system should do. Properties serve as the bridge between human-readable specifications and machine-verifiable correctness guarantees.*
+_A property is a characteristic or behavior that should hold true across all valid executions of a system — essentially, a formal statement about what the system should do. Properties serve as the bridge between human-readable specifications and machine-verifiable correctness guarantees._
 
 ### Property 1: Amount distribution invariant
 
-*For any* valid total amount (1 to 99999999999 cents) and valid parcel count (2 to 48), the `distributeAmount` function SHALL produce an array where: (a) the sum of all elements equals the original total exactly, (b) the first element equals `floor(total / count) + (total % count)`, and (c) all remaining elements equal `floor(total / count)`.
+_For any_ valid total amount (1 to 99999999999 cents) and valid parcel count (2 to 48), the `distributeAmount` function SHALL produce an array where: (a) the sum of all elements equals the original total exactly, (b) the first element equals `floor(total / count) + (total % count)`, and (c) all remaining elements equal `floor(total / count)`.
 
 **Validates: Requirements 2.3, 2.4, 2.5**
 
 ### Property 2: Month advancement correctness
 
-*For any* valid start month (YYYY-MM format) and valid parcel count (2 to 48), the `advanceMonth` function SHALL produce a sequence of months where each consecutive month is exactly one calendar month after the previous, correctly rolling over from December to January of the next year.
+_For any_ valid start month (YYYY-MM format) and valid parcel count (2 to 48), the `advanceMonth` function SHALL produce a sequence of months where each consecutive month is exactly one calendar month after the previous, correctly rolling over from December to January of the next year.
 
 **Validates: Requirements 2.2, 3.2, 7.1**
 
 ### Property 3: Description suffix formatting
 
-*For any* non-empty description string and valid parcel count N (2 to 48), the installment creation logic SHALL produce N descriptions where the i-th description equals `"{original} (i/N)"` for i from 1 to N.
+_For any_ non-empty description string and valid parcel count N (2 to 48), the installment creation logic SHALL produce N descriptions where the i-th description equals `"{original} (i/N)"` for i from 1 to N.
 
 **Validates: Requirements 3.3**
 
 ### Property 4: Installment group homogeneity
 
-*For any* installment creation input with a given categoryId and originId, all generated transaction records SHALL share the same `categoryId`, `originId`, and `installmentGroupId`.
+_For any_ installment creation input with a given categoryId and originId, all generated transaction records SHALL share the same `categoryId`, `originId`, and `installmentGroupId`.
 
 **Validates: Requirements 3.4**
 
 ### Property 5: Re-indexing after single parcel deletion
 
-*For any* installment group of size N and any valid removal index k (1 ≤ k ≤ N), after removing the k-th parcel, the remaining (N-1) parcels SHALL have their description suffixes re-indexed as sequential " (1/(N-1))", " (2/(N-1))", ..., " ((N-1)/(N-1))" in chronological order.
+_For any_ installment group of size N and any valid removal index k (1 ≤ k ≤ N), after removing the k-th parcel, the remaining (N-1) parcels SHALL have their description suffixes re-indexed as sequential " (1/(N-1))", " (2/(N-1))", ..., " ((N-1)/(N-1))" in chronological order.
 
 **Validates: Requirements 4.3**
 
 ### Property 6: Batch entry category and type derivation
 
-*For any* batch session with a selected category of type T (income or expense), every transaction created during that session SHALL have `categoryId` equal to the session's category and the amount sign consistent with type T (positive for income, negative for expense).
+_For any_ batch session with a selected category of type T (income or expense), every transaction created during that session SHALL have `categoryId` equal to the session's category and the amount sign consistent with type T (positive for income, negative for expense).
 
 **Validates: Requirements 5.2, 6.1**
 
 ### Property 7: Reference month derivation from date
 
-*For any* valid Date object, the derived `referenceMonth` SHALL equal the date's year and month formatted as "YYYY-MM" (zero-padded month).
+_For any_ valid Date object, the derived `referenceMonth` SHALL equal the date's year and month formatted as "YYYY-MM" (zero-padded month).
 
 **Validates: Requirements 6.2**
 
 ### Property 8: Amount validation rejects invalid values
 
-*For any* amount that is zero, negative, or greater than 99999999999 (R$ 999.999.999,99 in cents), the validation function SHALL return `valid: false` with an appropriate error message.
+_For any_ amount that is zero, negative, or greater than 99999999999 (R$ 999.999.999,99 in cents), the validation function SHALL return `valid: false` with an appropriate error message.
 
 **Validates: Requirements 8.1**
 
 ### Property 9: Description validation rejects invalid inputs
 
-*For any* string that is empty, composed entirely of whitespace characters, or longer than 100 characters, the validation function SHALL return `valid: false` with an appropriate error message.
+_For any_ string that is empty, composed entirely of whitespace characters, or longer than 100 characters, the validation function SHALL return `valid: false` with an appropriate error message.
 
 **Validates: Requirements 8.2**
 
 ### Property 10: Minimum parcel value validation
 
-*For any* total amount and parcel count where `floor(total / count) < 1` (resulting in sub-cent parcels), the validation function SHALL return `valid: false` and prevent installment creation.
+_For any_ total amount and parcel count where `floor(total / count) < 1` (resulting in sub-cent parcels), the validation function SHALL return `valid: false` and prevent installment creation.
 
 **Validates: Requirements 8.4**
 
@@ -307,6 +307,7 @@ totalAmount = 1000 (R$ 10,00), parcelCount = 3
 The project already includes `fast-check` as a dev dependency. Each correctness property maps to a single property-based test with minimum 100 iterations.
 
 **Target modules for PBT:**
+
 - `src/services/installment/InstallmentCalculator.ts` — Properties 1, 2, 3, 4
 - `src/services/installment/InstallmentGroupManager.ts` — Property 5
 - `src/services/batch/BatchSessionManager.ts` — Property 6
@@ -314,6 +315,7 @@ The project already includes `fast-check` as a dev dependency. Each correctness 
 - `src/validation/installmentValidation.ts` — Properties 8, 9, 10
 
 **Configuration:**
+
 - Minimum 100 iterations per property test
 - Each test tagged with: `Feature: manual-entry-installments, Property {N}: {title}`
 - Tests located in `src/__tests__/properties/` directory
@@ -321,6 +323,7 @@ The project already includes `fast-check` as a dev dependency. Each correctness 
 ### Unit Tests (Jest)
 
 Example-based tests for:
+
 - Navigation tab rendering (4 tabs, correct labels)
 - Route redirect behavior (import/review → manual)
 - UI state management (form reset after batch save, dialog appearance)
@@ -336,6 +339,6 @@ Example-based tests for:
 ### E2E Tests (Maestro)
 
 Update existing `manual-entry.yaml` flow and add:
+
 - `installment-flow.yaml` — Create installment, verify preview, confirm, check transactions
 - `batch-entry-flow.yaml` — Activate batch mode, add multiple entries, verify counter and summary
-

@@ -7,6 +7,7 @@ This design covers the comprehensive Maestro E2E testing strategy for the GG Eco
 ### Current State
 
 The project already has:
+
 - **8 existing flows**: smoke-test.yaml, import-flow.yaml, import-flow-mock.yaml, manual-entry.yaml, backup-flow.yaml, backup-flow-mock.yaml, navigation.yaml, language.yaml
 - **Maestro config**: `.maestro/config.yaml` with env vars, tags, and JUnit reporting
 - **npm scripts**: `e2e`, `e2e:smoke`, `e2e:import`, `e2e:manual`, `e2e:backup`, `e2e:navigation`, `e2e:language`
@@ -14,19 +15,19 @@ The project already has:
 
 ### New Flows Needed
 
-| Flow | File | Tag | Validates |
-|------|------|-----|-----------|
-| Dashboard Flow | `dashboard.yaml` | dashboard | Requirement 3 |
-| Transactions List Flow | `transactions-list.yaml` | transactions | Requirement 4 |
-| Transaction Edit Flow | `transaction-edit.yaml` | transactions | Requirement 9 |
-| Categories Management Flow | `categories.yaml` | categories | Requirement 10 |
+| Flow                       | File                     | Tag          | Validates      |
+| -------------------------- | ------------------------ | ------------ | -------------- |
+| Dashboard Flow             | `dashboard.yaml`         | dashboard    | Requirement 3  |
+| Transactions List Flow     | `transactions-list.yaml` | transactions | Requirement 4  |
+| Transaction Edit Flow      | `transaction-edit.yaml`  | transactions | Requirement 9  |
+| Categories Management Flow | `categories.yaml`        | categories   | Requirement 10 |
 
 ### Existing Flow Improvements
 
-| Flow | Improvement | Validates |
-|------|-------------|-----------|
+| Flow            | Improvement                                   | Validates     |
+| --------------- | --------------------------------------------- | ------------- |
 | smoke-test.yaml | Add screenshot assertions, timeout validation | Requirement 2 |
-| navigation.yaml | Add Notifications sub-setting navigation | Requirement 6 |
+| navigation.yaml | Add Notifications sub-setting navigation      | Requirement 6 |
 
 ## Architecture
 
@@ -114,60 +115,60 @@ appId: com.ggeconomy.mobile
 
 #### Dashboard Screen (`app/(tabs)/index.tsx`)
 
-| testID | Element | Used In |
-|--------|---------|---------|
-| `dashboard-month-selector` | MonthSelector component | dashboard.yaml |
-| `dashboard-summary` | SummaryCard (Income/Expenses/Balance) | dashboard.yaml |
-| `dashboard-chart-filter` | ChartFilter (All/Fixed/Variable) | dashboard.yaml |
-| `dashboard-expense-chart` | ExpenseChart visualization | dashboard.yaml |
-| `dashboard-fixed-section` | CollapsibleSection for fixed expenses | dashboard.yaml |
+| testID                       | Element                                  | Used In        |
+| ---------------------------- | ---------------------------------------- | -------------- |
+| `dashboard-month-selector`   | MonthSelector component                  | dashboard.yaml |
+| `dashboard-summary`          | SummaryCard (Income/Expenses/Balance)    | dashboard.yaml |
+| `dashboard-chart-filter`     | ChartFilter (All/Fixed/Variable)         | dashboard.yaml |
+| `dashboard-expense-chart`    | ExpenseChart visualization               | dashboard.yaml |
+| `dashboard-fixed-section`    | CollapsibleSection for fixed expenses    | dashboard.yaml |
 | `dashboard-variable-section` | CollapsibleSection for variable expenses | dashboard.yaml |
 
 #### Transactions Screen (`app/(tabs)/transactions.tsx`)
 
-| testID | Element | Used In |
-|--------|---------|---------|
-| `transactions-screen` | SafeAreaView container | transactions-list.yaml |
-| `monthly-summary` | MonthlySummary component | transactions-list.yaml |
-| `month-selector` | MonthSelector in transactions | transactions-list.yaml |
-| `transactions-list` | FlashList component | transactions-list.yaml |
-| `add-transaction-button` | "+" FAB button | transactions-list.yaml |
-| `loading-more-indicator` | Infinite scroll loading | transactions-list.yaml |
-| `empty-transactions` | EmptyState component | transactions-list.yaml |
-| `transaction-card-{id}` | Individual transaction card | transactions-list.yaml |
+| testID                   | Element                       | Used In                |
+| ------------------------ | ----------------------------- | ---------------------- |
+| `transactions-screen`    | SafeAreaView container        | transactions-list.yaml |
+| `monthly-summary`        | MonthlySummary component      | transactions-list.yaml |
+| `month-selector`         | MonthSelector in transactions | transactions-list.yaml |
+| `transactions-list`      | FlashList component           | transactions-list.yaml |
+| `add-transaction-button` | "+" FAB button                | transactions-list.yaml |
+| `loading-more-indicator` | Infinite scroll loading       | transactions-list.yaml |
+| `empty-transactions`     | EmptyState component          | transactions-list.yaml |
+| `transaction-card-{id}`  | Individual transaction card   | transactions-list.yaml |
 
 #### Transaction Detail Screen (`app/transaction/[id].tsx`)
 
-| testID | Element | Used In |
-|--------|---------|---------|
-| `transaction-detail-screen` | SafeAreaView container | transaction-edit.yaml |
-| `amount-display` | Amount text display | transaction-edit.yaml |
-| `details-card` | Transaction details card | transaction-edit.yaml |
-| `detail-category` | Category row (tappable) | transaction-edit.yaml |
-| `detail-description` | Description row | transaction-edit.yaml |
-| `edit-button` | Edit action button | transaction-edit.yaml |
-| `delete-button` | Delete action button | transaction-edit.yaml |
-| `category-edit-modal` | Category selection modal | transaction-edit.yaml |
-| `category-edit-selector` | CategorySelector in modal | transaction-edit.yaml |
-| `category-edit-cancel` | Cancel button in modal | transaction-edit.yaml |
-| `edit-prompt-dialog` | InputPromptDialog for edits | transaction-edit.yaml |
+| testID                      | Element                     | Used In               |
+| --------------------------- | --------------------------- | --------------------- |
+| `transaction-detail-screen` | SafeAreaView container      | transaction-edit.yaml |
+| `amount-display`            | Amount text display         | transaction-edit.yaml |
+| `details-card`              | Transaction details card    | transaction-edit.yaml |
+| `detail-category`           | Category row (tappable)     | transaction-edit.yaml |
+| `detail-description`        | Description row             | transaction-edit.yaml |
+| `edit-button`               | Edit action button          | transaction-edit.yaml |
+| `delete-button`             | Delete action button        | transaction-edit.yaml |
+| `category-edit-modal`       | Category selection modal    | transaction-edit.yaml |
+| `category-edit-selector`    | CategorySelector in modal   | transaction-edit.yaml |
+| `category-edit-cancel`      | Cancel button in modal      | transaction-edit.yaml |
+| `edit-prompt-dialog`        | InputPromptDialog for edits | transaction-edit.yaml |
 
 #### Categories Screen (`app/(tabs)/settings/categories.tsx`)
 
-| testID | Element | Used In |
-|--------|---------|---------|
-| `categories-settings-screen` | ScrollView container | categories.yaml |
-| `add-category-button` | Add category button | categories.yaml |
-| `category-form-modal` | Category form modal | categories.yaml |
-| `close-category-modal` | Close modal button | categories.yaml |
-| `save-category-button` | Save button in form | categories.yaml |
-| `category-name-input` | Name TextInput | categories.yaml |
-| `type-expense-button` | Expense type selector | categories.yaml |
-| `type-income-button` | Income type selector | categories.yaml |
-| `icon-picker-button` | Icon picker trigger | categories.yaml |
-| `color-picker-button` | Color picker trigger | categories.yaml |
-| `category-item-{id}` | Individual category row | categories.yaml |
-| `expense-group-filter` | Expense group filter tabs | categories.yaml |
+| testID                       | Element                   | Used In         |
+| ---------------------------- | ------------------------- | --------------- |
+| `categories-settings-screen` | ScrollView container      | categories.yaml |
+| `add-category-button`        | Add category button       | categories.yaml |
+| `category-form-modal`        | Category form modal       | categories.yaml |
+| `close-category-modal`       | Close modal button        | categories.yaml |
+| `save-category-button`       | Save button in form       | categories.yaml |
+| `category-name-input`        | Name TextInput            | categories.yaml |
+| `type-expense-button`        | Expense type selector     | categories.yaml |
+| `type-income-button`         | Income type selector      | categories.yaml |
+| `icon-picker-button`         | Icon picker trigger       | categories.yaml |
+| `color-picker-button`        | Color picker trigger      | categories.yaml |
+| `category-item-{id}`         | Individual category row   | categories.yaml |
+| `expense-group-filter`       | Expense group filter tabs | categories.yaml |
 
 ### npm Script Interface
 
@@ -192,10 +193,10 @@ Each flow uses the shared config from `.maestro/config.yaml`:
 # Inherited by all flows
 appId: com.ggeconomy.mobile
 env:
-  APP_NAME: "GG-Economy"
-  DEFAULT_TIMEOUT: "10000"
-  TEST_AMOUNT: "100.00"
-  TEST_DESCRIPTION: "Test Transaction"
+  APP_NAME: 'GG-Economy'
+  DEFAULT_TIMEOUT: '10000'
+  TEST_AMOUNT: '100.00'
+  TEST_DESCRIPTION: 'Test Transaction'
 ```
 
 ### Test Data Creation Pattern
@@ -204,95 +205,96 @@ Since flows use `clearState: true`, each flow that needs pre-existing data must 
 
 ```yaml
 # Navigate to Manual Entry and create a test transaction
-- tapOn: "Manual"
+- tapOn: 'Manual'
 - extendedWaitUntil:
     visible:
-      id: "manual-screen"
+      id: 'manual-screen'
     timeout: 5000
 
 # Fill form
 - tapOn:
-    id: "type-expense"
+    id: 'type-expense'
 - tapOn:
-    id: "amount-input"
-- inputText: "50.00"
+    id: 'amount-input'
+- inputText: '50.00'
 - tapOn:
-    id: "description-input"
-- inputText: "Test Expense"
+    id: 'description-input'
+- inputText: 'Test Expense'
 - tapOn:
-    id: "submit-button"
+    id: 'submit-button'
 
 # Wait for success
 - extendedWaitUntil:
-    visible: "success"
+    visible: 'success'
     timeout: 5000
 ```
 
 ### Tag Taxonomy
 
-| Tag | Scope | Flows |
-|-----|-------|-------|
-| `smoke` | Quick validation | smoke-test.yaml |
-| `dashboard` | Dashboard screen | dashboard.yaml |
+| Tag            | Scope                  | Flows                                         |
+| -------------- | ---------------------- | --------------------------------------------- |
+| `smoke`        | Quick validation       | smoke-test.yaml                               |
+| `dashboard`    | Dashboard screen       | dashboard.yaml                                |
 | `transactions` | Transaction operations | transactions-list.yaml, transaction-edit.yaml |
-| `manual` | Manual entry | manual-entry.yaml |
-| `import` | File import | import-flow.yaml, import-flow-mock.yaml |
-| `backup` | Backup/restore | backup-flow.yaml, backup-flow-mock.yaml |
-| `navigation` | Navigation paths | navigation.yaml |
-| `i18n` | Internationalization | language.yaml |
-| `categories` | Category management | categories.yaml |
+| `manual`       | Manual entry           | manual-entry.yaml                             |
+| `import`       | File import            | import-flow.yaml, import-flow-mock.yaml       |
+| `backup`       | Backup/restore         | backup-flow.yaml, backup-flow-mock.yaml       |
+| `navigation`   | Navigation paths       | navigation.yaml                               |
+| `i18n`         | Internationalization   | language.yaml                                 |
+| `categories`   | Category management    | categories.yaml                               |
 
 ### Timeout Strategy
 
-| Context | Timeout | Rationale |
-|---------|---------|-----------|
-| App launch | 15000ms | Cold start with DB initialization |
-| Tab navigation | 5000ms | Simple navigation transition |
-| Form submission | 10000ms | DB write + UI update |
-| Modal open/close | 3000ms | Animation + render |
-| Scroll/pagination | 5000ms | Data fetch + render |
-| Language switch | 5000ms | Full re-render of UI strings |
+| Context           | Timeout | Rationale                         |
+| ----------------- | ------- | --------------------------------- |
+| App launch        | 15000ms | Cold start with DB initialization |
+| Tab navigation    | 5000ms  | Simple navigation transition      |
+| Form submission   | 10000ms | DB write + UI update              |
+| Modal open/close  | 3000ms  | Animation + render                |
+| Scroll/pagination | 5000ms  | Data fetch + render               |
+| Language switch   | 5000ms  | Full re-render of UI strings      |
 
 ## Error Handling
 
 ### Flow Failure Modes
 
-| Failure Type | Detection | Recovery Strategy |
-|--------------|-----------|-------------------|
-| Element not found | Maestro timeout | Use `optional: true` for non-critical elements; fail with screenshot for critical ones |
-| App crash | Maestro detects process death | Flow fails; screenshot captured automatically |
-| Timeout exceeded | `extendedWaitUntil` timeout | Fail with descriptive error; screenshot at failure point |
-| Wrong screen state | `assertVisible` fails | Flow fails; screenshot shows actual state |
-| Keyboard blocking | Element obscured | Use `hideKeyboard` before assertions |
-| Alert/Dialog blocking | Unexpected modal | Use `back` or dismiss before continuing |
+| Failure Type          | Detection                     | Recovery Strategy                                                                      |
+| --------------------- | ----------------------------- | -------------------------------------------------------------------------------------- |
+| Element not found     | Maestro timeout               | Use `optional: true` for non-critical elements; fail with screenshot for critical ones |
+| App crash             | Maestro detects process death | Flow fails; screenshot captured automatically                                          |
+| Timeout exceeded      | `extendedWaitUntil` timeout   | Fail with descriptive error; screenshot at failure point                               |
+| Wrong screen state    | `assertVisible` fails         | Flow fails; screenshot shows actual state                                              |
+| Keyboard blocking     | Element obscured              | Use `hideKeyboard` before assertions                                                   |
+| Alert/Dialog blocking | Unexpected modal              | Use `back` or dismiss before continuing                                                |
 
 ### Defensive Patterns
 
 ```yaml
 # Pattern 1: Optional elements (may not exist in all states)
 - tapOn:
-    id: "element-that-may-not-exist"
+    id: 'element-that-may-not-exist'
     optional: true
 
 # Pattern 2: Wait with fallback
 - extendedWaitUntil:
     anyOf:
-      - visible: "Expected State A"
-      - visible: "Expected State B"
+      - visible: 'Expected State A'
+      - visible: 'Expected State B'
     timeout: 5000
 
 # Pattern 3: Keyboard dismissal before navigation
 - hideKeyboard
-- tapOn: "Next Button"
+- tapOn: 'Next Button'
 
 # Pattern 4: Screenshot on critical assertions
-- assertVisible: "Critical Element"
-- takeScreenshot: "critical_element_verified"
+- assertVisible: 'Critical Element'
+- takeScreenshot: 'critical_element_verified'
 ```
 
 ### Retry Configuration
 
 From `config.yaml`:
+
 ```yaml
 executionOrder:
   continueOnFailure: false
@@ -323,20 +325,20 @@ Instead of PBT, the testing strategy uses:
 
 ### Test Coverage Matrix
 
-| Requirement | Flow(s) | Coverage Type |
-|-------------|---------|---------------|
-| Req 1: Environment | Manual verification + smoke-test.yaml | Smoke |
-| Req 2: Smoke Test | smoke-test.yaml | Smoke |
-| Req 3: Dashboard | dashboard.yaml | Functional |
-| Req 4: Transactions List | transactions-list.yaml | Functional |
-| Req 5: Manual Entry | manual-entry.yaml (existing) | Functional |
-| Req 6: Settings Navigation | navigation.yaml (existing + update) | Navigation |
-| Req 7: Language Switching | language.yaml (existing) | Functional |
-| Req 8: Backup Settings | backup-flow-mock.yaml (existing) | Functional |
-| Req 9: Transaction Edit | transaction-edit.yaml | Functional |
-| Req 10: Categories | categories.yaml | Functional |
-| Req 11: Reporting | All flows (JUnit config) | Infrastructure |
-| Req 12: Data Independence | All flows (clearState: true) | Design pattern |
+| Requirement                | Flow(s)                               | Coverage Type  |
+| -------------------------- | ------------------------------------- | -------------- |
+| Req 1: Environment         | Manual verification + smoke-test.yaml | Smoke          |
+| Req 2: Smoke Test          | smoke-test.yaml                       | Smoke          |
+| Req 3: Dashboard           | dashboard.yaml                        | Functional     |
+| Req 4: Transactions List   | transactions-list.yaml                | Functional     |
+| Req 5: Manual Entry        | manual-entry.yaml (existing)          | Functional     |
+| Req 6: Settings Navigation | navigation.yaml (existing + update)   | Navigation     |
+| Req 7: Language Switching  | language.yaml (existing)              | Functional     |
+| Req 8: Backup Settings     | backup-flow-mock.yaml (existing)      | Functional     |
+| Req 9: Transaction Edit    | transaction-edit.yaml                 | Functional     |
+| Req 10: Categories         | categories.yaml                       | Functional     |
+| Req 11: Reporting          | All flows (JUnit config)              | Infrastructure |
+| Req 12: Data Independence  | All flows (clearState: true)          | Design pattern |
 
 ### Flow Design Principles
 
@@ -349,12 +351,12 @@ Instead of PBT, the testing strategy uses:
 
 ### Execution Modes
 
-| Mode | Command | Use Case |
-|------|---------|----------|
-| All flows | `npm run e2e` | Full regression |
-| Single flow | `npm run e2e:dashboard` | Focused testing |
-| By tag | `maestro test .maestro/flows --include-tags=smoke` | Category testing |
-| Studio | `npm run e2e:studio` | Interactive debugging |
+| Mode        | Command                                            | Use Case              |
+| ----------- | -------------------------------------------------- | --------------------- |
+| All flows   | `npm run e2e`                                      | Full regression       |
+| Single flow | `npm run e2e:dashboard`                            | Focused testing       |
+| By tag      | `maestro test .maestro/flows --include-tags=smoke` | Category testing      |
+| Studio      | `npm run e2e:studio`                               | Interactive debugging |
 
 ### CI/CD Considerations
 

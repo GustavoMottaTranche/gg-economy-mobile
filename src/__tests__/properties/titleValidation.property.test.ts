@@ -10,7 +10,11 @@
  */
 
 import fc from 'fast-check';
-import { validateTitle, TITLE_MIN_LENGTH, TITLE_MAX_LENGTH } from '../../validation/entryValidation';
+import {
+  validateTitle,
+  TITLE_MIN_LENGTH,
+  TITLE_MAX_LENGTH,
+} from '../../validation/entryValidation';
 
 describe('Feature: entry-title-and-dates, Property 1: Title Validation', () => {
   /**
@@ -22,12 +26,14 @@ describe('Feature: entry-title-and-dates, Property 1: Title Validation', () => {
     const validTitleArbitrary = fc
       .integer({ min: TITLE_MIN_LENGTH, max: TITLE_MAX_LENGTH })
       .chain((len) =>
-        fc.tuple(
-          // Core non-whitespace content of exact length
-          fc.string({ minLength: len, maxLength: len }).filter((s) => s.trim().length === len),
-          // Optional leading/trailing whitespace
-          fc.string({ minLength: 0, maxLength: 10 }).map((s) => s.replace(/\S/g, ' '))
-        ).map(([core, padding]) => padding + core + padding)
+        fc
+          .tuple(
+            // Core non-whitespace content of exact length
+            fc.string({ minLength: len, maxLength: len }).filter((s) => s.trim().length === len),
+            // Optional leading/trailing whitespace
+            fc.string({ minLength: 0, maxLength: 10 }).map((s) => s.replace(/\S/g, ' '))
+          )
+          .map(([core, padding]) => padding + core + padding)
       )
       .filter((s) => {
         const trimLen = s.trim().length;
@@ -91,7 +97,8 @@ describe('Feature: entry-title-and-dates, Property 1: Title Validation', () => {
     fc.assert(
       fc.property(fc.string({ minLength: 0, maxLength: 300 }), (title) => {
         const trimmedLength = title.trim().length;
-        const expectedValid = trimmedLength >= TITLE_MIN_LENGTH && trimmedLength <= TITLE_MAX_LENGTH;
+        const expectedValid =
+          trimmedLength >= TITLE_MIN_LENGTH && trimmedLength <= TITLE_MAX_LENGTH;
         const result = validateTitle(title);
 
         expect(result.valid).toBe(expectedValid);

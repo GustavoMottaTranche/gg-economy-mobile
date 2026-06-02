@@ -73,8 +73,15 @@ function InstallmentPreviewComponent({
 
   return (
     <View style={styles.section} testID={testID}>
-      <Text style={[styles.label, { color: colors.text.primary }]}>{t('manual.installment.preview')}</Text>
-      <View style={[styles.previewContainer, { backgroundColor: colors.surface.card, borderColor: colors.border.default }]}>
+      <Text style={[styles.label, { color: colors.text.primary }]}>
+        {t('manual.installment.preview')}
+      </Text>
+      <View
+        style={[
+          styles.previewContainer,
+          { backgroundColor: colors.surface.card, borderColor: colors.border.default },
+        ]}
+      >
         {installments.map((parcel, idx) => (
           <View
             key={parcel.index}
@@ -87,7 +94,9 @@ function InstallmentPreviewComponent({
                 total: parcel.totalParcels,
               })}
             </Text>
-            <Text style={[styles.previewMonth, { color: colors.text.secondary }]}>{formattedMonths[idx]}</Text>
+            <Text style={[styles.previewMonth, { color: colors.text.secondary }]}>
+              {formattedMonths[idx]}
+            </Text>
             {parcel.amount > 0 ? (
               <AmountDisplay
                 amount={transactionType === 'expense' ? -parcel.amount : parcel.amount}

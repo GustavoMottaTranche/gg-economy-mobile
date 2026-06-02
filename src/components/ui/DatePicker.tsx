@@ -177,7 +177,9 @@ const CalendarPicker = memo(function CalendarPicker({
           accessibilityRole="button"
           accessibilityLabel={t('common.previous')}
         >
-          <Text style={[calendarStyles.navButtonText, { color: colors.interactive.primary }]}>◀</Text>
+          <Text style={[calendarStyles.navButtonText, { color: colors.interactive.primary }]}>
+            ◀
+          </Text>
         </TouchableOpacity>
         <Text style={[calendarStyles.monthYear, { color: colors.text.primary }]}>
           {monthName} {year}
@@ -188,7 +190,9 @@ const CalendarPicker = memo(function CalendarPicker({
           accessibilityRole="button"
           accessibilityLabel={t('common.next')}
         >
-          <Text style={[calendarStyles.navButtonText, { color: colors.interactive.primary }]}>▶</Text>
+          <Text style={[calendarStyles.navButtonText, { color: colors.interactive.primary }]}>
+            ▶
+          </Text>
         </TouchableOpacity>
       </View>
 
@@ -196,7 +200,9 @@ const CalendarPicker = memo(function CalendarPicker({
       <View style={calendarStyles.weekdayRow}>
         {weekdays.map((day, index) => (
           <View key={index} style={calendarStyles.weekdayCell}>
-            <Text style={[calendarStyles.weekdayText, { color: colors.text.secondary }]}>{day}</Text>
+            <Text style={[calendarStyles.weekdayText, { color: colors.text.secondary }]}>
+              {day}
+            </Text>
           </View>
         ))}
       </View>
@@ -212,7 +218,11 @@ const CalendarPicker = memo(function CalendarPicker({
                 style={[
                   calendarStyles.dayButton,
                   isSelectedDay(day) && { backgroundColor: colors.interactive.primary },
-                  isToday(day) && !isSelectedDay(day) && { borderWidth: 1, borderColor: colors.interactive.primary },
+                  isToday(day) &&
+                    !isSelectedDay(day) && {
+                      borderWidth: 1,
+                      borderColor: colors.interactive.primary,
+                    },
                   isDateDisabled(day) && calendarStyles.disabledDay,
                 ]}
                 accessibilityRole="button"
@@ -227,7 +237,11 @@ const CalendarPicker = memo(function CalendarPicker({
                     calendarStyles.dayText,
                     { color: colors.text.primary },
                     isSelectedDay(day) && { color: colors.text.inverse, fontWeight: '600' },
-                    isToday(day) && !isSelectedDay(day) && { color: colors.interactive.primary, fontWeight: '600' },
+                    isToday(day) &&
+                      !isSelectedDay(day) && {
+                        color: colors.interactive.primary,
+                        fontWeight: '600',
+                      },
                     isDateDisabled(day) && { color: colors.text.tertiary },
                   ]}
                 >
@@ -250,7 +264,9 @@ const CalendarPicker = memo(function CalendarPicker({
         accessibilityRole="button"
         accessibilityLabel={t('common.today')}
       >
-        <Text style={[calendarStyles.todayButtonText, { color: colors.interactive.primary }]}>{t('common.today')}</Text>
+        <Text style={[calendarStyles.todayButtonText, { color: colors.interactive.primary }]}>
+          {t('common.today')}
+        </Text>
       </TouchableOpacity>
     </View>
   );
@@ -385,7 +401,9 @@ function DatePickerComponent({
 
   return (
     <View style={[styles.container, style]} testID={testID}>
-      {label && <Text style={[styles.label, { color: colors.text.primary }, labelStyle]}>{label}</Text>}
+      {label && (
+        <Text style={[styles.label, { color: colors.text.primary }, labelStyle]}>{label}</Text>
+      )}
 
       <TouchableOpacity
         onPress={handlePress}
@@ -393,7 +411,10 @@ function DatePickerComponent({
         style={[
           styles.inputContainer,
           { backgroundColor: colors.surface.card, borderColor: colors.border.strong },
-          disabled && { backgroundColor: colors.background.tertiary, borderColor: colors.border.default },
+          disabled && {
+            backgroundColor: colors.background.tertiary,
+            borderColor: colors.border.default,
+          },
           error && { borderColor: colors.semantic.danger.base },
         ]}
         accessibilityRole="button"
@@ -418,7 +439,10 @@ function DatePickerComponent({
       </TouchableOpacity>
 
       {error && (
-        <Text style={[styles.errorText, { color: colors.semantic.danger.base }]} accessibilityRole="alert">
+        <Text
+          style={[styles.errorText, { color: colors.semantic.danger.base }]}
+          accessibilityRole="alert"
+        >
           {error}
         </Text>
       )}
@@ -433,21 +457,20 @@ function DatePickerComponent({
       >
         <SafeAreaView style={styles.modalOverlay}>
           <TouchableOpacity style={styles.modalBackdrop} onPress={handleClose} activeOpacity={1} />
-          <View
-            style={[
-              styles.modalContent,
-              { backgroundColor: colors.surface.card },
-            ]}
-          >
+          <View style={[styles.modalContent, { backgroundColor: colors.surface.card }]}>
             <View style={[styles.modalHeader, { borderBottomColor: colors.border.default }]}>
-              <Text style={[styles.modalTitle, { color: colors.text.primary }]}>{t('manual.selectDate')}</Text>
+              <Text style={[styles.modalTitle, { color: colors.text.primary }]}>
+                {t('manual.selectDate')}
+              </Text>
               <TouchableOpacity
                 onPress={handleClose}
                 style={styles.closeButton}
                 accessibilityRole="button"
                 accessibilityLabel={t('common.close')}
               >
-                <Text style={[styles.closeButtonText, { color: colors.interactive.primary }]}>{t('common.close')}</Text>
+                <Text style={[styles.closeButtonText, { color: colors.interactive.primary }]}>
+                  {t('common.close')}
+                </Text>
               </TouchableOpacity>
             </View>
             <CalendarPicker

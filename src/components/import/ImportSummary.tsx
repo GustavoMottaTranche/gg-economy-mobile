@@ -251,7 +251,10 @@ function ImportSummaryComponent({
   };
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.surface.card }]} testID="import-summary">
+    <View
+      style={[styles.container, { backgroundColor: colors.surface.card }]}
+      testID="import-summary"
+    >
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
@@ -262,7 +265,9 @@ function ImportSummaryComponent({
           <Text style={styles.statusIcon} testID="overall-status-icon">
             {getOverallStatusIcon()}
           </Text>
-          <Text style={[styles.title, { color: colors.text.primary }]}>{t('fileImport.summary.title')}</Text>
+          <Text style={[styles.title, { color: colors.text.primary }]}>
+            {t('fileImport.summary.title')}
+          </Text>
           <Text
             style={[
               styles.statusText,
@@ -278,18 +283,35 @@ function ImportSummaryComponent({
         {/* All Files Failed Error Message (Requirement 7.7) */}
         {allFilesFailed && (
           <View
-            style={[styles.errorContainer, { backgroundColor: colors.semantic.danger.light, borderColor: colors.semantic.danger.base }]}
+            style={[
+              styles.errorContainer,
+              {
+                backgroundColor: colors.semantic.danger.light,
+                borderColor: colors.semantic.danger.base,
+              },
+            ]}
             testID="all-files-failed-error"
           >
-            <Text style={[styles.errorTitle, { color: colors.semantic.danger.dark }]}>{t('fileImport.summary.errorTitle')}</Text>
-            <Text style={[styles.errorMessage, { color: colors.semantic.danger.dark }]}>{t('fileImport.summary.errorMessage')}</Text>
-            <View style={[styles.troubleshootingContainer, { borderTopColor: colors.semantic.danger.base }]}>
+            <Text style={[styles.errorTitle, { color: colors.semantic.danger.dark }]}>
+              {t('fileImport.summary.errorTitle')}
+            </Text>
+            <Text style={[styles.errorMessage, { color: colors.semantic.danger.dark }]}>
+              {t('fileImport.summary.errorMessage')}
+            </Text>
+            <View
+              style={[
+                styles.troubleshootingContainer,
+                { borderTopColor: colors.semantic.danger.base },
+              ]}
+            >
               <Text style={[styles.troubleshootingTitle, { color: colors.semantic.danger.dark }]}>
                 {t('fileImport.summary.troubleshootingTitle')}
               </Text>
               {TROUBLESHOOTING_SUGGESTIONS.map((suggestion) => (
                 <View key={suggestion} style={styles.suggestionItem}>
-                  <Text style={[styles.suggestionBullet, { color: colors.semantic.danger.dark }]}>•</Text>
+                  <Text style={[styles.suggestionBullet, { color: colors.semantic.danger.dark }]}>
+                    •
+                  </Text>
                   <Text style={[styles.suggestionText, { color: colors.semantic.danger.dark }]}>
                     {t(`import.summary.troubleshooting.${suggestion}`)}
                   </Text>
@@ -301,13 +323,21 @@ function ImportSummaryComponent({
 
         {/* Statistics Section (Requirements 7.2, 7.3) */}
         {!allFilesFailed && (
-          <View style={[styles.statsContainer, { backgroundColor: colors.background.secondary }]} testID="import-stats">
+          <View
+            style={[styles.statsContainer, { backgroundColor: colors.background.secondary }]}
+            testID="import-stats"
+          >
             {/* Total Transactions Imported (Requirement 7.2) */}
             <View style={styles.statItem}>
-              <Text style={[styles.statValue, { color: colors.text.primary }]} testID="total-transactions">
+              <Text
+                style={[styles.statValue, { color: colors.text.primary }]}
+                testID="total-transactions"
+              >
                 {result.totalTransactionsImported}
               </Text>
-              <Text style={[styles.statLabel, { color: colors.text.secondary }]}>{t('fileImport.summary.totalTransactions')}</Text>
+              <Text style={[styles.statLabel, { color: colors.text.secondary }]}>
+                {t('fileImport.summary.totalTransactions')}
+              </Text>
             </View>
 
             {/* Total Duplicates Found (Requirement 7.3) */}
@@ -322,15 +352,22 @@ function ImportSummaryComponent({
               >
                 {totalDuplicates}
               </Text>
-              <Text style={[styles.statLabel, { color: colors.text.secondary }]}>{t('fileImport.summary.totalDuplicates')}</Text>
+              <Text style={[styles.statLabel, { color: colors.text.secondary }]}>
+                {t('fileImport.summary.totalDuplicates')}
+              </Text>
             </View>
 
             {/* Files Processed */}
             <View style={styles.statItem}>
-              <Text style={[styles.statValue, { color: colors.text.primary }]} testID="files-processed">
+              <Text
+                style={[styles.statValue, { color: colors.text.primary }]}
+                testID="files-processed"
+              >
                 {successfulFiles}/{result.fileResults.length}
               </Text>
-              <Text style={[styles.statLabel, { color: colors.text.secondary }]}>{t('fileImport.summary.filesProcessed')}</Text>
+              <Text style={[styles.statLabel, { color: colors.text.secondary }]}>
+                {t('fileImport.summary.filesProcessed')}
+              </Text>
             </View>
           </View>
         )}
@@ -338,16 +375,27 @@ function ImportSummaryComponent({
         {/* Duplicate Breakdown */}
         {!allFilesFailed && totalDuplicates > 0 && (
           <View
-            style={[styles.duplicateBreakdown, { backgroundColor: colors.semantic.warning.light, borderColor: colors.semantic.warning.base }]}
+            style={[
+              styles.duplicateBreakdown,
+              {
+                backgroundColor: colors.semantic.warning.light,
+                borderColor: colors.semantic.warning.base,
+              },
+            ]}
             testID="duplicate-breakdown"
           >
-            <Text style={[styles.breakdownTitle, { color: colors.semantic.warning.dark }]}>{t('fileImport.summary.duplicateBreakdown')}</Text>
+            <Text style={[styles.breakdownTitle, { color: colors.semantic.warning.dark }]}>
+              {t('fileImport.summary.duplicateBreakdown')}
+            </Text>
             {result.totalDuplicatesInFile > 0 && (
               <View style={styles.breakdownItem}>
                 <Text style={[styles.breakdownLabel, { color: colors.semantic.warning.dark }]}>
                   {t('fileImport.summary.inFileDuplicates')}
                 </Text>
-                <Text style={[styles.breakdownValue, { color: colors.semantic.warning.dark }]} testID="in-file-duplicates">
+                <Text
+                  style={[styles.breakdownValue, { color: colors.semantic.warning.dark }]}
+                  testID="in-file-duplicates"
+                >
                   {result.totalDuplicatesInFile}
                 </Text>
               </View>
@@ -357,7 +405,10 @@ function ImportSummaryComponent({
                 <Text style={[styles.breakdownLabel, { color: colors.semantic.warning.dark }]}>
                   {t('fileImport.summary.crossFileDuplicates')}
                 </Text>
-                <Text style={[styles.breakdownValue, { color: colors.semantic.warning.dark }]} testID="cross-file-duplicates">
+                <Text
+                  style={[styles.breakdownValue, { color: colors.semantic.warning.dark }]}
+                  testID="cross-file-duplicates"
+                >
                   {result.totalCrossFileDuplicates}
                 </Text>
               </View>
@@ -367,7 +418,10 @@ function ImportSummaryComponent({
                 <Text style={[styles.breakdownLabel, { color: colors.semantic.warning.dark }]}>
                   {t('fileImport.summary.databaseDuplicates')}
                 </Text>
-                <Text style={[styles.breakdownValue, { color: colors.semantic.warning.dark }]} testID="database-duplicates">
+                <Text
+                  style={[styles.breakdownValue, { color: colors.semantic.warning.dark }]}
+                  testID="database-duplicates"
+                >
                   {result.totalDatabaseDuplicates}
                 </Text>
               </View>
@@ -377,7 +431,9 @@ function ImportSummaryComponent({
 
         {/* Per-File Results (Requirements 7.4, 7.5) */}
         <View style={styles.resultsContainer}>
-          <Text style={[styles.resultsTitle, { color: colors.text.primary }]}>{t('fileImport.summary.fileResults')}</Text>
+          <Text style={[styles.resultsTitle, { color: colors.text.primary }]}>
+            {t('fileImport.summary.fileResults')}
+          </Text>
           <FlatList
             data={result.fileResults}
             renderItem={renderFileResult}
@@ -400,7 +456,9 @@ function ImportSummaryComponent({
             accessibilityLabel={t('fileImport.summary.retryFailed')}
             testID="retry-failed-button"
           >
-            <Text style={[styles.retryButtonText, { color: colors.semantic.warning.dark }]}>{t('fileImport.summary.retryFailed')}</Text>
+            <Text style={[styles.retryButtonText, { color: colors.semantic.warning.dark }]}>
+              {t('fileImport.summary.retryFailed')}
+            </Text>
           </TouchableOpacity>
         )}
 
@@ -414,7 +472,9 @@ function ImportSummaryComponent({
             accessibilityLabel={t('fileImport.summary.reviewAll')}
             testID="review-all-button"
           >
-            <Text style={[styles.reviewButtonText, { color: colors.text.inverse }]}>{t('fileImport.summary.reviewAll')}</Text>
+            <Text style={[styles.reviewButtonText, { color: colors.text.inverse }]}>
+              {t('fileImport.summary.reviewAll')}
+            </Text>
           </TouchableOpacity>
         )}
 
@@ -423,7 +483,8 @@ function ImportSummaryComponent({
           style={[
             styles.closeButton,
             { backgroundColor: colors.background.tertiary },
-            !hasSuccessfulImports && !hasFailedFiles && { backgroundColor: colors.interactive.primary },
+            !hasSuccessfulImports &&
+              !hasFailedFiles && { backgroundColor: colors.interactive.primary },
           ]}
           onPress={handleClose}
           activeOpacity={0.7}

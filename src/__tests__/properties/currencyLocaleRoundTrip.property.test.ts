@@ -22,10 +22,7 @@ function getDecimalSeparator(locale: 'pt-BR' | 'en'): string {
 /**
  * Format a cents value to a display string with locale-appropriate decimal separator
  */
-function formatAmountForDisplay(
-  cents: number | null,
-  locale: 'pt-BR' | 'en'
-): string {
+function formatAmountForDisplay(cents: number | null, locale: 'pt-BR' | 'en'): string {
   if (cents === null) return '';
   const value = cents / 100;
   const separator = getDecimalSeparator(locale);
@@ -37,10 +34,7 @@ function formatAmountForDisplay(
  * Parse a locale-aware amount string to cents (integer)
  * Returns null if the string is empty or invalid
  */
-function parseAmountToCents(
-  text: string,
-  locale: 'pt-BR' | 'en'
-): number | null {
+function parseAmountToCents(text: string, locale: 'pt-BR' | 'en'): number | null {
   if (!text.trim()) return null;
   const separator = getDecimalSeparator(locale);
   // Normalize to standard decimal point

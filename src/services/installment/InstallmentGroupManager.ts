@@ -88,19 +88,14 @@ export async function deleteAllInGroup(groupId: string): Promise<void> {
  * @param groupId - The installment group ID
  * @throws Error if the transaction is not found in the group or if the operation fails
  */
-export async function deleteSingleParcel(
-  transactionId: string,
-  groupId: string
-): Promise<void> {
+export async function deleteSingleParcel(transactionId: string, groupId: string): Promise<void> {
   await withTransaction(async () => {
     const db = getDb();
     const parcels = await getGroupParcels(groupId);
 
     const parcelExists = parcels.some((p) => p.id === transactionId);
     if (!parcelExists) {
-      throw new Error(
-        `Transaction ${transactionId} not found in installment group ${groupId}`
-      );
+      throw new Error(`Transaction ${transactionId} not found in installment group ${groupId}`);
     }
 
     // Delete the target parcel
@@ -116,9 +111,10 @@ export async function deleteSingleParcel(
       for (let i = 0; i < remaining.length; i++) {
         const parcel = remaining[i]!;
         const baseDescription = extractBaseDescription(parcel.description);
-        const newDescription = newTotal === 1
-          ? baseDescription // If only one parcel remains, remove the suffix entirely
-          : `${baseDescription}${buildSuffix(i + 1, newTotal)}`;
+        const newDescription =
+          newTotal === 1
+            ? baseDescription // If only one parcel remains, remove the suffix entirely
+            : `${baseDescription}${buildSuffix(i + 1, newTotal)}`;
 
         await db
           .update(transactions)
@@ -141,10 +137,7 @@ export async function deleteSingleParcel(
  * @param newTotal - New total amount in cents to distribute
  * @throws Error if the group has no parcels or if the operation fails
  */
-export async function recalculateGroup(
-  groupId: string,
-  newTotal: number
-): Promise<void> {
+export async function recalculateGroup(groupId: string, newTotal: number): Promise<void> {
   await withTransaction(async () => {
     const db = getDb();
     const parcels = await getGroupParcels(groupId);
@@ -212,9 +205,8 @@ export async function updateGroupField(
       const totalParcels = parcels.length;
       for (let i = 0; i < parcels.length; i++) {
         const parcel = parcels[i]!;
-        const newDescription = totalParcels === 1
-          ? value
-          : `${value}${buildSuffix(i + 1, totalParcels)}`;
+        const newDescription =
+          totalParcels === 1 ? value : `${value}${buildSuffix(i + 1, totalParcels)}`;
 
         await db
           .update(transactions)

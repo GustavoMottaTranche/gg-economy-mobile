@@ -31,77 +31,61 @@ describe('Feature: entry-title-and-dates, Property 11: Individual Parcel Edit Is
 
   it('editing parcel K amount does not affect any other parcel amounts', () => {
     fc.assert(
-      fc.property(
-        validInput(),
-        fc.integer({ min: 1, max: 999999999 }),
-        (input, newAmount) => {
-          const parcels = calculateInstallments(input);
-          const n = parcels.length;
+      fc.property(validInput(), fc.integer({ min: 1, max: 999999999 }), (input, newAmount) => {
+        const parcels = calculateInstallments(input);
+        const n = parcels.length;
 
-          // Pick a random parcel index K (0-based) deterministically from input
-          const k = newAmount % n;
+        // Pick a random parcel index K (0-based) deterministically from input
+        const k = newAmount % n;
 
-          // Store original amounts for all parcels
-          const originalAmounts = parcels.map((p) => p.amount);
+        // Store original amounts for all parcels
+        const originalAmounts = parcels.map((p) => p.amount);
 
-          // Simulate editing parcel K to a new amount (direct mutation as would happen in DB)
-          parcels[k] = { ...parcels[k]!, amount: newAmount };
+        // Simulate editing parcel K to a new amount (direct mutation as would happen in DB)
+        parcels[k] = { ...parcels[k]!, amount: newAmount };
 
-          // Verify parcel K has the new amount
-          expect(parcels[k]!.amount).toBe(newAmount);
+        // Verify parcel K has the new amount
+        expect(parcels[k]!.amount).toBe(newAmount);
 
-          // Verify all other parcels retain their original amounts
-          for (let i = 0; i < n; i++) {
-            if (i !== k) {
-              expect(parcels[i]!.amount).toBe(originalAmounts[i]);
-            }
+        // Verify all other parcels retain their original amounts
+        for (let i = 0; i < n; i++) {
+          if (i !== k) {
+            expect(parcels[i]!.amount).toBe(originalAmounts[i]);
           }
-        },
-      ),
-      { numRuns: 100 },
+        }
+      }),
+      { numRuns: 100 }
     );
   });
 
   it('editing parcel K does not change the count or structure of other parcels', () => {
     fc.assert(
-      fc.property(
-        validInput(),
-        fc.integer({ min: 1, max: 999999999 }),
-        (input, newAmount) => {
-          const parcels = calculateInstallments(input);
-          const n = parcels.length;
+      fc.property(validInput(), fc.integer({ min: 1, max: 999999999 }), (input, newAmount) => {
+        const parcels = calculateInstallments(input);
+        const n = parcels.length;
 
-          const k = newAmount % n;
+        const k = newAmount % n;
 
-          // Store original state of all parcels except K
-          const originalOthers = parcels
-            .filter((_, i) => i !== k)
-            .map((p) => ({ ...p }));
+        // Store original state of all parcels except K
+        const originalOthers = parcels.filter((_, i) => i !== k).map((p) => ({ ...p }));
 
-          // Simulate editing parcel K
-          parcels[k] = { ...parcels[k]!, amount: newAmount };
+        // Simulate editing parcel K
+        parcels[k] = { ...parcels[k]!, amount: newAmount };
 
-          // Verify total count unchanged
-          expect(parcels.length).toBe(n);
+        // Verify total count unchanged
+        expect(parcels.length).toBe(n);
 
-          // Verify all other parcels are completely unchanged
-          const currentOthers = parcels.filter((_, i) => i !== k);
-          for (let i = 0; i < originalOthers.length; i++) {
-            expect(currentOthers[i]!.index).toBe(originalOthers[i]!.index);
-            expect(currentOthers[i]!.totalParcels).toBe(
-              originalOthers[i]!.totalParcels,
-            );
-            expect(currentOthers[i]!.amount).toBe(originalOthers[i]!.amount);
-            expect(currentOthers[i]!.referenceMonth).toBe(
-              originalOthers[i]!.referenceMonth,
-            );
-            expect(currentOthers[i]!.descriptionSuffix).toBe(
-              originalOthers[i]!.descriptionSuffix,
-            );
-          }
-        },
-      ),
-      { numRuns: 100 },
+        // Verify all other parcels are completely unchanged
+        const currentOthers = parcels.filter((_, i) => i !== k);
+        for (let i = 0; i < originalOthers.length; i++) {
+          expect(currentOthers[i]!.index).toBe(originalOthers[i]!.index);
+          expect(currentOthers[i]!.totalParcels).toBe(originalOthers[i]!.totalParcels);
+          expect(currentOthers[i]!.amount).toBe(originalOthers[i]!.amount);
+          expect(currentOthers[i]!.referenceMonth).toBe(originalOthers[i]!.referenceMonth);
+          expect(currentOthers[i]!.descriptionSuffix).toBe(originalOthers[i]!.descriptionSuffix);
+        }
+      }),
+      { numRuns: 100 }
     );
   });
 });

@@ -90,19 +90,29 @@ interface DetailRowProps {
   onPress?: () => void;
 }
 
-function DetailRow({ label, value, valueColor, testID, onPress }: DetailRowProps): React.ReactElement {
+function DetailRow({
+  label,
+  value,
+  valueColor,
+  testID,
+  onPress,
+}: DetailRowProps): React.ReactElement {
   const colors = useThemeColors();
 
   const rowContent = (
     <>
       <Text style={[styles.detailLabel, { color: colors.text.secondary }]}>{label}</Text>
       <View style={styles.detailValueContainer}>
-        <Text style={[styles.detailValue, { color: colors.text.primary }, valueColor ? { color: valueColor } : undefined]}>
+        <Text
+          style={[
+            styles.detailValue,
+            { color: colors.text.primary },
+            valueColor ? { color: valueColor } : undefined,
+          ]}
+        >
           {value}
         </Text>
-        {onPress && (
-          <Text style={[styles.detailChevron, { color: colors.text.tertiary }]}>›</Text>
-        )}
+        {onPress && <Text style={[styles.detailChevron, { color: colors.text.tertiary }]}>›</Text>}
       </View>
     </>
   );
@@ -153,7 +163,9 @@ export default function TransactionDetailScreen(): React.ReactElement {
   const [promptTitle, setPromptTitle] = useState('');
   const [promptMessage, setPromptMessage] = useState('');
   const [promptDefaultValue, setPromptDefaultValue] = useState('');
-  const [promptKeyboardType, setPromptKeyboardType] = useState<'default' | 'decimal-pad'>('default');
+  const [promptKeyboardType, setPromptKeyboardType] = useState<'default' | 'decimal-pad'>(
+    'default'
+  );
 
   // State for category edit bottom sheet
   const [categorySheetOpen, setCategorySheetOpen] = useState(false);
@@ -186,7 +198,9 @@ export default function TransactionDetailScreen(): React.ReactElement {
     }
 
     loadPaymentStatus();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [id]);
 
   /**
@@ -312,11 +326,7 @@ export default function TransactionDetailScreen(): React.ReactElement {
         case 'description-all': {
           if (!value || value.trim().length === 0) return;
           try {
-            await updateGroupField(
-              transaction.installmentGroupId!,
-              'description',
-              value.trim()
-            );
+            await updateGroupField(transaction.installmentGroupId!, 'description', value.trim());
             Alert.alert(t('common.success'), t('manual.installment.updateAllSuccess'));
           } catch (err) {
             Alert.alert(t('common.error'), t('manual.installment.editError'));
@@ -366,46 +376,38 @@ export default function TransactionDetailScreen(): React.ReactElement {
       if (transaction.installmentGroupId) {
         // Close sheet first, then show scope alert
         setCategorySheetOpen(false);
-        Alert.alert(
-          t('categoryEdit.changeCategory'),
-          t('categoryEdit.installmentPrompt'),
-          [
-            {
-              text: t('common.cancel'),
-              style: 'cancel',
+        Alert.alert(t('categoryEdit.changeCategory'), t('categoryEdit.installmentPrompt'), [
+          {
+            text: t('common.cancel'),
+            style: 'cancel',
+          },
+          {
+            text: t('categoryEdit.applyToThisParcel'),
+            onPress: async () => {
+              setIsCategoryUpdating(true);
+              try {
+                await setTransactionCategory(transaction.id, category.id);
+              } catch (err) {
+                Alert.alert(t('common.error'), t('categoryEdit.updateError'));
+              } finally {
+                setIsCategoryUpdating(false);
+              }
             },
-            {
-              text: t('categoryEdit.applyToThisParcel'),
-              onPress: async () => {
-                setIsCategoryUpdating(true);
-                try {
-                  await setTransactionCategory(transaction.id, category.id);
-                } catch (err) {
-                  Alert.alert(t('common.error'), t('categoryEdit.updateError'));
-                } finally {
-                  setIsCategoryUpdating(false);
-                }
-              },
+          },
+          {
+            text: t('categoryEdit.applyToAllParcels'),
+            onPress: async () => {
+              setIsCategoryUpdating(true);
+              try {
+                await updateGroupField(transaction.installmentGroupId!, 'categoryId', category.id);
+              } catch (err) {
+                Alert.alert(t('common.error'), t('categoryEdit.updateError'));
+              } finally {
+                setIsCategoryUpdating(false);
+              }
             },
-            {
-              text: t('categoryEdit.applyToAllParcels'),
-              onPress: async () => {
-                setIsCategoryUpdating(true);
-                try {
-                  await updateGroupField(
-                    transaction.installmentGroupId!,
-                    'categoryId',
-                    category.id
-                  );
-                } catch (err) {
-                  Alert.alert(t('common.error'), t('categoryEdit.updateError'));
-                } finally {
-                  setIsCategoryUpdating(false);
-                }
-              },
-            },
-          ]
-        );
+          },
+        ]);
       } else {
         // Non-installment: update directly
         setCategorySheetOpen(false);
@@ -441,13 +443,25 @@ export default function TransactionDetailScreen(): React.ReactElement {
           {
             text: t('manual.installment.applyToThisOccurrence'),
             onPress: () => {
-              openPrompt('amount-recurring-single', t('transactions.amount'), t('manual.enterAmount'), '', 'decimal-pad');
+              openPrompt(
+                'amount-recurring-single',
+                t('transactions.amount'),
+                t('manual.enterAmount'),
+                '',
+                'decimal-pad'
+              );
             },
           },
           {
             text: t('manual.installment.applyToAllFuture'),
             onPress: () => {
-              openPrompt('amount-recurring-future', t('transactions.amount'), t('manual.enterAmount'), '', 'decimal-pad');
+              openPrompt(
+                'amount-recurring-future',
+                t('transactions.amount'),
+                t('manual.enterAmount'),
+                '',
+                'decimal-pad'
+              );
             },
           },
         ]
@@ -461,19 +475,37 @@ export default function TransactionDetailScreen(): React.ReactElement {
           {
             text: t('manual.installment.applyToThisOnly'),
             onPress: () => {
-              openPrompt('amount-single', t('transactions.amount'), t('manual.enterAmount'), '', 'decimal-pad');
+              openPrompt(
+                'amount-single',
+                t('transactions.amount'),
+                t('manual.enterAmount'),
+                '',
+                'decimal-pad'
+              );
             },
           },
           {
             text: t('manual.installment.recalculateAll'),
             onPress: () => {
-              openPrompt('amount-recalculate', t('manual.installment.enterNewTotal'), t('manual.installment.enterNewTotalMessage'), '', 'decimal-pad');
+              openPrompt(
+                'amount-recalculate',
+                t('manual.installment.enterNewTotal'),
+                t('manual.installment.enterNewTotalMessage'),
+                '',
+                'decimal-pad'
+              );
             },
           },
         ]
       );
     } else {
-      openPrompt('amount-standard', t('transactions.amount'), t('manual.enterAmount'), '', 'decimal-pad');
+      openPrompt(
+        'amount-standard',
+        t('transactions.amount'),
+        t('manual.enterAmount'),
+        '',
+        'decimal-pad'
+      );
     }
   }, [t, transaction, openPrompt]);
 
@@ -492,19 +524,34 @@ export default function TransactionDetailScreen(): React.ReactElement {
           {
             text: t('manual.installment.applyToThisOnly'),
             onPress: () => {
-              openPrompt('description-single', t('transactions.description'), t('manual.enterDescription'), transaction.description);
+              openPrompt(
+                'description-single',
+                t('transactions.description'),
+                t('manual.enterDescription'),
+                transaction.description
+              );
             },
           },
           {
             text: t('manual.installment.applyToAll'),
             onPress: () => {
-              openPrompt('description-all', t('transactions.description'), t('manual.enterDescription'), transaction.description);
+              openPrompt(
+                'description-all',
+                t('transactions.description'),
+                t('manual.enterDescription'),
+                transaction.description
+              );
             },
           },
         ]
       );
     } else {
-      openPrompt('description-standard', t('transactions.description'), t('manual.enterDescription'), transaction.description);
+      openPrompt(
+        'description-standard',
+        t('transactions.description'),
+        t('manual.enterDescription'),
+        transaction.description
+      );
     }
   }, [t, transaction, openPrompt]);
 
@@ -528,36 +575,32 @@ export default function TransactionDetailScreen(): React.ReactElement {
     if (!transaction) return;
 
     if (transaction.installmentGroupId) {
-      Alert.alert(
-        t('manual.installment.deleteTitle'),
-        t('manual.installment.deleteMessage'),
-        [
-          { text: t('common.cancel'), style: 'cancel' },
-          {
-            text: t('manual.installment.deleteThisOnly'),
-            onPress: async () => {
-              try {
-                await deleteSingleParcel(transaction.id, transaction.installmentGroupId!);
-                router.back();
-              } catch (err) {
-                Alert.alert(t('common.error'), t('manual.installment.editError'));
-              }
-            },
+      Alert.alert(t('manual.installment.deleteTitle'), t('manual.installment.deleteMessage'), [
+        { text: t('common.cancel'), style: 'cancel' },
+        {
+          text: t('manual.installment.deleteThisOnly'),
+          onPress: async () => {
+            try {
+              await deleteSingleParcel(transaction.id, transaction.installmentGroupId!);
+              router.back();
+            } catch (err) {
+              Alert.alert(t('common.error'), t('manual.installment.editError'));
+            }
           },
-          {
-            text: t('manual.installment.deleteAll'),
-            style: 'destructive',
-            onPress: async () => {
-              try {
-                await deleteAllInGroup(transaction.installmentGroupId!);
-                router.back();
-              } catch (err) {
-                Alert.alert(t('common.error'), t('manual.installment.editError'));
-              }
-            },
+        },
+        {
+          text: t('manual.installment.deleteAll'),
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await deleteAllInGroup(transaction.installmentGroupId!);
+              router.back();
+            } catch (err) {
+              Alert.alert(t('common.error'), t('manual.installment.editError'));
+            }
           },
-        ]
-      );
+        },
+      ]);
     } else {
       Alert.alert(t('transactions.deleteTransaction'), t('transactions.deleteConfirmation'), [
         { text: t('common.cancel'), style: 'cancel' },
@@ -618,15 +661,23 @@ export default function TransactionDetailScreen(): React.ReactElement {
   const amountPrefix = isIncome ? '+' : '-';
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.background.secondary }]} testID="transaction-detail-screen">
+    <SafeAreaView
+      style={[styles.container, { backgroundColor: colors.background.secondary }]}
+      testID="transaction-detail-screen"
+    >
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
       >
-
         {/* Amount Display — prominent at top with color-coded formatting */}
-        <View style={[styles.amountContainer, { backgroundColor: colors.surface.card }, themeShadows.sm]}>
+        <View
+          style={[
+            styles.amountContainer,
+            { backgroundColor: colors.surface.card },
+            themeShadows.sm,
+          ]}
+        >
           <Text style={[styles.amountLabel, { color: colors.text.secondary }]}>
             {isIncome ? t('dashboard.income') : t('dashboard.expenses')}
           </Text>
@@ -637,7 +688,10 @@ export default function TransactionDetailScreen(): React.ReactElement {
         </View>
 
         {/* Transaction Details Card */}
-        <View style={[styles.detailsCard, { backgroundColor: colors.surface.card }, themeShadows.sm]} testID="details-card">
+        <View
+          style={[styles.detailsCard, { backgroundColor: colors.surface.card }, themeShadows.sm]}
+          testID="details-card"
+        >
           <DetailRow label={t('transactions.date')} value={formattedDate} testID="detail-date" />
           <DetailRow
             label={t('transactions.description')}
@@ -675,9 +729,7 @@ export default function TransactionDetailScreen(): React.ReactElement {
               accessibilityLabel={isPaid ? 'Marcar como pendente' : 'Marcar como pago'}
               testID="detail-payment-status-touchable"
             >
-              <Text style={[styles.detailLabel, { color: colors.text.secondary }]}>
-                Status
-              </Text>
+              <Text style={[styles.detailLabel, { color: colors.text.secondary }]}>Status</Text>
               <View style={styles.detailValueContainer}>
                 <Text
                   style={[
@@ -711,9 +763,16 @@ export default function TransactionDetailScreen(): React.ReactElement {
         </View>
 
         {/* Metadata Card */}
-        <View style={[styles.metadataCard, { backgroundColor: colors.background.tertiary, borderColor: colors.border.subtle }]}>
+        <View
+          style={[
+            styles.metadataCard,
+            { backgroundColor: colors.background.tertiary, borderColor: colors.border.subtle },
+          ]}
+        >
           <Text style={[styles.metadataTitle, { color: colors.text.tertiary }]}>Metadata</Text>
-          <Text style={[styles.metadataText, { color: colors.text.secondary }]}>ID: {transaction.id}</Text>
+          <Text style={[styles.metadataText, { color: colors.text.secondary }]}>
+            ID: {transaction.id}
+          </Text>
           <Text style={[styles.metadataText, { color: colors.text.secondary }]}>
             Created: {formatDateLocale(transaction.createdAt, locale, { includeTime: true })}
           </Text>
@@ -731,7 +790,9 @@ export default function TransactionDetailScreen(): React.ReactElement {
             accessibilityLabel={t('common.edit')}
             testID="edit-button"
           >
-            <Text style={[styles.primaryButtonText, { color: colors.text.inverse }]}>{t('common.edit')}</Text>
+            <Text style={[styles.primaryButtonText, { color: colors.text.inverse }]}>
+              {t('common.edit')}
+            </Text>
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -749,13 +810,18 @@ export default function TransactionDetailScreen(): React.ReactElement {
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={[styles.dangerButton, { backgroundColor: colors.surface.card, borderColor: colors.semantic.danger.base }]}
+            style={[
+              styles.dangerButton,
+              { backgroundColor: colors.surface.card, borderColor: colors.semantic.danger.base },
+            ]}
             onPress={handleDelete}
             accessibilityRole="button"
             accessibilityLabel={t('common.delete')}
             testID="delete-button"
           >
-            <Text style={[styles.dangerButtonText, { color: colors.semantic.danger.base }]}>{t('common.delete')}</Text>
+            <Text style={[styles.dangerButtonText, { color: colors.semantic.danger.base }]}>
+              {t('common.delete')}
+            </Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
@@ -805,7 +871,9 @@ export default function TransactionDetailScreen(): React.ReactElement {
                   accessibilityLabel={t('common.cancel')}
                   testID="category-edit-cancel"
                 >
-                  <Text style={[styles.cancelButtonText, { color: colors.text.secondary }]}>{t('common.cancel')}</Text>
+                  <Text style={[styles.cancelButtonText, { color: colors.text.secondary }]}>
+                    {t('common.cancel')}
+                  </Text>
                 </TouchableOpacity>
               </View>
             </SafeAreaView>
@@ -829,7 +897,6 @@ export default function TransactionDetailScreen(): React.ReactElement {
     </SafeAreaView>
   );
 }
-
 
 const styles = StyleSheet.create({
   container: {
@@ -961,8 +1028,7 @@ const styles = StyleSheet.create({
     maxHeight: '80%',
     minHeight: 400,
   },
-  bottomSheetSafeArea: {
-  },
+  bottomSheetSafeArea: {},
   handleContainer: {
     alignItems: 'center',
     paddingTop: spacing.md,
@@ -988,9 +1054,8 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   selectorContainer: {
-    minHeight: 250,
-    paddingHorizontal: spacing.lg,
     minHeight: 200,
+    paddingHorizontal: spacing.lg,
   },
   bottomSheetActions: {
     paddingHorizontal: spacing.lg,

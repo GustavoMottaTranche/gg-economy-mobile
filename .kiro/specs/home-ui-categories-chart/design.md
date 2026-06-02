@@ -57,12 +57,13 @@ graph TD
 ### New Components
 
 #### `CollapsibleSection`
+
 A reusable collapsible container for expense group sections.
 
 ```typescript
 interface CollapsibleSectionProps {
-  title: string;                    // "Fixo" or "Variável"
-  total: number;                    // Total in cents for the group
+  title: string; // "Fixo" or "Variável"
+  total: number; // Total in cents for the group
   categories: CategoryBreakdownItem[];
   isExpanded: boolean;
   onToggle: () => void;
@@ -74,6 +75,7 @@ interface CollapsibleSectionProps {
 ```
 
 #### `CategoryRow`
+
 An individual category line item that can expand to show transactions.
 
 ```typescript
@@ -87,6 +89,7 @@ interface CategoryRowProps {
 ```
 
 #### `TransactionList`
+
 Inline list of transactions for an expanded category (lazy-loaded).
 
 ```typescript
@@ -98,6 +101,7 @@ interface TransactionListProps {
 ```
 
 #### `ChartFilter`
+
 Filter selector for the expense chart.
 
 ```typescript
@@ -111,6 +115,7 @@ interface ChartFilterProps {
 ```
 
 #### `ExpenseChart`
+
 Enhanced chart component supporting fixed-vs-variable comparison and per-group breakdown.
 
 ```typescript
@@ -127,10 +132,12 @@ interface ExpenseChartProps {
 ### Modified Components
 
 #### `MonthSelector` (modified)
+
 - Remove `disableNext` logic (always enabled for forward navigation)
 - Add `isFutureMonth` prop for visual indicator
 
 #### `useDashboardData` (enhanced)
+
 - Add `fixedBreakdown: CategoryBreakdownItem[]` — categories with `expenseGroup = 'fixed'`
 - Add `variableBreakdown: CategoryBreakdownItem[]` — categories with `expenseGroup = 'variable'`
 - Add `fixedTotal: number` and `variableTotal: number`
@@ -211,7 +218,7 @@ interface CategoryBreakdownItem {
   categoryType: CategoryType | null;
   categoryColor: string;
   categoryIcon: string;
-  expenseGroup: ExpenseGroup | null;  // NEW
+  expenseGroup: ExpenseGroup | null; // NEW
   total: number;
   count: number;
   percentage: number;
@@ -224,9 +231,9 @@ interface CategoryBreakdownItem {
 interface ChartSegment {
   id: string;
   label: string;
-  value: number;       // Amount in cents
+  value: number; // Amount in cents
   color: string;
-  percentage: number;  // Integer 0-100, sum always equals 100
+  percentage: number; // Integer 0-100, sum always equals 100
 }
 
 interface FixedVsVariableData {
@@ -244,75 +251,75 @@ interface FixedVsVariableData {
  */
 function roundPercentages(values: number[], total: number): number[] {
   if (total === 0) return values.map(() => 0);
-  
-  const rawPercentages = values.map(v => (v / total) * 100);
+
+  const rawPercentages = values.map((v) => (v / total) * 100);
   const floored = rawPercentages.map(Math.floor);
   const remainders = rawPercentages.map((raw, i) => raw - floored[i]);
-  
+
   let remaining = 100 - floored.reduce((sum, v) => sum + v, 0);
-  
+
   // Distribute remaining points to entries with largest remainders
   const indices = remainders
     .map((r, i) => ({ remainder: r, index: i }))
     .sort((a, b) => b.remainder - a.remainder);
-  
+
   for (let i = 0; i < remaining; i++) {
     floored[indices[i].index]++;
   }
-  
+
   return floored;
 }
 ```
 
 ## Correctness Properties
 
-*A property is a characteristic or behavior that should hold true across all valid executions of a system — essentially, a formal statement about what the system should do. Properties serve as the bridge between human-readable specifications and machine-verifiable correctness guarantees.*
+_A property is a characteristic or behavior that should hold true across all valid executions of a system — essentially, a formal statement about what the system should do. Properties serve as the bridge between human-readable specifications and machine-verifiable correctness guarantees._
 
 ### Property 1: Category grouping partitions by expenseGroup
 
-*For any* array of expense categories with mixed `expenseGroup` values ('fixed', 'variable', or null), the grouping function SHALL place all categories with `expenseGroup = 'fixed'` into the fixed group, all categories with `expenseGroup = 'variable'` into the variable group, and exclude all categories with `expenseGroup = null` from both groups.
+_For any_ array of expense categories with mixed `expenseGroup` values ('fixed', 'variable', or null), the grouping function SHALL place all categories with `expenseGroup = 'fixed'` into the fixed group, all categories with `expenseGroup = 'variable'` into the variable group, and exclude all categories with `expenseGroup = null` from both groups.
 
 **Validates: Requirements 1.1**
 
 ### Property 2: Section total equals sum of category amounts
 
-*For any* non-empty array of category breakdown items belonging to an expense group, the computed section total SHALL equal the arithmetic sum of all individual category `total` values in that group.
+_For any_ non-empty array of category breakdown items belonging to an expense group, the computed section total SHALL equal the arithmetic sum of all individual category `total` values in that group.
 
 **Validates: Requirements 1.7, 1.8**
 
 ### Property 3: Transaction list ordering by date descending
 
-*For any* non-empty list of transactions returned for a category in a given month, the list SHALL be ordered such that for every consecutive pair of transactions (t[i], t[i+1]), the date of t[i] is greater than or equal to the date of t[i+1].
+_For any_ non-empty list of transactions returned for a category in a given month, the list SHALL be ordered such that for every consecutive pair of transactions (t[i], t[i+1]), the date of t[i] is greater than or equal to the date of t[i+1].
 
 **Validates: Requirements 2.5**
 
 ### Property 4: Percentage rounding invariant — sum equals 100
 
-*For any* set of two or more positive monetary values whose sum is greater than zero, the `roundPercentages` function SHALL produce integer percentages that sum to exactly 100.
+_For any_ set of two or more positive monetary values whose sum is greater than zero, the `roundPercentages` function SHALL produce integer percentages that sum to exactly 100.
 
 **Validates: Requirements 3.3**
 
 ### Property 5: Filtered chart shows only matching group with correct relative percentages
 
-*For any* set of expense categories and a selected filter ('fixed' or 'variable'), the chart SHALL display only categories belonging to the selected expense group, and their displayed percentages SHALL sum to exactly 100 (relative to the group total, not the overall total).
+_For any_ set of expense categories and a selected filter ('fixed' or 'variable'), the chart SHALL display only categories belonging to the selected expense group, and their displayed percentages SHALL sum to exactly 100 (relative to the group total, not the overall total).
 
 **Validates: Requirements 4.2, 4.3**
 
 ### Property 6: Month advancement produces correct next month
 
-*For any* valid YYYY-MM string, advancing to the next month SHALL produce the chronologically next month, correctly handling December→January year transitions (e.g., "2024-12" → "2025-01").
+_For any_ valid YYYY-MM string, advancing to the next month SHALL produce the chronologically next month, correctly handling December→January year transitions (e.g., "2024-12" → "2025-01").
 
 **Validates: Requirements 5.2**
 
 ## Error Handling
 
-| Scenario | Behavior |
-|----------|----------|
-| Category transactions query fails | Show inline error message with retry button inside the expanded category row |
-| Empty transaction list for category | Show inline empty state message ("Nenhum lançamento neste mês") |
-| Dashboard data loading fails | Existing error state with retry (already implemented) |
-| Zero expenses for a group | Section header shows R$ 0,00; chart shows empty state when all groups are zero |
-| Future month with no data | All sections render with zero totals; chart shows empty state |
+| Scenario                            | Behavior                                                                       |
+| ----------------------------------- | ------------------------------------------------------------------------------ |
+| Category transactions query fails   | Show inline error message with retry button inside the expanded category row   |
+| Empty transaction list for category | Show inline empty state message ("Nenhum lançamento neste mês")                |
+| Dashboard data loading fails        | Existing error state with retry (already implemented)                          |
+| Zero expenses for a group           | Section header shows R$ 0,00; chart shows empty state when all groups are zero |
+| Future month with no data           | All sections render with zero totals; chart shows empty state                  |
 
 ### Error Recovery
 
@@ -325,14 +332,14 @@ function roundPercentages(values: number[], total: number): number[] {
 
 The project already uses `fast-check` for property-based testing. Each property test will run a minimum of 100 iterations.
 
-| Property | Test File | What It Validates |
-|----------|-----------|-------------------|
-| 1: Category grouping | `categoryGrouping.property.test.ts` | Correct partitioning by expenseGroup |
-| 2: Section totals | `sectionTotals.property.test.ts` | Sum computation correctness |
-| 3: Transaction ordering | `transactionOrdering.property.test.ts` | Date descending sort invariant |
-| 4: Percentage rounding | `percentageRounding.property.test.ts` | Sum-to-100 invariant |
-| 5: Filter percentages | `filterPercentages.property.test.ts` | Group filtering + relative percentages |
-| 6: Month advancement | `monthAdvancement.property.test.ts` | Correct next-month derivation |
+| Property                | Test File                              | What It Validates                      |
+| ----------------------- | -------------------------------------- | -------------------------------------- |
+| 1: Category grouping    | `categoryGrouping.property.test.ts`    | Correct partitioning by expenseGroup   |
+| 2: Section totals       | `sectionTotals.property.test.ts`       | Sum computation correctness            |
+| 3: Transaction ordering | `transactionOrdering.property.test.ts` | Date descending sort invariant         |
+| 4: Percentage rounding  | `percentageRounding.property.test.ts`  | Sum-to-100 invariant                   |
+| 5: Filter percentages   | `filterPercentages.property.test.ts`   | Group filtering + relative percentages |
+| 6: Month advancement    | `monthAdvancement.property.test.ts`    | Correct next-month derivation          |
 
 **Tag format**: `Feature: home-ui-categories-chart, Property {N}: {title}`
 

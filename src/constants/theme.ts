@@ -106,7 +106,6 @@ export interface ThemeColors {
   readonly dark: ModeColors;
 }
 
-
 // ─── Light Mode Colors ───────────────────────────────────────────────────────
 
 const lightColors: ModeColors = {
@@ -327,11 +326,11 @@ export interface TypographyScale {
  * Line heights maintain a 1.2x–1.5x ratio relative to font size.
  */
 export const typography: TypographyScale = {
-  display:  { fontSize: 34, fontWeight: '700', lineHeight: 41 },
-  heading:  { fontSize: 28, fontWeight: '700', lineHeight: 36 },
-  title:    { fontSize: 22, fontWeight: '600', lineHeight: 30 },
-  body:     { fontSize: 16, fontWeight: '400', lineHeight: 24 },
-  caption:  { fontSize: 13, fontWeight: '400', lineHeight: 18 },
+  display: { fontSize: 34, fontWeight: '700', lineHeight: 41 },
+  heading: { fontSize: 28, fontWeight: '700', lineHeight: 36 },
+  title: { fontSize: 22, fontWeight: '600', lineHeight: 30 },
+  body: { fontSize: 16, fontWeight: '400', lineHeight: 24 },
+  caption: { fontSize: 13, fontWeight: '400', lineHeight: 18 },
   overline: { fontSize: 11, fontWeight: '500', lineHeight: 16, letterSpacing: 0.5 },
 } as const;
 

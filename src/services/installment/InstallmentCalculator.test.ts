@@ -1,8 +1,4 @@
-import {
-  distributeAmount,
-  advanceMonth,
-  calculateInstallments,
-} from './InstallmentCalculator';
+import { distributeAmount, advanceMonth, calculateInstallments } from './InstallmentCalculator';
 import { InstallmentCalculatorInput } from '../../types/installment';
 
 describe('InstallmentCalculator', () => {
@@ -147,11 +143,7 @@ describe('InstallmentCalculator', () => {
       };
 
       const result = calculateInstallments(input);
-      expect(result.map((r) => r.descriptionSuffix)).toEqual([
-        ' (1/3)',
-        ' (2/3)',
-        ' (3/3)',
-      ]);
+      expect(result.map((r) => r.descriptionSuffix)).toEqual([' (1/3)', ' (2/3)', ' (3/3)']);
     });
   });
 });

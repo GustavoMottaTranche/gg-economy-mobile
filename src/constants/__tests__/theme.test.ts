@@ -19,8 +19,7 @@ function relativeLuminance(hex: string): number {
   const g = parseInt(hex.slice(3, 5), 16) / 255;
   const b = parseInt(hex.slice(5, 7), 16) / 255;
 
-  const linearize = (c: number) =>
-    c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+  const linearize = (c: number) => (c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4));
 
   const R = linearize(r);
   const G = linearize(g);
@@ -31,12 +30,19 @@ function relativeLuminance(hex: string): number {
 
 // ─── Constants for generators ────────────────────────────────────────────────
 
-const semanticColorNames = ['primary', 'secondary', 'success', 'danger', 'warning', 'info'] as const;
+const semanticColorNames = [
+  'primary',
+  'secondary',
+  'success',
+  'danger',
+  'warning',
+  'info',
+] as const;
 const colorVariants = ['light', 'base', 'dark'] as const;
 const modes = ['light', 'dark'] as const;
 
 const typographyLevels = ['display', 'heading', 'title', 'body', 'caption', 'overline'] as const;
-const adjacentPairs: [typeof typographyLevels[number], typeof typographyLevels[number]][] = [
+const adjacentPairs: [(typeof typographyLevels)[number], (typeof typographyLevels)[number]][] = [
   ['display', 'heading'],
   ['heading', 'title'],
   ['title', 'body'],
@@ -72,9 +78,9 @@ describe('Feature: ui-style-improvements, Property 1: Color palette completeness
           const value = colorGroup[variant];
 
           expect(value).toMatch(hexPattern);
-        },
+        }
       ),
-      { numRuns: 100 },
+      { numRuns: 100 }
     );
   });
 });
@@ -94,41 +100,35 @@ describe('Feature: ui-style-improvements, Property 6: Primary color progressive 
    */
   it('should have monotonically decreasing luminance across light mode primary scale', () => {
     fc.assert(
-      fc.property(
-        fc.integer({ min: 0, max: primaryScaleKeys.length - 2 }),
-        (indexA) => {
-          const indexB = indexA + 1;
-          const keyA = primaryScaleKeys[indexA]!;
-          const keyB = primaryScaleKeys[indexB]!;
+      fc.property(fc.integer({ min: 0, max: primaryScaleKeys.length - 2 }), (indexA) => {
+        const indexB = indexA + 1;
+        const keyA = primaryScaleKeys[indexA]!;
+        const keyB = primaryScaleKeys[indexB]!;
 
-          const scale = colors.light.semantic.primary.scale;
-          const luminanceA = relativeLuminance(scale[keyA]);
-          const luminanceB = relativeLuminance(scale[keyB]);
+        const scale = colors.light.semantic.primary.scale;
+        const luminanceA = relativeLuminance(scale[keyA]);
+        const luminanceB = relativeLuminance(scale[keyB]);
 
-          expect(luminanceA).toBeGreaterThan(luminanceB);
-        },
-      ),
-      { numRuns: 100 },
+        expect(luminanceA).toBeGreaterThan(luminanceB);
+      }),
+      { numRuns: 100 }
     );
   });
 
   it('should have monotonically increasing luminance across dark mode primary scale', () => {
     fc.assert(
-      fc.property(
-        fc.integer({ min: 0, max: primaryScaleKeys.length - 2 }),
-        (indexA) => {
-          const indexB = indexA + 1;
-          const keyA = primaryScaleKeys[indexA]!;
-          const keyB = primaryScaleKeys[indexB]!;
+      fc.property(fc.integer({ min: 0, max: primaryScaleKeys.length - 2 }), (indexA) => {
+        const indexB = indexA + 1;
+        const keyA = primaryScaleKeys[indexA]!;
+        const keyB = primaryScaleKeys[indexB]!;
 
-          const scale = colors.dark.semantic.primary.scale;
-          const luminanceA = relativeLuminance(scale[keyA]);
-          const luminanceB = relativeLuminance(scale[keyB]);
+        const scale = colors.dark.semantic.primary.scale;
+        const luminanceA = relativeLuminance(scale[keyA]);
+        const luminanceB = relativeLuminance(scale[keyB]);
 
-          expect(luminanceA).toBeLessThan(luminanceB);
-        },
-      ),
-      { numRuns: 100 },
+        expect(luminanceA).toBeLessThan(luminanceB);
+      }),
+      { numRuns: 100 }
     );
   });
 });
@@ -148,25 +148,22 @@ describe('Feature: ui-style-improvements, Property 7: Typography scale validity'
     const validWeights = ['400', '500', '600', '700'];
 
     fc.assert(
-      fc.property(
-        fc.constantFrom(...typographyLevels),
-        (level) => {
-          const entry = typography[level];
+      fc.property(fc.constantFrom(...typographyLevels), (level) => {
+        const entry = typography[level];
 
-          // (a) fontSize between 11 and 34 inclusive
-          expect(entry.fontSize).toBeGreaterThanOrEqual(11);
-          expect(entry.fontSize).toBeLessThanOrEqual(34);
+        // (a) fontSize between 11 and 34 inclusive
+        expect(entry.fontSize).toBeGreaterThanOrEqual(11);
+        expect(entry.fontSize).toBeLessThanOrEqual(34);
 
-          // (b) fontWeight one of '400','500','600','700'
-          expect(validWeights).toContain(entry.fontWeight);
+        // (b) fontWeight one of '400','500','600','700'
+        expect(validWeights).toContain(entry.fontWeight);
 
-          // (c) lineHeight/fontSize ratio between 1.2 and 1.6 inclusive
-          const ratio = entry.lineHeight / entry.fontSize;
-          expect(ratio).toBeGreaterThanOrEqual(1.2);
-          expect(ratio).toBeLessThanOrEqual(1.6);
-        },
-      ),
-      { numRuns: 100 },
+        // (c) lineHeight/fontSize ratio between 1.2 and 1.6 inclusive
+        const ratio = entry.lineHeight / entry.fontSize;
+        expect(ratio).toBeGreaterThanOrEqual(1.2);
+        expect(ratio).toBeLessThanOrEqual(1.6);
+      }),
+      { numRuns: 100 }
     );
   });
 
@@ -178,16 +175,13 @@ describe('Feature: ui-style-improvements, Property 7: Typography scale validity'
    */
   it('should have fontSize difference >= 2px between adjacent levels', () => {
     fc.assert(
-      fc.property(
-        fc.constantFrom(...adjacentPairs),
-        ([higher, lower]) => {
-          const higherSize = typography[higher].fontSize;
-          const lowerSize = typography[lower].fontSize;
+      fc.property(fc.constantFrom(...adjacentPairs), ([higher, lower]) => {
+        const higherSize = typography[higher].fontSize;
+        const lowerSize = typography[lower].fontSize;
 
-          expect(higherSize - lowerSize).toBeGreaterThanOrEqual(2);
-        },
-      ),
-      { numRuns: 100 },
+        expect(higherSize - lowerSize).toBeGreaterThanOrEqual(2);
+      }),
+      { numRuns: 100 }
     );
   });
 });
@@ -202,23 +196,19 @@ describe('Feature: ui-style-improvements, Property 8: Spacing scale multiples', 
    */
   it('should have all spacing values as positive multiples of 4', () => {
     fc.assert(
-      fc.property(
-        fc.constantFrom(...spacingKeys),
-        (key) => {
-          const value = spacing[key];
+      fc.property(fc.constantFrom(...spacingKeys), (key) => {
+        const value = spacing[key];
 
-          // Value must be positive
-          expect(value).toBeGreaterThan(0);
+        // Value must be positive
+        expect(value).toBeGreaterThan(0);
 
-          // Value must be a multiple of 4
-          expect(value % 4).toBe(0);
-        },
-      ),
-      { numRuns: 100 },
+        // Value must be a multiple of 4
+        expect(value % 4).toBe(0);
+      }),
+      { numRuns: 100 }
     );
   });
 });
-
 
 // ─── Property 2: Dark mode color selection ───────────────────────────────────
 
@@ -240,85 +230,70 @@ describe('Feature: ui-style-improvements, Property 2: Dark mode color selection'
 
   it('should return distinct color palettes for light and dark modes', () => {
     fc.assert(
-      fc.property(
-        fc.constantFrom(...modes),
-        (mode) => {
-          const palette = colors[mode];
+      fc.property(fc.constantFrom(...modes), (mode) => {
+        const palette = colors[mode];
 
-          // Palette must be a valid object with expected groups
-          expect(palette).toHaveProperty('background');
-          expect(palette).toHaveProperty('text');
-          expect(palette).toHaveProperty('border');
-          expect(palette).toHaveProperty('semantic');
-          expect(palette).toHaveProperty('surface');
-          expect(palette).toHaveProperty('interactive');
-        },
-      ),
-      { numRuns: 100 },
+        // Palette must be a valid object with expected groups
+        expect(palette).toHaveProperty('background');
+        expect(palette).toHaveProperty('text');
+        expect(palette).toHaveProperty('border');
+        expect(palette).toHaveProperty('semantic');
+        expect(palette).toHaveProperty('surface');
+        expect(palette).toHaveProperty('interactive');
+      }),
+      { numRuns: 100 }
     );
   });
 
   it('should return mode-specific background colors for each resolved scheme', () => {
     fc.assert(
-      fc.property(
-        fc.constantFrom(...modes),
-        fc.constantFrom(...backgroundKeys),
-        (mode, key) => {
-          const palette = colors[mode];
-          const value = palette.background[key];
+      fc.property(fc.constantFrom(...modes), fc.constantFrom(...backgroundKeys), (mode, key) => {
+        const palette = colors[mode];
+        const value = palette.background[key];
 
-          // Value must be a non-empty string (hex or rgba)
-          expect(typeof value).toBe('string');
-          expect(value.length).toBeGreaterThan(0);
+        // Value must be a non-empty string (hex or rgba)
+        expect(typeof value).toBe('string');
+        expect(value.length).toBeGreaterThan(0);
 
-          // Light and dark must differ for the same key
-          const otherMode = mode === 'light' ? 'dark' : 'light';
-          expect(value).not.toBe(colors[otherMode].background[key]);
-        },
-      ),
-      { numRuns: 100 },
+        // Light and dark must differ for the same key
+        const otherMode = mode === 'light' ? 'dark' : 'light';
+        expect(value).not.toBe(colors[otherMode].background[key]);
+      }),
+      { numRuns: 100 }
     );
   });
 
   it('should return mode-specific text colors for each resolved scheme', () => {
     fc.assert(
-      fc.property(
-        fc.constantFrom(...modes),
-        fc.constantFrom(...textKeys),
-        (mode, key) => {
-          const palette = colors[mode];
-          const value = palette.text[key];
+      fc.property(fc.constantFrom(...modes), fc.constantFrom(...textKeys), (mode, key) => {
+        const palette = colors[mode];
+        const value = palette.text[key];
 
-          expect(typeof value).toBe('string');
-          expect(value.length).toBeGreaterThan(0);
+        expect(typeof value).toBe('string');
+        expect(value.length).toBeGreaterThan(0);
 
-          // Light and dark must differ for the same key
-          const otherMode = mode === 'light' ? 'dark' : 'light';
-          expect(value).not.toBe(colors[otherMode].text[key]);
-        },
-      ),
-      { numRuns: 100 },
+        // Light and dark must differ for the same key
+        const otherMode = mode === 'light' ? 'dark' : 'light';
+        expect(value).not.toBe(colors[otherMode].text[key]);
+      }),
+      { numRuns: 100 }
     );
   });
 
   it('should return mode-specific border colors for each resolved scheme', () => {
     fc.assert(
-      fc.property(
-        fc.constantFrom(...modes),
-        fc.constantFrom(...borderKeys),
-        (mode, key) => {
-          const palette = colors[mode];
-          const value = palette.border[key];
+      fc.property(fc.constantFrom(...modes), fc.constantFrom(...borderKeys), (mode, key) => {
+        const palette = colors[mode];
+        const value = palette.border[key];
 
-          expect(typeof value).toBe('string');
-          expect(value.length).toBeGreaterThan(0);
+        expect(typeof value).toBe('string');
+        expect(value.length).toBeGreaterThan(0);
 
-          // Light and dark must differ for the same key
-          const otherMode = mode === 'light' ? 'dark' : 'light';
-          expect(value).not.toBe(colors[otherMode].border[key]);
-        },
-      ),
-      { numRuns: 100 },
+        // Light and dark must differ for the same key
+        const otherMode = mode === 'light' ? 'dark' : 'light';
+        expect(value).not.toBe(colors[otherMode].border[key]);
+      }),
+      { numRuns: 100 }
     );
   });
 });
@@ -341,27 +316,21 @@ describe('Feature: ui-style-improvements, Property 3: Dark mode luminance constr
 
   it('should have dark mode background luminance ≤ 0.05 for all background colors', () => {
     fc.assert(
-      fc.property(
-        fc.constantFrom(...darkBackgrounds),
-        ({ key: _key, hex }) => {
-          const luminance = relativeLuminance(hex);
-          expect(luminance).toBeLessThanOrEqual(0.05);
-        },
-      ),
-      { numRuns: 100 },
+      fc.property(fc.constantFrom(...darkBackgrounds), ({ key: _key, hex }) => {
+        const luminance = relativeLuminance(hex);
+        expect(luminance).toBeLessThanOrEqual(0.05);
+      }),
+      { numRuns: 100 }
     );
   });
 
   it('should have dark mode primary text luminance ≥ 0.8', () => {
     fc.assert(
-      fc.property(
-        fc.constant(colors.dark.text.primary),
-        (textColor) => {
-          const luminance = relativeLuminance(textColor);
-          expect(luminance).toBeGreaterThanOrEqual(0.8);
-        },
-      ),
-      { numRuns: 100 },
+      fc.property(fc.constant(colors.dark.text.primary), (textColor) => {
+        const luminance = relativeLuminance(textColor);
+        expect(luminance).toBeGreaterThanOrEqual(0.8);
+      }),
+      { numRuns: 100 }
     );
   });
 });
@@ -381,25 +350,21 @@ describe('Feature: ui-style-improvements, Property 4: Shadow opacity reduction i
 
   it('should have dark shadowOpacity ≤ 50% of light shadowOpacity for each level', () => {
     fc.assert(
-      fc.property(
-        fc.constantFrom(...shadowLevels),
-        (level) => {
-          const lightOpacity = shadows.light[level].shadowOpacity;
-          const darkOpacity = shadows.dark[level].shadowOpacity;
+      fc.property(fc.constantFrom(...shadowLevels), (level) => {
+        const lightOpacity = shadows.light[level].shadowOpacity;
+        const darkOpacity = shadows.dark[level].shadowOpacity;
 
-          // Dark opacity must be at most 50% of light opacity
-          expect(darkOpacity).toBeLessThanOrEqual(lightOpacity * 0.5);
+        // Dark opacity must be at most 50% of light opacity
+        expect(darkOpacity).toBeLessThanOrEqual(lightOpacity * 0.5);
 
-          // Both must be positive
-          expect(lightOpacity).toBeGreaterThan(0);
-          expect(darkOpacity).toBeGreaterThan(0);
-        },
-      ),
-      { numRuns: 100 },
+        // Both must be positive
+        expect(lightOpacity).toBeGreaterThan(0);
+        expect(darkOpacity).toBeGreaterThan(0);
+      }),
+      { numRuns: 100 }
     );
   });
 });
-
 
 // ─── Helpers (Property 5) ────────────────────────────────────────────────────
 
@@ -428,19 +393,31 @@ describe('Feature: ui-style-improvements, Property 5: WCAG contrast compliance',
 
   const textBackgroundPairs: { text: string; bg: string; label: string }[] = [
     { text: 'text.primary', bg: 'background.primary', label: 'text.primary on background.primary' },
-    { text: 'text.secondary', bg: 'background.primary', label: 'text.secondary on background.primary' },
+    {
+      text: 'text.secondary',
+      bg: 'background.primary',
+      label: 'text.secondary on background.primary',
+    },
     { text: 'text.primary', bg: 'surface.card', label: 'text.primary on surface.card' },
   ];
 
   const interactivePairs: { fg: string; bg: string; label: string }[] = [
-    { fg: 'interactive.primary', bg: 'background.primary', label: 'interactive.primary on background.primary' },
-    { fg: 'semantic.primary.base', bg: 'background.primary', label: 'semantic.primary.base on background.primary' },
+    {
+      fg: 'interactive.primary',
+      bg: 'background.primary',
+      label: 'interactive.primary on background.primary',
+    },
+    {
+      fg: 'semantic.primary.base',
+      bg: 'background.primary',
+      label: 'semantic.primary.base on background.primary',
+    },
   ];
 
   /**
    * Helper to resolve a dot-path color token from a ModeColors object.
    */
-  function resolveColor(modeColors: typeof colors['light'], path: string): string {
+  function resolveColor(modeColors: (typeof colors)['light'], path: string): string {
     const parts = path.split('.');
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let current: any = modeColors;
@@ -462,27 +439,23 @@ describe('Feature: ui-style-improvements, Property 5: WCAG contrast compliance',
           const ratio = contrastRatio(textColor, bgColor);
 
           expect(ratio).toBeGreaterThanOrEqual(4.5);
-        },
+        }
       ),
-      { numRuns: 100 },
+      { numRuns: 100 }
     );
   });
 
   it('should have ≥ 3:1 contrast ratio for interactive elements on background in both modes', () => {
     fc.assert(
-      fc.property(
-        fc.constantFrom(...modes),
-        fc.constantFrom(...interactivePairs),
-        (mode, pair) => {
-          const modeColors = colors[mode];
-          const fgColor = resolveColor(modeColors, pair.fg);
-          const bgColor = resolveColor(modeColors, pair.bg);
-          const ratio = contrastRatio(fgColor, bgColor);
+      fc.property(fc.constantFrom(...modes), fc.constantFrom(...interactivePairs), (mode, pair) => {
+        const modeColors = colors[mode];
+        const fgColor = resolveColor(modeColors, pair.fg);
+        const bgColor = resolveColor(modeColors, pair.bg);
+        const ratio = contrastRatio(fgColor, bgColor);
 
-          expect(ratio).toBeGreaterThanOrEqual(3);
-        },
-      ),
-      { numRuns: 100 },
+        expect(ratio).toBeGreaterThanOrEqual(3);
+      }),
+      { numRuns: 100 }
     );
   });
 });

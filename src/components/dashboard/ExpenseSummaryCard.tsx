@@ -19,11 +19,7 @@ export interface ExpenseSummaryCardProps {
   testID?: string;
 }
 
-function ExpenseSummaryCardComponent({
-  paid,
-  pending,
-  testID,
-}: ExpenseSummaryCardProps) {
+function ExpenseSummaryCardComponent({ paid, pending, testID }: ExpenseSummaryCardProps) {
   const colors = useThemeColors();
   const locale = getCurrentLocale();
 
@@ -36,26 +32,37 @@ function ExpenseSummaryCardComponent({
 
   return (
     <View
-      style={[styles.container, { backgroundColor: colors.surface.card, borderColor: colors.border.subtle }]}
+      style={[
+        styles.container,
+        { backgroundColor: colors.surface.card, borderColor: colors.border.subtle },
+      ]}
       testID={testID}
     >
       {/* Totals */}
       <View style={styles.totalsRow}>
         <View style={styles.totalItem}>
           <Text style={[styles.totalLabel, { color: colors.semantic.success.base }]}>Pago</Text>
-          <Text style={[styles.totalValue, { color: colors.semantic.success.base }]}>{formattedPaid}</Text>
+          <Text style={[styles.totalValue, { color: colors.semantic.success.base }]}>
+            {formattedPaid}
+          </Text>
         </View>
         <View style={[styles.divider, { backgroundColor: colors.border.default }]} />
         <View style={styles.totalItem}>
           <Text style={[styles.totalLabel, { color: colors.semantic.warning.base }]}>Pendente</Text>
-          <Text style={[styles.totalValue, { color: colors.semantic.warning.base }]}>{formattedPending}</Text>
+          <Text style={[styles.totalValue, { color: colors.semantic.warning.base }]}>
+            {formattedPending}
+          </Text>
         </View>
       </View>
 
       {/* Total previsto */}
       <View style={[styles.predictedRow, { borderTopColor: colors.border.subtle }]}>
-        <Text style={[styles.predictedLabel, { color: colors.text.secondary }]}>Total previsto</Text>
-        <Text style={[styles.predictedValue, { color: colors.text.primary }]}>{formattedTotal}</Text>
+        <Text style={[styles.predictedLabel, { color: colors.text.secondary }]}>
+          Total previsto
+        </Text>
+        <Text style={[styles.predictedValue, { color: colors.text.primary }]}>
+          {formattedTotal}
+        </Text>
       </View>
     </View>
   );

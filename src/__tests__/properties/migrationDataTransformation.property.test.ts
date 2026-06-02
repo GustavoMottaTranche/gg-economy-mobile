@@ -39,9 +39,7 @@ interface PostMigrationTransaction {
  * 2. UPDATE SET title = description
  * 3. UPDATE SET description = ''
  */
-function simulateMigration(
-  transactions: PreMigrationTransaction[]
-): PostMigrationTransaction[] {
+function simulateMigration(transactions: PreMigrationTransaction[]): PostMigrationTransaction[] {
   return transactions.map((tx) => ({
     ...tx,
     title: tx.description,

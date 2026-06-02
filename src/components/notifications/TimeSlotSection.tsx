@@ -8,14 +8,7 @@
  * **Validates: Requirements 5.4, 5.5, 5.6, 5.7, 1.6**
  */
 import { useState, useCallback } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  Modal,
-  FlatList,
-} from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Modal, FlatList } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { type TimeSlot, timeSlotKey } from '../../stores/notificationStore';
 import { useThemeColors } from '../../hooks/useThemeColors';
@@ -87,13 +80,16 @@ export function TimeSlotSection({
     setShowTimePicker(true);
   }, []);
 
-  const handleEditPress = useCallback((slot: TimeSlot) => {
-    if (disabled) return;
-    setEditingSlotKey(timeSlotKey(slot));
-    setSelectedHour(slot.hour);
-    setSelectedMinute(slot.minute);
-    setShowTimePicker(true);
-  }, [disabled]);
+  const handleEditPress = useCallback(
+    (slot: TimeSlot) => {
+      if (disabled) return;
+      setEditingSlotKey(timeSlotKey(slot));
+      setSelectedHour(slot.hour);
+      setSelectedMinute(slot.minute);
+      setShowTimePicker(true);
+    },
+    [disabled]
+  );
 
   const handleTimeConfirm = useCallback(() => {
     if (editingSlotKey && onEditSlot) {
@@ -139,10 +135,7 @@ export function TimeSlotSection({
         {/* Add Time Slot Button */}
         {!isAtMax && (
           <TouchableOpacity
-            style={[
-              styles.addButton,
-              disabled && styles.disabledOpacity,
-            ]}
+            style={[styles.addButton, disabled && styles.disabledOpacity]}
             onPress={handleAddPress}
             disabled={disabled}
             accessibilityRole="button"
@@ -177,9 +170,7 @@ export function TimeSlotSection({
       >
         <View style={[styles.modalOverlay, { backgroundColor: colors.surface.overlay }]}>
           <View style={[styles.modalContent, { backgroundColor: colors.surface.card }]}>
-            <View
-              style={[styles.modalHeader, { borderBottomColor: colors.border.subtle }]}
-            >
+            <View style={[styles.modalHeader, { borderBottomColor: colors.border.subtle }]}>
               <TouchableOpacity
                 onPress={handleTimeCancel}
                 accessibilityRole="button"
@@ -295,9 +286,7 @@ export function TimeSlotSection({
               </View>
             </View>
 
-            <View
-              style={[styles.selectedTimePreview, { borderTopColor: colors.border.subtle }]}
-            >
+            <View style={[styles.selectedTimePreview, { borderTopColor: colors.border.subtle }]}>
               <Text style={[styles.selectedTimeText, { color: colors.interactive.primary }]}>
                 {formatTime(selectedHour, selectedMinute)}
               </Text>

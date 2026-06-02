@@ -54,9 +54,7 @@ function bulkMarkGroup(occurrences: OccurrenceWithPayment[]): {
   }
 
   // Collect distinct affected months from unpaid occurrences
-  const affectedMonths = Array.from(
-    new Set(unpaidOccurrences.map((o) => o.referenceMonth))
-  ).sort();
+  const affectedMonths = Array.from(new Set(unpaidOccurrences.map((o) => o.referenceMonth))).sort();
 
   // Mark all unpaid as paid
   const updatedOccurrences = occurrences.map((o) => ({
@@ -132,9 +130,9 @@ describe('Feature: payment-status-tracking, Property 6: Bulk mark sets all unpai
   it('after bulk mark, all occurrences have isPaid=true', () => {
     fc.assert(
       fc.property(
-        fc.uuid().chain((groupId) =>
-          occurrencesArbitrary(groupId).map((occs) => ({ groupId, occs }))
-        ),
+        fc
+          .uuid()
+          .chain((groupId) => occurrencesArbitrary(groupId).map((occs) => ({ groupId, occs }))),
         ({ occs }) => {
           const { updatedOccurrences } = bulkMarkGroup(occs);
 
@@ -151,9 +149,9 @@ describe('Feature: payment-status-tracking, Property 6: Bulk mark sets all unpai
   it('markedCount equals exactly the number of previously unpaid occurrences (K)', () => {
     fc.assert(
       fc.property(
-        fc.uuid().chain((groupId) =>
-          occurrencesArbitrary(groupId).map((occs) => ({ groupId, occs }))
-        ),
+        fc
+          .uuid()
+          .chain((groupId) => occurrencesArbitrary(groupId).map((occs) => ({ groupId, occs }))),
         ({ occs }) => {
           const unpaidCount = occs.filter((o) => !o.isPaid).length;
           const { result } = bulkMarkGroup(occs);
@@ -168,9 +166,9 @@ describe('Feature: payment-status-tracking, Property 6: Bulk mark sets all unpai
   it('affectedMonths contains exactly the distinct reference months of previously unpaid items', () => {
     fc.assert(
       fc.property(
-        fc.uuid().chain((groupId) =>
-          occurrencesArbitrary(groupId).map((occs) => ({ groupId, occs }))
-        ),
+        fc
+          .uuid()
+          .chain((groupId) => occurrencesArbitrary(groupId).map((occs) => ({ groupId, occs }))),
         ({ occs }) => {
           const unpaidOccurrences = occs.filter((o) => !o.isPaid);
           const expectedMonths = Array.from(
@@ -189,9 +187,9 @@ describe('Feature: payment-status-tracking, Property 6: Bulk mark sets all unpai
   it('the total number of occurrences is preserved (no items added or removed)', () => {
     fc.assert(
       fc.property(
-        fc.uuid().chain((groupId) =>
-          occurrencesArbitrary(groupId).map((occs) => ({ groupId, occs }))
-        ),
+        fc
+          .uuid()
+          .chain((groupId) => occurrencesArbitrary(groupId).map((occs) => ({ groupId, occs }))),
         ({ occs }) => {
           const { updatedOccurrences } = bulkMarkGroup(occs);
 
@@ -281,13 +279,11 @@ describe('Feature: payment-status-tracking, Property 6: Bulk mark sets all unpai
   it('occurrences that were already paid remain paid and are not double-counted', () => {
     fc.assert(
       fc.property(
-        fc.uuid().chain((groupId) =>
-          occurrencesArbitrary(groupId).map((occs) => ({ groupId, occs }))
-        ),
+        fc
+          .uuid()
+          .chain((groupId) => occurrencesArbitrary(groupId).map((occs) => ({ groupId, occs }))),
         ({ occs }) => {
-          const alreadyPaidIds = new Set(
-            occs.filter((o) => o.isPaid).map((o) => o.id)
-          );
+          const alreadyPaidIds = new Set(occs.filter((o) => o.isPaid).map((o) => o.id));
           const { updatedOccurrences, result } = bulkMarkGroup(occs);
 
           // Already-paid items should still be paid

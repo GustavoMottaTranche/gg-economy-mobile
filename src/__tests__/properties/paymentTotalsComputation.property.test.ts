@@ -43,9 +43,7 @@ function computePaymentTotals(occurrences: MockOccurrence[], month: string): Pay
   const monthOccurrences = occurrences.filter((o) => o.referenceMonth === month);
 
   const predictedTotal = monthOccurrences.reduce((sum, o) => sum + o.amount, 0);
-  const paidTotal = monthOccurrences
-    .filter((o) => o.isPaid)
-    .reduce((sum, o) => sum + o.amount, 0);
+  const paidTotal = monthOccurrences.filter((o) => o.isPaid).reduce((sum, o) => sum + o.amount, 0);
   const pendingTotal = predictedTotal - paidTotal;
 
   return { predictedTotal, paidTotal, pendingTotal };
@@ -56,9 +54,7 @@ function computePaymentTotals(occurrences: MockOccurrence[], month: string): Pay
 const referenceMonthArb = fc
   .integer({ min: 2020, max: 2030 })
   .chain((year) =>
-    fc
-      .integer({ min: 1, max: 12 })
-      .map((month) => `${year}-${String(month).padStart(2, '0')}`)
+    fc.integer({ min: 1, max: 12 }).map((month) => `${year}-${String(month).padStart(2, '0')}`)
   );
 
 /** Generates a positive amount in cents then converts to 2-decimal currency value */
@@ -77,18 +73,20 @@ const occurrenceArb = (targetMonth: string): fc.Arbitrary<MockOccurrence> =>
  * some belonging to other months (to verify filtering).
  */
 const occurrencesWithNoiseArb = (targetMonth: string): fc.Arbitrary<MockOccurrence[]> =>
-  fc.tuple(
-    fc.array(occurrenceArb(targetMonth), { minLength: 0, maxLength: 30 }),
-    fc.array(
-      fc.record({
-        amount: amountArb,
-        isPaid: fc.boolean(),
-        referenceMonth: referenceMonthArb.filter((m) => m !== targetMonth),
-        type: fc.constantFrom('weekly' as const, 'monthly' as const),
-      }),
-      { minLength: 0, maxLength: 10 }
+  fc
+    .tuple(
+      fc.array(occurrenceArb(targetMonth), { minLength: 0, maxLength: 30 }),
+      fc.array(
+        fc.record({
+          amount: amountArb,
+          isPaid: fc.boolean(),
+          referenceMonth: referenceMonthArb.filter((m) => m !== targetMonth),
+          type: fc.constantFrom('weekly' as const, 'monthly' as const),
+        }),
+        { minLength: 0, maxLength: 10 }
+      )
     )
-  ).map(([target, noise]) => [...target, ...noise]);
+    .map(([target, noise]) => [...target, ...noise]);
 
 // ─── Property Tests ──────────────────────────────────────────────────────────
 
@@ -142,10 +140,7 @@ describe('Feature: payment-status-tracking, Property 3: Payment totals computati
         ({ month, occs }) => {
           const totals = computePaymentTotals(occs, month);
 
-          expect(totals.pendingTotal).toBeCloseTo(
-            totals.predictedTotal - totals.paidTotal,
-            10
-          );
+          expect(totals.pendingTotal).toBeCloseTo(totals.predictedTotal - totals.paidTotal, 10);
         }
       ),
       { numRuns: 100 }
@@ -158,14 +153,20 @@ describe('Feature: payment-status-tracking, Property 3: Payment totals computati
         referenceMonthArb.chain((month) =>
           fc
             .tuple(
-              fc.array(occurrenceArb(month).map((o) => ({ ...o, type: 'weekly' as const })), {
-                minLength: 1,
-                maxLength: 15,
-              }),
-              fc.array(occurrenceArb(month).map((o) => ({ ...o, type: 'monthly' as const })), {
-                minLength: 1,
-                maxLength: 15,
-              })
+              fc.array(
+                occurrenceArb(month).map((o) => ({ ...o, type: 'weekly' as const })),
+                {
+                  minLength: 1,
+                  maxLength: 15,
+                }
+              ),
+              fc.array(
+                occurrenceArb(month).map((o) => ({ ...o, type: 'monthly' as const })),
+                {
+                  minLength: 1,
+                  maxLength: 15,
+                }
+              )
             )
             .map(([weekly, monthly]) => ({ month, occs: [...weekly, ...monthly] }))
         ),
@@ -273,7 +274,11 @@ describe('Feature: payment-status-tracking, Property 3: Payment totals computati
                 { minLength: 1, maxLength: 10 }
               )
             )
-            .map(([target, noise]) => ({ month, targetOccs: target, allOccs: [...target, ...noise] }))
+            .map(([target, noise]) => ({
+              month,
+              targetOccs: target,
+              allOccs: [...target, ...noise],
+            }))
         ),
         ({ month, targetOccs, allOccs }) => {
           const totalsAll = computePaymentTotals(allOccs, month);

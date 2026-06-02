@@ -66,7 +66,10 @@ jest.mock('@react-native-community/datetimepicker', () => {
       testID,
     }: {
       value: Date;
-      onChange: (event: { type: string; nativeEvent: {} }, date?: Date) => void;
+      onChange: (
+        event: { type: string; nativeEvent: Record<string, unknown> },
+        date?: Date
+      ) => void;
       testID?: string;
     }) =>
       React.createElement(

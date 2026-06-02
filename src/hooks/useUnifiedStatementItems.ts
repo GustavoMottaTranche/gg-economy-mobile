@@ -22,10 +22,7 @@
 import { useMemo } from 'react';
 import type { PaginatedTransactionWithCategory } from './usePaginatedTransactions';
 import type { WeeklyOccurrence, WeeklyRecurringGroup } from '../types/weeklyRecurring';
-import type {
-  UnifiedStatementItem,
-  WeeklyGroupHeaderData,
-} from '../types/unifiedStatementItem';
+import type { UnifiedStatementItem, WeeklyGroupHeaderData } from '../types/unifiedStatementItem';
 
 /**
  * Parameters for the useUnifiedStatementItems hook.
@@ -64,9 +61,7 @@ function getItemSortDate(item: UnifiedStatementItem): string {
 /**
  * Groups occurrences by their weeklyGroupId.
  */
-function groupOccurrencesByGroup(
-  occurrences: WeeklyOccurrence[]
-): Map<string, WeeklyOccurrence[]> {
+function groupOccurrencesByGroup(occurrences: WeeklyOccurrence[]): Map<string, WeeklyOccurrence[]> {
   const map = new Map<string, WeeklyOccurrence[]>();
   for (const occ of occurrences) {
     const existing = map.get(occ.weeklyGroupId);
@@ -88,9 +83,7 @@ function buildGroupHeaderData(
   isExpanded: boolean,
   pendingOnly: boolean
 ): WeeklyGroupHeaderData {
-  const relevantOccurrences = pendingOnly
-    ? occurrences.filter((o) => !o.isPaid)
-    : occurrences;
+  const relevantOccurrences = pendingOnly ? occurrences.filter((o) => !o.isPaid) : occurrences;
 
   const monthlyTotal = relevantOccurrences.reduce((sum, o) => sum + o.amount, 0);
   const paidCount = occurrences.filter((o) => o.isPaid === true).length;

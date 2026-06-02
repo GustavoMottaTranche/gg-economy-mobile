@@ -23,11 +23,7 @@ describe('PaymentStatusOption', () => {
   describe('rendering', () => {
     it('renders three options', () => {
       const { getByText } = render(
-        <PaymentStatusOption
-          selected="all_pending"
-          onSelect={jest.fn()}
-          testID="payment-option"
-        />
+        <PaymentStatusOption selected="all_pending" onSelect={jest.fn()} testID="payment-option" />
       );
 
       expect(getByText('Todas pendentes')).toBeTruthy();
@@ -37,11 +33,7 @@ describe('PaymentStatusOption', () => {
 
     it('renders the section label', () => {
       const { getByText } = render(
-        <PaymentStatusOption
-          selected="all_pending"
-          onSelect={jest.fn()}
-          testID="payment-option"
-        />
+        <PaymentStatusOption selected="all_pending" onSelect={jest.fn()} testID="payment-option" />
       );
 
       expect(getByText('Status de pagamento')).toBeTruthy();
@@ -49,11 +41,7 @@ describe('PaymentStatusOption', () => {
 
     it('applies testID to the container', () => {
       const { getByTestId } = render(
-        <PaymentStatusOption
-          selected="all_pending"
-          onSelect={jest.fn()}
-          testID="payment-option"
-        />
+        <PaymentStatusOption selected="all_pending" onSelect={jest.fn()} testID="payment-option" />
       );
 
       expect(getByTestId('payment-option')).toBeTruthy();
@@ -61,11 +49,7 @@ describe('PaymentStatusOption', () => {
 
     it('applies testID to each option', () => {
       const { getByTestId } = render(
-        <PaymentStatusOption
-          selected="all_pending"
-          onSelect={jest.fn()}
-          testID="payment-option"
-        />
+        <PaymentStatusOption selected="all_pending" onSelect={jest.fn()} testID="payment-option" />
       );
 
       expect(getByTestId('payment-option-all_pending')).toBeTruthy();
@@ -78,11 +62,7 @@ describe('PaymentStatusOption', () => {
     it('calls onSelect with "all_pending" when first option is pressed', () => {
       const onSelect = jest.fn();
       const { getByTestId } = render(
-        <PaymentStatusOption
-          selected="first_paid"
-          onSelect={onSelect}
-          testID="payment-option"
-        />
+        <PaymentStatusOption selected="first_paid" onSelect={onSelect} testID="payment-option" />
       );
 
       fireEvent.press(getByTestId('payment-option-all_pending'));
@@ -92,11 +72,7 @@ describe('PaymentStatusOption', () => {
     it('calls onSelect with "first_paid" when second option is pressed', () => {
       const onSelect = jest.fn();
       const { getByTestId } = render(
-        <PaymentStatusOption
-          selected="all_pending"
-          onSelect={onSelect}
-          testID="payment-option"
-        />
+        <PaymentStatusOption selected="all_pending" onSelect={onSelect} testID="payment-option" />
       );
 
       fireEvent.press(getByTestId('payment-option-first_paid'));
@@ -106,11 +82,7 @@ describe('PaymentStatusOption', () => {
     it('calls onSelect with "all_paid" when third option is pressed', () => {
       const onSelect = jest.fn();
       const { getByTestId } = render(
-        <PaymentStatusOption
-          selected="all_pending"
-          onSelect={onSelect}
-          testID="payment-option"
-        />
+        <PaymentStatusOption selected="all_pending" onSelect={onSelect} testID="payment-option" />
       );
 
       fireEvent.press(getByTestId('payment-option-all_paid'));
@@ -121,11 +93,7 @@ describe('PaymentStatusOption', () => {
   describe('accessibility', () => {
     it('has radio role on each option', () => {
       const { getByTestId } = render(
-        <PaymentStatusOption
-          selected="all_pending"
-          onSelect={jest.fn()}
-          testID="payment-option"
-        />
+        <PaymentStatusOption selected="all_pending" onSelect={jest.fn()} testID="payment-option" />
       );
 
       const option = getByTestId('payment-option-all_pending');
@@ -134,11 +102,7 @@ describe('PaymentStatusOption', () => {
 
     it('marks selected option with selected=true state', () => {
       const { getByTestId } = render(
-        <PaymentStatusOption
-          selected="first_paid"
-          onSelect={jest.fn()}
-          testID="payment-option"
-        />
+        <PaymentStatusOption selected="first_paid" onSelect={jest.fn()} testID="payment-option" />
       );
 
       const selectedOption = getByTestId('payment-option-first_paid');
@@ -147,11 +111,7 @@ describe('PaymentStatusOption', () => {
 
     it('marks unselected options with selected=false state', () => {
       const { getByTestId } = render(
-        <PaymentStatusOption
-          selected="first_paid"
-          onSelect={jest.fn()}
-          testID="payment-option"
-        />
+        <PaymentStatusOption selected="first_paid" onSelect={jest.fn()} testID="payment-option" />
       );
 
       const unselectedOption = getByTestId('payment-option-all_pending');

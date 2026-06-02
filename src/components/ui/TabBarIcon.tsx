@@ -13,10 +13,8 @@ export interface TabBarIconProps {
  * Designed for a 24x24 viewBox, Material Design style.
  */
 const FILLED_PATHS: Record<TabBarIconProps['name'], string> = {
-  dashboard:
-    'M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z',
-  transactions:
-    'M4 6h16v2H4V6zm0 5h16v2H4v-2zm0 5h16v2H4v-2z',
+  dashboard: 'M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z',
+  transactions: 'M4 6h16v2H4V6zm0 5h16v2H4v-2zm0 5h16v2H4v-2z',
   manual:
     'M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm5 11h-4v4h-2v-4H7v-2h4V7h2v4h4v2z',
   settings:
@@ -28,10 +26,8 @@ const FILLED_PATHS: Record<TabBarIconProps['name'], string> = {
  * Designed for a 24x24 viewBox, Material Design style.
  */
 const OUTLINE_PATHS: Record<TabBarIconProps['name'], string> = {
-  dashboard:
-    'M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8h5zm2-14.5l6 5.4V18h-3v-6H9v6H6v-7.1l6-5.4z',
-  transactions:
-    'M4 6h16v2H4V6zm0 5h16v2H4v-2zm0 5h16v2H4v-2z',
+  dashboard: 'M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8h5zm2-14.5l6 5.4V18h-3v-6H9v6H6v-7.1l6-5.4z',
+  transactions: 'M4 6h16v2H4V6zm0 5h16v2H4v-2zm0 5h16v2H4v-2z',
   manual:
     'M13 7h-2v4H7v2h4v4h2v-4h4v-2h-4V7zm-1-5C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z',
   settings:

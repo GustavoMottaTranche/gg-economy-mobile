@@ -17,7 +17,10 @@ import {
   type NewWeeklyRecurringGroupRecord,
 } from '../db/schema';
 import type { WeeklyRecurringGroup } from '../types/weeklyRecurring';
-import type { IWeeklyGroupRepository, WeeklyGroupUpdateFields } from './interfaces/IWeeklyGroupRepository';
+import type {
+  IWeeklyGroupRepository,
+  WeeklyGroupUpdateFields,
+} from './interfaces/IWeeklyGroupRepository';
 
 /**
  * Convert a database record to a WeeklyRecurringGroup domain type.
@@ -126,10 +129,7 @@ export class WeeklyGroupRepository implements IWeeklyGroupRepository {
       updateData.isActive = data.isActive;
     }
 
-    await db
-      .update(weeklyRecurringGroups)
-      .set(updateData)
-      .where(eq(weeklyRecurringGroups.id, id));
+    await db.update(weeklyRecurringGroups).set(updateData).where(eq(weeklyRecurringGroups.id, id));
 
     return this.getById(id);
   }

@@ -26,33 +26,21 @@ describe('PaymentStatusToggle', () => {
   describe('when isPaid=true', () => {
     it('renders the check icon', () => {
       const { getByTestId } = render(
-        <PaymentStatusToggle
-          isPaid={true}
-          onToggle={jest.fn()}
-          testID="toggle"
-        />
+        <PaymentStatusToggle isPaid={true} onToggle={jest.fn()} testID="toggle" />
       );
       expect(getByTestId('toggle-check-icon')).toBeTruthy();
     });
 
     it('does not render the empty icon', () => {
       const { queryByTestId } = render(
-        <PaymentStatusToggle
-          isPaid={true}
-          onToggle={jest.fn()}
-          testID="toggle"
-        />
+        <PaymentStatusToggle isPaid={true} onToggle={jest.fn()} testID="toggle" />
       );
       expect(queryByTestId('toggle-empty-icon')).toBeNull();
     });
 
     it('applies success background color', () => {
       const { getByTestId } = render(
-        <PaymentStatusToggle
-          isPaid={true}
-          onToggle={jest.fn()}
-          testID="toggle"
-        />
+        <PaymentStatusToggle isPaid={true} onToggle={jest.fn()} testID="toggle" />
       );
       const toggle = getByTestId('toggle');
       const flatStyle = Array.isArray(toggle.props.style)
@@ -65,33 +53,21 @@ describe('PaymentStatusToggle', () => {
   describe('when isPaid=false', () => {
     it('renders the empty circle icon', () => {
       const { getByTestId } = render(
-        <PaymentStatusToggle
-          isPaid={false}
-          onToggle={jest.fn()}
-          testID="toggle"
-        />
+        <PaymentStatusToggle isPaid={false} onToggle={jest.fn()} testID="toggle" />
       );
       expect(getByTestId('toggle-empty-icon')).toBeTruthy();
     });
 
     it('does not render the check icon', () => {
       const { queryByTestId } = render(
-        <PaymentStatusToggle
-          isPaid={false}
-          onToggle={jest.fn()}
-          testID="toggle"
-        />
+        <PaymentStatusToggle isPaid={false} onToggle={jest.fn()} testID="toggle" />
       );
       expect(queryByTestId('toggle-check-icon')).toBeNull();
     });
 
     it('applies transparent background with border', () => {
       const { getByTestId } = render(
-        <PaymentStatusToggle
-          isPaid={false}
-          onToggle={jest.fn()}
-          testID="toggle"
-        />
+        <PaymentStatusToggle isPaid={false} onToggle={jest.fn()} testID="toggle" />
       );
       const toggle = getByTestId('toggle');
       const flatStyle = Array.isArray(toggle.props.style)
@@ -106,11 +82,7 @@ describe('PaymentStatusToggle', () => {
     it('calls onToggle when pressed', () => {
       const onToggle = jest.fn();
       const { getByTestId } = render(
-        <PaymentStatusToggle
-          isPaid={false}
-          onToggle={onToggle}
-          testID="toggle"
-        />
+        <PaymentStatusToggle isPaid={false} onToggle={onToggle} testID="toggle" />
       );
       fireEvent.press(getByTestId('toggle'));
       expect(onToggle).toHaveBeenCalledTimes(1);
@@ -119,11 +91,7 @@ describe('PaymentStatusToggle', () => {
     it('calls onToggle when pressed in paid state', () => {
       const onToggle = jest.fn();
       const { getByTestId } = render(
-        <PaymentStatusToggle
-          isPaid={true}
-          onToggle={onToggle}
-          testID="toggle"
-        />
+        <PaymentStatusToggle isPaid={true} onToggle={onToggle} testID="toggle" />
       );
       fireEvent.press(getByTestId('toggle'));
       expect(onToggle).toHaveBeenCalledTimes(1);
@@ -134,12 +102,7 @@ describe('PaymentStatusToggle', () => {
     it('does not call onToggle when disabled', () => {
       const onToggle = jest.fn();
       const { getByTestId } = render(
-        <PaymentStatusToggle
-          isPaid={false}
-          onToggle={onToggle}
-          disabled={true}
-          testID="toggle"
-        />
+        <PaymentStatusToggle isPaid={false} onToggle={onToggle} disabled={true} testID="toggle" />
       );
       fireEvent.press(getByTestId('toggle'));
       expect(onToggle).not.toHaveBeenCalled();
@@ -147,12 +110,7 @@ describe('PaymentStatusToggle', () => {
 
     it('applies reduced opacity when disabled', () => {
       const { getByTestId } = render(
-        <PaymentStatusToggle
-          isPaid={false}
-          onToggle={jest.fn()}
-          disabled={true}
-          testID="toggle"
-        />
+        <PaymentStatusToggle isPaid={false} onToggle={jest.fn()} disabled={true} testID="toggle" />
       );
       const toggle = getByTestId('toggle');
       const flatStyle = Array.isArray(toggle.props.style)
@@ -163,12 +121,7 @@ describe('PaymentStatusToggle', () => {
 
     it('has full opacity when not disabled', () => {
       const { getByTestId } = render(
-        <PaymentStatusToggle
-          isPaid={false}
-          onToggle={jest.fn()}
-          disabled={false}
-          testID="toggle"
-        />
+        <PaymentStatusToggle isPaid={false} onToggle={jest.fn()} disabled={false} testID="toggle" />
       );
       const toggle = getByTestId('toggle');
       const flatStyle = Array.isArray(toggle.props.style)
@@ -181,11 +134,7 @@ describe('PaymentStatusToggle', () => {
   describe('size prop', () => {
     it('defaults to medium size (36px container)', () => {
       const { getByTestId } = render(
-        <PaymentStatusToggle
-          isPaid={false}
-          onToggle={jest.fn()}
-          testID="toggle"
-        />
+        <PaymentStatusToggle isPaid={false} onToggle={jest.fn()} testID="toggle" />
       );
       const toggle = getByTestId('toggle');
       const flatStyle = Array.isArray(toggle.props.style)
@@ -197,12 +146,7 @@ describe('PaymentStatusToggle', () => {
 
     it('renders small size (28px container)', () => {
       const { getByTestId } = render(
-        <PaymentStatusToggle
-          isPaid={false}
-          onToggle={jest.fn()}
-          size="small"
-          testID="toggle"
-        />
+        <PaymentStatusToggle isPaid={false} onToggle={jest.fn()} size="small" testID="toggle" />
       );
       const toggle = getByTestId('toggle');
       const flatStyle = Array.isArray(toggle.props.style)
@@ -214,12 +158,7 @@ describe('PaymentStatusToggle', () => {
 
     it('renders medium size explicitly (36px container)', () => {
       const { getByTestId } = render(
-        <PaymentStatusToggle
-          isPaid={true}
-          onToggle={jest.fn()}
-          size="medium"
-          testID="toggle"
-        />
+        <PaymentStatusToggle isPaid={true} onToggle={jest.fn()} size="medium" testID="toggle" />
       );
       const toggle = getByTestId('toggle');
       const flatStyle = Array.isArray(toggle.props.style)
@@ -233,11 +172,7 @@ describe('PaymentStatusToggle', () => {
   describe('accessibility', () => {
     it('has checkbox role', () => {
       const { getByTestId } = render(
-        <PaymentStatusToggle
-          isPaid={false}
-          onToggle={jest.fn()}
-          testID="toggle"
-        />
+        <PaymentStatusToggle isPaid={false} onToggle={jest.fn()} testID="toggle" />
       );
       const toggle = getByTestId('toggle');
       expect(toggle.props.accessibilityRole).toBe('checkbox');
@@ -245,11 +180,7 @@ describe('PaymentStatusToggle', () => {
 
     it('has checked=true state when isPaid', () => {
       const { getByTestId } = render(
-        <PaymentStatusToggle
-          isPaid={true}
-          onToggle={jest.fn()}
-          testID="toggle"
-        />
+        <PaymentStatusToggle isPaid={true} onToggle={jest.fn()} testID="toggle" />
       );
       const toggle = getByTestId('toggle');
       expect(toggle.props.accessibilityState.checked).toBe(true);
@@ -257,11 +188,7 @@ describe('PaymentStatusToggle', () => {
 
     it('has checked=false state when not paid', () => {
       const { getByTestId } = render(
-        <PaymentStatusToggle
-          isPaid={false}
-          onToggle={jest.fn()}
-          testID="toggle"
-        />
+        <PaymentStatusToggle isPaid={false} onToggle={jest.fn()} testID="toggle" />
       );
       const toggle = getByTestId('toggle');
       expect(toggle.props.accessibilityState.checked).toBe(false);
@@ -269,12 +196,7 @@ describe('PaymentStatusToggle', () => {
 
     it('has disabled=true in accessibility state when disabled', () => {
       const { getByTestId } = render(
-        <PaymentStatusToggle
-          isPaid={false}
-          onToggle={jest.fn()}
-          disabled={true}
-          testID="toggle"
-        />
+        <PaymentStatusToggle isPaid={false} onToggle={jest.fn()} disabled={true} testID="toggle" />
       );
       const toggle = getByTestId('toggle');
       expect(toggle.props.accessibilityState.disabled).toBe(true);
@@ -284,11 +206,7 @@ describe('PaymentStatusToggle', () => {
   describe('testID', () => {
     it('applies testID to the container', () => {
       const { getByTestId } = render(
-        <PaymentStatusToggle
-          isPaid={false}
-          onToggle={jest.fn()}
-          testID="my-toggle"
-        />
+        <PaymentStatusToggle isPaid={false} onToggle={jest.fn()} testID="my-toggle" />
       );
       expect(getByTestId('my-toggle')).toBeTruthy();
     });

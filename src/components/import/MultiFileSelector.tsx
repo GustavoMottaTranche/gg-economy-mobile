@@ -132,7 +132,10 @@ const FileItem = memo(function FileItem({
   const icon = FILE_TYPE_ICONS[file.fileType] || '📄';
 
   return (
-    <View style={[styles.fileItem, { borderBottomColor: colors.border.subtle }]} testID={`file-item-${file.fileName}`}>
+    <View
+      style={[styles.fileItem, { borderBottomColor: colors.border.subtle }]}
+      testID={`file-item-${file.fileName}`}
+    >
       <View style={styles.fileItemContent}>
         <Text style={styles.fileIcon}>{icon}</Text>
         <View style={styles.fileInfo}>
@@ -307,10 +310,15 @@ function MultiFileSelectorComponent({
   const hasFiles = selectedFiles.length > 0;
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.surface.card }]} testID="multi-file-selector">
+    <View
+      style={[styles.container, { backgroundColor: colors.surface.card }]}
+      testID="multi-file-selector"
+    >
       {/* Header */}
       <View style={styles.header}>
-        <Text style={[styles.title, { color: colors.text.primary }]}>{t('fileImport.multiFile.title')}</Text>
+        <Text style={[styles.title, { color: colors.text.primary }]}>
+          {t('fileImport.multiFile.title')}
+        </Text>
         <Text style={[styles.subtitle, { color: colors.text.secondary }]}>
           {t('fileImport.multiFile.subtitle', {
             formats: SUPPORTED_EXTENSIONS.join(', '),
@@ -319,7 +327,12 @@ function MultiFileSelectorComponent({
       </View>
 
       {/* File Count Display (Requirement 4.4) */}
-      <View style={[styles.countContainer, { backgroundColor: colors.background.secondary, borderColor: colors.border.default }]}>
+      <View
+        style={[
+          styles.countContainer,
+          { backgroundColor: colors.background.secondary, borderColor: colors.border.default },
+        ]}
+      >
         <Text style={[styles.countText, { color: colors.text.primary }]} testID="file-count">
           {t('fileImport.multiFile.fileCount', {
             count: selectedFiles.length,
@@ -333,7 +346,9 @@ function MultiFileSelectorComponent({
             accessibilityLabel={t('fileImport.multiFile.clearAll')}
             testID="clear-all-button"
           >
-            <Text style={[styles.clearAllText, { color: colors.semantic.danger.base }]}>{t('fileImport.multiFile.clearAll')}</Text>
+            <Text style={[styles.clearAllText, { color: colors.semantic.danger.base }]}>
+              {t('fileImport.multiFile.clearAll')}
+            </Text>
           </TouchableOpacity>
         )}
       </View>
@@ -352,8 +367,12 @@ function MultiFileSelectorComponent({
       ) : (
         <View style={styles.emptyContainer}>
           <Text style={styles.emptyIcon}>📁</Text>
-          <Text style={[styles.emptyText, { color: colors.text.primary }]}>{t('fileImport.multiFile.noFilesSelected')}</Text>
-          <Text style={[styles.emptyHint, { color: colors.text.secondary }]}>{t('fileImport.multiFile.tapToSelect')}</Text>
+          <Text style={[styles.emptyText, { color: colors.text.primary }]}>
+            {t('fileImport.multiFile.noFilesSelected')}
+          </Text>
+          <Text style={[styles.emptyHint, { color: colors.text.secondary }]}>
+            {t('fileImport.multiFile.tapToSelect')}
+          </Text>
         </View>
       )}
 
@@ -389,7 +408,9 @@ function MultiFileSelectorComponent({
           accessibilityLabel={t('common.cancel')}
           testID="cancel-button"
         >
-          <Text style={[styles.cancelButtonText, { color: colors.text.primary }]}>{t('common.cancel')}</Text>
+          <Text style={[styles.cancelButtonText, { color: colors.text.primary }]}>
+            {t('common.cancel')}
+          </Text>
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -406,11 +427,13 @@ function MultiFileSelectorComponent({
           accessibilityState={{ disabled: !hasFiles }}
           testID="confirm-button"
         >
-          <Text style={[
-            styles.confirmButtonText,
-            { color: colors.text.inverse },
-            !hasFiles && { color: colors.text.tertiary },
-          ]}>
+          <Text
+            style={[
+              styles.confirmButtonText,
+              { color: colors.text.inverse },
+              !hasFiles && { color: colors.text.tertiary },
+            ]}
+          >
             {t('fileImport.multiFile.importFiles')}
           </Text>
         </TouchableOpacity>

@@ -13,4 +13,7 @@ export * from './interfaces';
 export { TransactionRepository, transactionRepository } from './TransactionRepository';
 export { ImportBatchRepository, importBatchRepository } from './ImportBatchRepository';
 export { WeeklyGroupRepository, weeklyGroupRepository } from './WeeklyGroupRepository';
-export { WeeklyOccurrenceRepository, weeklyOccurrenceRepository } from './WeeklyOccurrenceRepository';
+export {
+  WeeklyOccurrenceRepository,
+  weeklyOccurrenceRepository,
+} from './WeeklyOccurrenceRepository';

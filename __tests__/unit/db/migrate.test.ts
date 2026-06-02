@@ -245,9 +245,7 @@ describe('Database Migration', () => {
 
       await initializeDatabase();
 
-      expect(mockSqliteDb.runSync).toHaveBeenCalledWith(
-        expect.stringContaining('schema_version')
-      );
+      expect(mockSqliteDb.runSync).toHaveBeenCalledWith(expect.stringContaining('schema_version'));
     });
   });
 

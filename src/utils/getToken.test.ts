@@ -28,9 +28,7 @@ describe('getToken', () => {
 
     getToken(tokenObj, 'unknown', '#000');
 
-    expect(warnSpy).toHaveBeenCalledWith(
-      '[Theme] Token "unknown" not found, using fallback'
-    );
+    expect(warnSpy).toHaveBeenCalledWith('[Theme] Token "unknown" not found, using fallback');
 
     warnSpy.mockRestore();
   });

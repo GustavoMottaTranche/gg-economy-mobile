@@ -118,9 +118,7 @@ describe('TimeSlotListItem', () => {
 
     it('does not call onDelete when delete button is not rendered', () => {
       const slot: TimeSlot = { hour: 6, minute: 0 };
-      render(
-        <TimeSlotListItem slot={slot} canDelete={false} onDelete={mockOnDelete} />
-      );
+      render(<TimeSlotListItem slot={slot} canDelete={false} onDelete={mockOnDelete} />);
 
       expect(mockOnDelete).not.toHaveBeenCalled();
     });

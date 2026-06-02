@@ -62,11 +62,16 @@ interface RuleItemProps {
 function RuleItem({ rule, onEdit, onDelete, t }: RuleItemProps) {
   const colors = useThemeColors();
   const matchTypeLabel =
-    MATCH_TYPE_OPTIONS.find((opt) => opt.value === rule.matchType)?.labelKey ?? 'rules.matchContains';
+    MATCH_TYPE_OPTIONS.find((opt) => opt.value === rule.matchType)?.labelKey ??
+    'rules.matchContains';
 
   return (
     <View
-      style={[styles.ruleItem, { borderBottomColor: colors.border.subtle }, !rule.isActive && styles.ruleItemInactive]}
+      style={[
+        styles.ruleItem,
+        { borderBottomColor: colors.border.subtle },
+        !rule.isActive && styles.ruleItemInactive,
+      ]}
       testID={`rule-item-${rule.id}`}
     >
       <View style={styles.ruleContent}>
@@ -74,28 +79,51 @@ function RuleItem({ rule, onEdit, onDelete, t }: RuleItemProps) {
           <Text style={[styles.rulePattern, { color: colors.text.primary }]} numberOfLines={1}>
             "{rule.pattern}"
           </Text>
-          <Text style={[styles.rulePriority, { color: colors.text.tertiary, backgroundColor: colors.background.secondary }]}>
+          <Text
+            style={[
+              styles.rulePriority,
+              { color: colors.text.tertiary, backgroundColor: colors.background.secondary },
+            ]}
+          >
             #{rule.priority}
           </Text>
         </View>
         <View style={styles.ruleDetails}>
-          <Text style={[styles.ruleMatchType, { color: colors.text.tertiary }]}>{t(matchTypeLabel)}</Text>
+          <Text style={[styles.ruleMatchType, { color: colors.text.tertiary }]}>
+            {t(matchTypeLabel)}
+          </Text>
           <Text style={[styles.ruleArrow, { color: colors.text.tertiary }]}>→</Text>
           {rule.category ? (
             <View style={styles.ruleCategoryBadge}>
               <View style={[styles.categoryDot, { backgroundColor: rule.category.color }]} />
-              <Text style={[styles.ruleCategoryName, { color: colors.text.primary }]}>{rule.category.name}</Text>
+              <Text style={[styles.ruleCategoryName, { color: colors.text.primary }]}>
+                {rule.category.name}
+              </Text>
             </View>
           ) : (
-            <Text style={[styles.ruleCategoryMissing, { color: colors.semantic.danger.base }]}>{t('rules.categoryDeleted')}</Text>
+            <Text style={[styles.ruleCategoryMissing, { color: colors.semantic.danger.base }]}>
+              {t('rules.categoryDeleted')}
+            </Text>
           )}
         </View>
       </View>
       <View style={styles.ruleActions}>
-        <TouchableOpacity style={styles.ruleActionButton} onPress={() => onEdit(rule)} accessibilityRole="button" accessibilityLabel={t('common.edit')} testID={`edit-rule-${rule.id}`}>
+        <TouchableOpacity
+          style={styles.ruleActionButton}
+          onPress={() => onEdit(rule)}
+          accessibilityRole="button"
+          accessibilityLabel={t('common.edit')}
+          testID={`edit-rule-${rule.id}`}
+        >
           <Text style={styles.ruleActionIcon}>✏️</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.ruleActionButton} onPress={() => onDelete(rule)} accessibilityRole="button" accessibilityLabel={t('common.delete')} testID={`delete-rule-${rule.id}`}>
+        <TouchableOpacity
+          style={styles.ruleActionButton}
+          onPress={() => onDelete(rule)}
+          accessibilityRole="button"
+          accessibilityLabel={t('common.delete')}
+          testID={`delete-rule-${rule.id}`}
+        >
           <Text style={styles.ruleActionIcon}>🗑️</Text>
         </TouchableOpacity>
       </View>
@@ -115,7 +143,14 @@ interface RuleFormModalProps {
   isLoading: boolean;
 }
 
-function RuleFormModal({ visible, rule, categories, onClose, onSave, isLoading }: RuleFormModalProps) {
+function RuleFormModal({
+  visible,
+  rule,
+  categories,
+  onClose,
+  onSave,
+  isLoading,
+}: RuleFormModalProps) {
   const { t } = useTranslation();
   const colors = useThemeColors();
   const isEditing = rule !== null;
@@ -136,37 +171,72 @@ function RuleFormModal({ visible, rule, categories, onClose, onSave, isLoading }
     setShowCategoryPicker(false);
   }, [rule]);
 
-  useState(() => { resetForm(); });
+  useState(() => {
+    resetForm();
+  });
 
-  const selectedCategory = useMemo(() => categories.find((c) => c.id === categoryId), [categories, categoryId]);
+  const selectedCategory = useMemo(
+    () => categories.find((c) => c.id === categoryId),
+    [categories, categoryId]
+  );
 
   const handleSave = useCallback(async () => {
-    if (!pattern.trim()) { Alert.alert(t('common.error'), t('rules.patternRequired')); return; }
-    if (!categoryId) { Alert.alert(t('common.error'), t('rules.categoryRequired')); return; }
+    if (!pattern.trim()) {
+      Alert.alert(t('common.error'), t('rules.patternRequired'));
+      return;
+    }
+    if (!categoryId) {
+      Alert.alert(t('common.error'), t('rules.categoryRequired'));
+      return;
+    }
     const data: CreateCategorizationRuleDTO | UpdateCategorizationRuleDTO = {
-      pattern: pattern.trim(), matchType, categoryId, priority: parseInt(priority, 10) || 0,
+      pattern: pattern.trim(),
+      matchType,
+      categoryId,
+      priority: parseInt(priority, 10) || 0,
     };
     await onSave(data);
   }, [pattern, matchType, categoryId, priority, onSave, t]);
 
-  const handleClose = useCallback(() => { resetForm(); onClose(); }, [resetForm, onClose]);
+  const handleClose = useCallback(() => {
+    resetForm();
+    onClose();
+  }, [resetForm, onClose]);
 
   return (
-    <Modal visible={visible} animationType="slide" transparent onRequestClose={handleClose} testID="rule-form-modal">
+    <Modal
+      visible={visible}
+      animationType="slide"
+      transparent
+      onRequestClose={handleClose}
+      testID="rule-form-modal"
+    >
       <View style={[styles.modalOverlay, { backgroundColor: colors.surface.overlay }]}>
         <View style={[styles.modalContent, { backgroundColor: colors.surface.card }]}>
           <View style={[styles.modalHeader, { borderBottomColor: colors.border.subtle }]}>
             <TouchableOpacity onPress={handleClose} testID="close-rule-modal">
-              <Text style={[styles.modalCancel, { color: colors.interactive.primary }]}>{t('common.cancel')}</Text>
+              <Text style={[styles.modalCancel, { color: colors.interactive.primary }]}>
+                {t('common.cancel')}
+              </Text>
             </TouchableOpacity>
             <Text style={[styles.modalTitle, { color: colors.text.primary }]}>
               {isEditing ? t('rules.editRule') : t('rules.addRule')}
             </Text>
-            <TouchableOpacity onPress={handleSave} disabled={isLoading || !pattern.trim() || !categoryId} testID="save-rule-button">
+            <TouchableOpacity
+              onPress={handleSave}
+              disabled={isLoading || !pattern.trim() || !categoryId}
+              testID="save-rule-button"
+            >
               {isLoading ? (
                 <ActivityIndicator size="small" color={colors.interactive.primary} />
               ) : (
-                <Text style={[styles.modalSave, { color: colors.interactive.primary }, (!pattern.trim() || !categoryId) && { color: colors.interactive.disabled }]}>
+                <Text
+                  style={[
+                    styles.modalSave,
+                    { color: colors.interactive.primary },
+                    (!pattern.trim() || !categoryId) && { color: colors.interactive.disabled },
+                  ]}
+                >
                   {t('common.save')}
                 </Text>
               )}
@@ -176,41 +246,80 @@ function RuleFormModal({ visible, rule, categories, onClose, onSave, isLoading }
           <ScrollView style={styles.formContainer}>
             {/* Pattern Input */}
             <View style={styles.formGroup}>
-              <Text style={[styles.formLabel, { color: colors.text.secondary }]}>{t('rules.pattern')}</Text>
+              <Text style={[styles.formLabel, { color: colors.text.secondary }]}>
+                {t('rules.pattern')}
+              </Text>
               <TextInput
-                style={[styles.textInput, { backgroundColor: colors.background.secondary, color: colors.text.primary }]}
-                value={pattern} onChangeText={setPattern}
-                placeholder={t('rules.patternPlaceholder')} placeholderTextColor={colors.text.tertiary}
-                autoFocus testID="rule-pattern-input"
+                style={[
+                  styles.textInput,
+                  { backgroundColor: colors.background.secondary, color: colors.text.primary },
+                ]}
+                value={pattern}
+                onChangeText={setPattern}
+                placeholder={t('rules.patternPlaceholder')}
+                placeholderTextColor={colors.text.tertiary}
+                autoFocus
+                testID="rule-pattern-input"
               />
-              <Text style={[styles.formHint, { color: colors.text.tertiary }]}>{t('rules.patternHint')}</Text>
+              <Text style={[styles.formHint, { color: colors.text.tertiary }]}>
+                {t('rules.patternHint')}
+              </Text>
             </View>
 
             {/* Match Type Selector */}
             <View style={styles.formGroup}>
-              <Text style={[styles.formLabel, { color: colors.text.secondary }]}>{t('rules.matchType')}</Text>
+              <Text style={[styles.formLabel, { color: colors.text.secondary }]}>
+                {t('rules.matchType')}
+              </Text>
               <TouchableOpacity
                 style={[styles.pickerButton, { backgroundColor: colors.background.secondary }]}
-                onPress={() => setShowMatchTypePicker(!showMatchTypePicker)} testID="match-type-picker-button"
+                onPress={() => setShowMatchTypePicker(!showMatchTypePicker)}
+                testID="match-type-picker-button"
               >
                 <Text style={[styles.pickerButtonText, { color: colors.text.primary }]}>
-                  {t(MATCH_TYPE_OPTIONS.find((opt) => opt.value === matchType)?.labelKey ?? 'rules.matchContains')}
+                  {t(
+                    MATCH_TYPE_OPTIONS.find((opt) => opt.value === matchType)?.labelKey ??
+                      'rules.matchContains'
+                  )}
                 </Text>
                 <Text style={[styles.chevron, { color: colors.text.tertiary }]}>›</Text>
               </TouchableOpacity>
               {showMatchTypePicker && (
-                <View style={[styles.pickerOptions, { backgroundColor: colors.background.secondary }]} testID="match-type-picker">
+                <View
+                  style={[styles.pickerOptions, { backgroundColor: colors.background.secondary }]}
+                  testID="match-type-picker"
+                >
                   {MATCH_TYPE_OPTIONS.map((option) => (
                     <TouchableOpacity
                       key={option.value}
-                      style={[styles.pickerOption, { borderBottomColor: colors.border.subtle }, matchType === option.value && { backgroundColor: colors.surface.card }]}
-                      onPress={() => { setMatchType(option.value); setShowMatchTypePicker(false); }}
+                      style={[
+                        styles.pickerOption,
+                        { borderBottomColor: colors.border.subtle },
+                        matchType === option.value && { backgroundColor: colors.surface.card },
+                      ]}
+                      onPress={() => {
+                        setMatchType(option.value);
+                        setShowMatchTypePicker(false);
+                      }}
                       testID={`match-type-option-${option.value}`}
                     >
-                      <Text style={[styles.pickerOptionText, { color: colors.text.primary }, matchType === option.value && { color: colors.interactive.primary, fontWeight: '600' }]}>
+                      <Text
+                        style={[
+                          styles.pickerOptionText,
+                          { color: colors.text.primary },
+                          matchType === option.value && {
+                            color: colors.interactive.primary,
+                            fontWeight: '600',
+                          },
+                        ]}
+                      >
                         {t(option.labelKey)}
                       </Text>
-                      {matchType === option.value && <Text style={[styles.checkmark, { color: colors.interactive.primary }]}>✓</Text>}
+                      {matchType === option.value && (
+                        <Text style={[styles.checkmark, { color: colors.interactive.primary }]}>
+                          ✓
+                        </Text>
+                      )}
                     </TouchableOpacity>
                   ))}
                 </View>
@@ -219,27 +328,46 @@ function RuleFormModal({ visible, rule, categories, onClose, onSave, isLoading }
 
             {/* Category Selector */}
             <View style={styles.formGroup}>
-              <Text style={[styles.formLabel, { color: colors.text.secondary }]}>{t('rules.category')}</Text>
+              <Text style={[styles.formLabel, { color: colors.text.secondary }]}>
+                {t('rules.category')}
+              </Text>
               <TouchableOpacity
                 style={[styles.pickerButton, { backgroundColor: colors.background.secondary }]}
-                onPress={() => setShowCategoryPicker(!showCategoryPicker)} testID="category-picker-button"
+                onPress={() => setShowCategoryPicker(!showCategoryPicker)}
+                testID="category-picker-button"
               >
                 {selectedCategory ? (
                   <View style={styles.selectedCategoryContainer}>
-                    <View style={[styles.categoryDot, { backgroundColor: selectedCategory.color }]} />
-                    <Text style={[styles.pickerButtonText, { color: colors.text.primary }]}>{selectedCategory.name}</Text>
+                    <View
+                      style={[styles.categoryDot, { backgroundColor: selectedCategory.color }]}
+                    />
+                    <Text style={[styles.pickerButtonText, { color: colors.text.primary }]}>
+                      {selectedCategory.name}
+                    </Text>
                   </View>
                 ) : (
-                  <Text style={[styles.pickerPlaceholder, { color: colors.text.tertiary }]}>{t('rules.selectCategory')}</Text>
+                  <Text style={[styles.pickerPlaceholder, { color: colors.text.tertiary }]}>
+                    {t('rules.selectCategory')}
+                  </Text>
                 )}
                 <Text style={[styles.chevron, { color: colors.text.tertiary }]}>›</Text>
               </TouchableOpacity>
               {showCategoryPicker && (
-                <View style={[styles.categoryPickerContainer, { backgroundColor: colors.background.secondary }]} testID="category-picker">
+                <View
+                  style={[
+                    styles.categoryPickerContainer,
+                    { backgroundColor: colors.background.secondary },
+                  ]}
+                  testID="category-picker"
+                >
                   <CategorySelector
                     selectedCategoryId={categoryId || null}
-                    onSelect={(category: Category) => { setCategoryId(category.id); setShowCategoryPicker(false); }}
-                    includeIncome testID="category-selector"
+                    onSelect={(category: Category) => {
+                      setCategoryId(category.id);
+                      setShowCategoryPicker(false);
+                    }}
+                    includeIncome
+                    testID="category-selector"
                   />
                 </View>
               )}
@@ -247,14 +375,24 @@ function RuleFormModal({ visible, rule, categories, onClose, onSave, isLoading }
 
             {/* Priority Input */}
             <View style={styles.formGroup}>
-              <Text style={[styles.formLabel, { color: colors.text.secondary }]}>{t('rules.priority')}</Text>
+              <Text style={[styles.formLabel, { color: colors.text.secondary }]}>
+                {t('rules.priority')}
+              </Text>
               <TextInput
-                style={[styles.textInput, { backgroundColor: colors.background.secondary, color: colors.text.primary }]}
-                value={priority} onChangeText={setPriority}
-                placeholder="0" placeholderTextColor={colors.text.tertiary}
-                keyboardType="numeric" testID="rule-priority-input"
+                style={[
+                  styles.textInput,
+                  { backgroundColor: colors.background.secondary, color: colors.text.primary },
+                ]}
+                value={priority}
+                onChangeText={setPriority}
+                placeholder="0"
+                placeholderTextColor={colors.text.tertiary}
+                keyboardType="numeric"
+                testID="rule-priority-input"
               />
-              <Text style={[styles.formHint, { color: colors.text.tertiary }]}>{t('rules.priorityHint')}</Text>
+              <Text style={[styles.formHint, { color: colors.text.tertiary }]}>
+                {t('rules.priorityHint')}
+              </Text>
             </View>
           </ScrollView>
         </View>
@@ -276,14 +414,30 @@ export default function RulesSettingsScreen() {
   const [editingRule, setEditingRule] = useState<CategorizationRule | null>(null);
   const [isSaving, setIsSaving] = useState(false);
 
-  const handleAddRule = useCallback(() => { setEditingRule(null); setShowFormModal(true); }, []);
-  const handleEditRule = useCallback((rule: CategorizationRule) => { setEditingRule(rule); setShowFormModal(true); }, []);
+  const handleAddRule = useCallback(() => {
+    setEditingRule(null);
+    setShowFormModal(true);
+  }, []);
+  const handleEditRule = useCallback((rule: CategorizationRule) => {
+    setEditingRule(rule);
+    setShowFormModal(true);
+  }, []);
 
   const handleDeleteRule = useCallback(
     (rule: CategorizationRule) => {
       Alert.alert(t('rules.deleteRule'), t('rules.deleteConfirmation', { pattern: rule.pattern }), [
         { text: t('common.cancel'), style: 'cancel' },
-        { text: t('common.delete'), style: 'destructive', onPress: async () => { try { await remove(rule.id); } catch (err) { Alert.alert(t('common.error'), t('rules.deleteError')); } } },
+        {
+          text: t('common.delete'),
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await remove(rule.id);
+            } catch (err) {
+              Alert.alert(t('common.error'), t('rules.deleteError'));
+            }
+          },
+        },
       ]);
     },
     [remove, t]
@@ -293,27 +447,47 @@ export default function RulesSettingsScreen() {
     async (data: CreateCategorizationRuleDTO | UpdateCategorizationRuleDTO) => {
       setIsSaving(true);
       try {
-        if (editingRule) { await update(editingRule.id, data); } else { await create(data as CreateCategorizationRuleDTO); }
-        setShowFormModal(false); setEditingRule(null);
-      } catch (err) { Alert.alert(t('common.error'), t('rules.saveError')); } finally { setIsSaving(false); }
+        if (editingRule) {
+          await update(editingRule.id, data);
+        } else {
+          await create(data as CreateCategorizationRuleDTO);
+        }
+        setShowFormModal(false);
+        setEditingRule(null);
+      } catch (err) {
+        Alert.alert(t('common.error'), t('rules.saveError'));
+      } finally {
+        setIsSaving(false);
+      }
     },
     [editingRule, create, update, t]
   );
 
-  const handleCloseModal = useCallback(() => { setShowFormModal(false); setEditingRule(null); }, []);
+  const handleCloseModal = useCallback(() => {
+    setShowFormModal(false);
+    setEditingRule(null);
+  }, []);
 
   if (isLoading) {
     return (
-      <View style={[styles.loadingContainer, { backgroundColor: colors.background.secondary }]} testID="rules-loading">
+      <View
+        style={[styles.loadingContainer, { backgroundColor: colors.background.secondary }]}
+        testID="rules-loading"
+      >
         <ActivityIndicator size="large" color={colors.interactive.primary} />
-        <Text style={[styles.loadingText, { color: colors.text.tertiary }]}>{t('common.loading')}</Text>
+        <Text style={[styles.loadingText, { color: colors.text.tertiary }]}>
+          {t('common.loading')}
+        </Text>
       </View>
     );
   }
 
   if (error) {
     return (
-      <View style={[styles.errorContainer, { backgroundColor: colors.background.secondary }]} testID="rules-error">
+      <View
+        style={[styles.errorContainer, { backgroundColor: colors.background.secondary }]}
+        testID="rules-error"
+      >
         <Text style={styles.errorIcon}>⚠️</Text>
         <Text style={[styles.errorText, { color: colors.semantic.danger.base }]}>{error}</Text>
       </View>
@@ -329,7 +503,10 @@ export default function RulesSettingsScreen() {
       {/* Add Rule Button */}
       <TouchableOpacity
         style={[styles.addButton, { backgroundColor: colors.interactive.primary }]}
-        onPress={handleAddRule} accessibilityRole="button" accessibilityLabel={t('rules.addRule')} testID="add-rule-button"
+        onPress={handleAddRule}
+        accessibilityRole="button"
+        accessibilityLabel={t('rules.addRule')}
+        testID="add-rule-button"
       >
         <Text style={[styles.addIcon, { color: colors.text.inverse }]}>+</Text>
         <Text style={[styles.addText, { color: colors.text.inverse }]}>{t('rules.addRule')}</Text>
@@ -337,16 +514,31 @@ export default function RulesSettingsScreen() {
 
       {/* Rules List Section */}
       <View style={styles.section}>
-        <View style={[styles.sectionContent, { backgroundColor: colors.surface.card, borderColor: colors.border.default }]}>
+        <View
+          style={[
+            styles.sectionContent,
+            { backgroundColor: colors.surface.card, borderColor: colors.border.default },
+          ]}
+        >
           {rules.length === 0 ? (
             <View style={styles.emptyState} testID="rules-empty">
               <Text style={styles.emptyIcon}>📋</Text>
-              <Text style={[styles.emptyText, { color: colors.text.tertiary }]}>{t('rules.noRules')}</Text>
-              <Text style={[styles.emptyHint, { color: colors.text.tertiary }]}>{t('settings.rulesDescription')}</Text>
+              <Text style={[styles.emptyText, { color: colors.text.tertiary }]}>
+                {t('rules.noRules')}
+              </Text>
+              <Text style={[styles.emptyHint, { color: colors.text.tertiary }]}>
+                {t('settings.rulesDescription')}
+              </Text>
             </View>
           ) : (
             rules.map((rule) => (
-              <RuleItem key={rule.id} rule={rule} onEdit={handleEditRule} onDelete={handleDeleteRule} t={t} />
+              <RuleItem
+                key={rule.id}
+                rule={rule}
+                onEdit={handleEditRule}
+                onDelete={handleDeleteRule}
+                t={t}
+              />
             ))
           )}
         </View>
@@ -354,19 +546,32 @@ export default function RulesSettingsScreen() {
 
       {/* Help Section */}
       <View style={styles.helpSection}>
-        <Text style={[styles.helpTitle, { color: colors.text.secondary }]}>{t('rules.matchTypeHelp')}</Text>
+        <Text style={[styles.helpTitle, { color: colors.text.secondary }]}>
+          {t('rules.matchTypeHelp')}
+        </Text>
         <View style={[styles.helpContent, { backgroundColor: colors.surface.card }]}>
           {MATCH_TYPE_OPTIONS.map((option) => (
             <View key={option.value} style={styles.helpItem}>
-              <Text style={[styles.helpLabel, { color: colors.text.primary }]}>{t(option.labelKey)}</Text>
-              <Text style={[styles.helpDescription, { color: colors.text.tertiary }]}>{t(`rules.${option.value}Description`)}</Text>
+              <Text style={[styles.helpLabel, { color: colors.text.primary }]}>
+                {t(option.labelKey)}
+              </Text>
+              <Text style={[styles.helpDescription, { color: colors.text.tertiary }]}>
+                {t(`rules.${option.value}Description`)}
+              </Text>
             </View>
           ))}
         </View>
       </View>
 
       {/* Rule Form Modal */}
-      <RuleFormModal visible={showFormModal} rule={editingRule} categories={categories} onClose={handleCloseModal} onSave={handleSaveRule} isLoading={isSaving} />
+      <RuleFormModal
+        visible={showFormModal}
+        rule={editingRule}
+        categories={categories}
+        onClose={handleCloseModal}
+        onSave={handleSaveRule}
+        isLoading={isSaving}
+      />
     </ScrollView>
   );
 }

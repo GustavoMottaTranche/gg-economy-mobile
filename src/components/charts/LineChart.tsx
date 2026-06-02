@@ -272,7 +272,9 @@ function LineChartComponent({
         accessibilityLabel={t('charts.noData')}
       >
         <View style={[styles.emptyChart, { backgroundColor: colors.background.secondary }]}>
-          <Text style={[styles.emptyText, { color: colors.text.tertiary }]}>{t('charts.noData')}</Text>
+          <Text style={[styles.emptyText, { color: colors.text.tertiary }]}>
+            {t('charts.noData')}
+          </Text>
         </View>
       </View>
     );

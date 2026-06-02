@@ -11,13 +11,15 @@ const getAppName = () => {
 };
 
 const getAndroidPackage = () => {
+  if (IS_PRODUCTION) return 'com.ggeconomy.mobile';
   if (IS_PREVIEW) return 'com.ggeconomy.mobile.preview';
-  return 'com.ggeconomy.mobile';
+  return 'com.ggeconomy.mobile.dev';
 };
 
 const getIosBundleId = () => {
+  if (IS_PRODUCTION) return 'com.ggeconomy.mobile';
   if (IS_PREVIEW) return 'com.ggeconomy.mobile.preview';
-  return 'com.ggeconomy.mobile';
+  return 'com.ggeconomy.mobile.dev';
 };
 
 module.exports = ({ config }) => {

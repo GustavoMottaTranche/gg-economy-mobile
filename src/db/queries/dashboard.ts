@@ -168,10 +168,7 @@ export function getWeeklyOccurrenceBreakdownQuery(referenceMonth: string) {
     .innerJoin(weeklyRecurringGroups, eq(weeklyOccurrences.weeklyGroupId, weeklyRecurringGroups.id))
     .leftJoin(categories, eq(weeklyRecurringGroups.categoryId, categories.id))
     .where(
-      and(
-        eq(weeklyOccurrences.referenceMonth, referenceMonth),
-        eq(weeklyOccurrences.isPaid, true)
-      )
+      and(eq(weeklyOccurrences.referenceMonth, referenceMonth), eq(weeklyOccurrences.isPaid, true))
     )
     .groupBy(weeklyRecurringGroups.categoryId);
 }

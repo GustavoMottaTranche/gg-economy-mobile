@@ -117,8 +117,15 @@ const SheetItem = memo(function SheetItem({
       style={[
         styles.sheetItem,
         { backgroundColor: colors.background.secondary, borderColor: colors.border.default },
-        isSelected && { backgroundColor: colors.semantic.primary.light, borderColor: colors.interactive.primary },
-        isSuggested && !isSelected && { backgroundColor: colors.semantic.success.light, borderColor: colors.semantic.success.base },
+        isSelected && {
+          backgroundColor: colors.semantic.primary.light,
+          borderColor: colors.interactive.primary,
+        },
+        isSuggested &&
+          !isSelected && {
+            backgroundColor: colors.semantic.success.light,
+            borderColor: colors.semantic.success.base,
+          },
       ]}
       onPress={handlePress}
       activeOpacity={0.7}
@@ -142,7 +149,10 @@ const SheetItem = memo(function SheetItem({
           </Text>
           {/* Suggested badge (Requirement 11.3) */}
           {isSuggested && (
-            <View style={[styles.suggestedBadge, { backgroundColor: colors.semantic.success.light }]} testID={`suggested-badge-${sheet.name}`}>
+            <View
+              style={[styles.suggestedBadge, { backgroundColor: colors.semantic.success.light }]}
+              testID={`suggested-badge-${sheet.name}`}
+            >
               <Text style={[styles.suggestedBadgeText, { color: colors.semantic.success.dark }]}>
                 {t('fileImport.sheetSelector.suggested')}
               </Text>
@@ -156,7 +166,12 @@ const SheetItem = memo(function SheetItem({
 
       {/* Preview of first rows (Requirement 9.3) */}
       {sheet.preview.length > 0 && (
-        <View style={[styles.previewContainer, { backgroundColor: colors.surface.card, borderColor: colors.border.default }]}>
+        <View
+          style={[
+            styles.previewContainer,
+            { backgroundColor: colors.surface.card, borderColor: colors.border.default },
+          ]}
+        >
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
@@ -171,7 +186,11 @@ const SheetItem = memo(function SheetItem({
                       style={[
                         styles.previewCell,
                         { color: colors.text.primary },
-                        rowIndex === 0 && { fontWeight: '600', color: colors.text.primary, backgroundColor: colors.background.tertiary },
+                        rowIndex === 0 && {
+                          fontWeight: '600',
+                          color: colors.text.primary,
+                          backgroundColor: colors.background.tertiary,
+                        },
                       ]}
                       numberOfLines={1}
                     >
@@ -361,10 +380,15 @@ function SheetSelectorComponent({
   const showCountdown = !userInteracted && remainingTime > 0;
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.surface.card }]} testID="sheet-selector">
+    <View
+      style={[styles.container, { backgroundColor: colors.surface.card }]}
+      testID="sheet-selector"
+    >
       {/* Header */}
       <View style={styles.header}>
-        <Text style={[styles.title, { color: colors.text.primary }]}>{t('fileImport.sheetSelector.title')}</Text>
+        <Text style={[styles.title, { color: colors.text.primary }]}>
+          {t('fileImport.sheetSelector.title')}
+        </Text>
         <Text style={[styles.subtitle, { color: colors.text.secondary }]}>
           {t('fileImport.sheetSelector.subtitle', { count: sheets.length })}
         </Text>
@@ -372,13 +396,28 @@ function SheetSelectorComponent({
 
       {/* Countdown Timer (Requirement 9.4) */}
       {showCountdown && (
-        <View style={[styles.countdownContainer, { backgroundColor: colors.semantic.warning.light, borderColor: colors.semantic.warning.base }]} testID="countdown-container">
+        <View
+          style={[
+            styles.countdownContainer,
+            {
+              backgroundColor: colors.semantic.warning.light,
+              borderColor: colors.semantic.warning.base,
+            },
+          ]}
+          testID="countdown-container"
+        >
           <Text style={[styles.countdownText, { color: colors.semantic.warning.dark }]}>
             {t('fileImport.sheetSelector.autoSelectIn', { seconds: remainingTime })}
           </Text>
           <View style={[styles.countdownBar, { backgroundColor: colors.semantic.warning.light }]}>
             <View
-              style={[styles.countdownBarFill, { width: `${(remainingTime / timeout) * 100}%`, backgroundColor: colors.semantic.warning.base }]}
+              style={[
+                styles.countdownBarFill,
+                {
+                  width: `${(remainingTime / timeout) * 100}%`,
+                  backgroundColor: colors.semantic.warning.base,
+                },
+              ]}
               testID="countdown-bar-fill"
             />
           </View>
@@ -407,7 +446,9 @@ function SheetSelectorComponent({
             accessibilityLabel={t('fileImport.sheetSelector.useFirst')}
             testID="use-first-button"
           >
-            <Text style={[styles.defaultButtonText, { color: colors.text.primary }]}>{t('fileImport.sheetSelector.useFirst')}</Text>
+            <Text style={[styles.defaultButtonText, { color: colors.text.primary }]}>
+              {t('fileImport.sheetSelector.useFirst')}
+            </Text>
           </TouchableOpacity>
         )}
 

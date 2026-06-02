@@ -31,10 +31,7 @@ const dateArb = fc
       .chain((month) =>
         fc
           .integer({ min: 1, max: 28 })
-          .map(
-            (day) =>
-              `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`
-          )
+          .map((day) => `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`)
       )
   );
 
@@ -109,50 +106,42 @@ describe('Property 5: Date Range Filter Correctness', () => {
 
   it('transactions on exact start date boundary are included', () => {
     fc.assert(
-      fc.property(
-        dateRangeArb,
-        fc.uuid(),
-        ({ startDate, endDate }, id) => {
-          // Create a transaction with date exactly equal to startDate
-          const transaction: MockTransaction = {
-            id,
-            date: startDate,
-            amount: 1000,
-            categoryId: null,
-            referenceMonth: '2024-01',
-          };
+      fc.property(dateRangeArb, fc.uuid(), ({ startDate, endDate }, id) => {
+        // Create a transaction with date exactly equal to startDate
+        const transaction: MockTransaction = {
+          id,
+          date: startDate,
+          amount: 1000,
+          categoryId: null,
+          referenceMonth: '2024-01',
+        };
 
-          const filtered = filterByDateRange([transaction], startDate, endDate);
+        const filtered = filterByDateRange([transaction], startDate, endDate);
 
-          expect(filtered).toHaveLength(1);
-          expect(filtered[0]!.id).toBe(id);
-        }
-      ),
+        expect(filtered).toHaveLength(1);
+        expect(filtered[0]!.id).toBe(id);
+      }),
       { numRuns: 100 }
     );
   });
 
   it('transactions on exact end date boundary are included', () => {
     fc.assert(
-      fc.property(
-        dateRangeArb,
-        fc.uuid(),
-        ({ startDate, endDate }, id) => {
-          // Create a transaction with date exactly equal to endDate
-          const transaction: MockTransaction = {
-            id,
-            date: endDate,
-            amount: -500,
-            categoryId: null,
-            referenceMonth: '2024-01',
-          };
+      fc.property(dateRangeArb, fc.uuid(), ({ startDate, endDate }, id) => {
+        // Create a transaction with date exactly equal to endDate
+        const transaction: MockTransaction = {
+          id,
+          date: endDate,
+          amount: -500,
+          categoryId: null,
+          referenceMonth: '2024-01',
+        };
 
-          const filtered = filterByDateRange([transaction], startDate, endDate);
+        const filtered = filterByDateRange([transaction], startDate, endDate);
 
-          expect(filtered).toHaveLength(1);
-          expect(filtered[0]!.id).toBe(id);
-        }
-      ),
+        expect(filtered).toHaveLength(1);
+        expect(filtered[0]!.id).toBe(id);
+      }),
       { numRuns: 100 }
     );
   });

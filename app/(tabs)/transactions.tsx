@@ -51,8 +51,15 @@ import { deleteTransaction } from '../../src/db/queries/transactions';
 import { useThemeColors } from '../../src/hooks/useThemeColors';
 import { useThemeStore } from '../../src/stores/themeStore';
 import { typography, spacing, borderRadius, shadows } from '../../src/constants/theme';
-import { useWeeklyRecurringStore, useExpandedGroupIds } from '../../src/stores/weeklyRecurringStore';
-import { useWeeklyOccurrences, useWeeklyGroups, useWeeklyMonthlyTotal } from '../../src/stores/weeklyRecurringStore';
+import {
+  useWeeklyRecurringStore,
+  useExpandedGroupIds,
+} from '../../src/stores/weeklyRecurringStore';
+import {
+  useWeeklyOccurrences,
+  useWeeklyGroups,
+  useWeeklyMonthlyTotal,
+} from '../../src/stores/weeklyRecurringStore';
 import { usePaymentStatusStore } from '../../src/stores/paymentStatusStore';
 import { useUnifiedStatementItems } from '../../src/hooks/useUnifiedStatementItems';
 import { WeeklyGroupItem } from '../../src/components/WeeklyGroupItem';
@@ -124,7 +131,8 @@ function MonthlySummary({ summary, weeklyTotal }: MonthlySummaryProps): React.Re
   const formattedExpenses = formatCurrencyLocale(expensesDisplay, locale);
   const formattedBalance = formatCurrencyLocale(balanceDisplay, locale);
 
-  const balanceColor = balanceDisplay >= 0 ? colors.semantic.success.dark : colors.semantic.danger.dark;
+  const balanceColor =
+    balanceDisplay >= 0 ? colors.semantic.success.dark : colors.semantic.danger.dark;
 
   const styles = useMemo(
     () =>
@@ -267,24 +275,16 @@ export default function TransactionsScreen(): React.ReactElement {
   const { categories } = useCategories();
 
   // Paginated transactions with filter support (includes pendingOnly)
-  const {
-    transactions,
-    isLoading,
-    isLoadingMore,
-    error,
-    hasMore,
-    summary,
-    loadMore,
-    refresh,
-  } = usePaginatedTransactions({
-    referenceMonth: selectedMonth,
-    categoryIds: filters.categoryIds.length > 0 ? filters.categoryIds : undefined,
-    minAmount: filters.minAmount,
-    maxAmount: filters.maxAmount,
-    startDate: filters.startDate,
-    endDate: filters.endDate,
-    pendingOnly: filters.pendingOnly || undefined,
-  });
+  const { transactions, isLoading, isLoadingMore, error, hasMore, summary, loadMore, refresh } =
+    usePaginatedTransactions({
+      referenceMonth: selectedMonth,
+      categoryIds: filters.categoryIds.length > 0 ? filters.categoryIds : undefined,
+      minAmount: filters.minAmount,
+      maxAmount: filters.maxAmount,
+      startDate: filters.startDate,
+      endDate: filters.endDate,
+      pendingOnly: filters.pendingOnly || undefined,
+    });
 
   // Weekly occurrences for the selected month
   const weeklyOccurrences = useWeeklyOccurrences(selectedMonth);
@@ -334,7 +334,9 @@ export default function TransactionsScreen(): React.ReactElement {
 
     loadData();
 
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [selectedMonth]);
 
   // Reset filters and pagination when reference month changes
@@ -419,17 +421,14 @@ export default function TransactionsScreen(): React.ReactElement {
     setExpanded(!isExpanded);
   }, [isExpanded, setExpanded]);
 
-  const handleFiltersChange = useCallback(
-    (newFilters: typeof filters) => {
-      const store = useFilterStore.getState();
-      store.setCategoryIds(newFilters.categoryIds);
-      store.setMinAmount(newFilters.minAmount);
-      store.setMaxAmount(newFilters.maxAmount);
-      store.setStartDate(newFilters.startDate);
-      store.setEndDate(newFilters.endDate);
-    },
-    []
-  );
+  const handleFiltersChange = useCallback((newFilters: typeof filters) => {
+    const store = useFilterStore.getState();
+    store.setCategoryIds(newFilters.categoryIds);
+    store.setMinAmount(newFilters.minAmount);
+    store.setMaxAmount(newFilters.maxAmount);
+    store.setStartDate(newFilters.startDate);
+    store.setEndDate(newFilters.endDate);
+  }, []);
 
   // Transaction handlers
   const handleTransactionPress = useCallback((transaction: PaginatedTransactionWithCategory) => {
@@ -529,7 +528,10 @@ export default function TransactionsScreen(): React.ReactElement {
 
   // Weekly parcel press handler (navigate to parcel detail view)
   const handleParcelPress = useCallback((occurrence: WeeklyOccurrence) => {
-    router.push({ pathname: '/weekly-recurring/parcel-detail', params: { occurrenceId: occurrence.id } });
+    router.push({
+      pathname: '/weekly-recurring/parcel-detail',
+      params: { occurrenceId: occurrence.id },
+    });
   }, []);
 
   // Edit group handler (navigate to edit screen)
@@ -538,28 +540,31 @@ export default function TransactionsScreen(): React.ReactElement {
   }, []);
 
   // Delete group handler (confirmation dialog + store action)
-  const handleDeleteGroup = useCallback((groupId: string) => {
-    Alert.alert(
-      'Excluir grupo',
-      'Tem certeza que deseja excluir este grupo? Ocorrências futuras serão removidas. Esta ação é irreversível.',
-      [
-        { text: 'Cancelar', style: 'cancel' },
-        {
-          text: 'Excluir',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await useWeeklyRecurringStore.getState().deleteGroup(groupId);
-              await useWeeklyRecurringStore.getState().loadGroups();
-              await useWeeklyRecurringStore.getState().loadOccurrencesForMonth(selectedMonth);
-            } catch (err) {
-              Alert.alert('Erro', 'Não foi possível excluir o grupo.');
-            }
+  const handleDeleteGroup = useCallback(
+    (groupId: string) => {
+      Alert.alert(
+        'Excluir grupo',
+        'Tem certeza que deseja excluir este grupo? Ocorrências futuras serão removidas. Esta ação é irreversível.',
+        [
+          { text: 'Cancelar', style: 'cancel' },
+          {
+            text: 'Excluir',
+            style: 'destructive',
+            onPress: async () => {
+              try {
+                await useWeeklyRecurringStore.getState().deleteGroup(groupId);
+                await useWeeklyRecurringStore.getState().loadGroups();
+                await useWeeklyRecurringStore.getState().loadOccurrencesForMonth(selectedMonth);
+              } catch (err) {
+                Alert.alert('Erro', 'Não foi possível excluir o grupo.');
+              }
+            },
           },
-        },
-      ]
-    );
-  }, [selectedMonth]);
+        ]
+      );
+    },
+    [selectedMonth]
+  );
 
   // Payment status toggle for weekly occurrences (optimistic update via paymentStatusStore)
   const handleToggleWeeklyPaymentStatus = useCallback(
@@ -657,21 +662,18 @@ export default function TransactionsScreen(): React.ReactElement {
     ]
   );
 
-  const keyExtractor = useCallback(
-    (item: UnifiedStatementItem) => {
-      switch (item.type) {
-        case 'transaction':
-          return `tx-${item.data.id}`;
-        case 'weeklyGroupHeader':
-          return `wg-${item.data.group.id}`;
-        case 'weeklyParcel':
-          return `wp-${item.data.id}`;
-        default:
-          return String(Math.random());
-      }
-    },
-    []
-  );
+  const keyExtractor = useCallback((item: UnifiedStatementItem) => {
+    switch (item.type) {
+      case 'transaction':
+        return `tx-${item.data.id}`;
+      case 'weeklyGroupHeader':
+        return `wg-${item.data.group.id}`;
+      case 'weeklyParcel':
+        return `wp-${item.data.id}`;
+      default:
+        return String(Math.random());
+    }
+  }, []);
 
   // Loading footer component for infinite scroll
   const ListFooterComponent = useMemo(() => {
@@ -787,16 +789,13 @@ export default function TransactionsScreen(): React.ReactElement {
           data={unifiedItems}
           renderItem={renderItem}
           keyExtractor={keyExtractor}
-          estimatedItemSize={100}
           ListHeaderComponent={ListHeader}
           ListEmptyComponent={unifiedItems.length === 0 ? ListEmpty : undefined}
           ListFooterComponent={ListFooterComponent}
           onEndReached={hasMore ? loadMore : undefined}
           onEndReachedThreshold={0.5}
           showsVerticalScrollIndicator={false}
-          refreshControl={
-            <RefreshControl refreshing={isRefreshing} onRefresh={handleRefresh} />
-          }
+          refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={handleRefresh} />}
           testID="transactions-list"
         />
       </View>

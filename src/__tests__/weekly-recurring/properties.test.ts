@@ -29,7 +29,11 @@
  */
 
 import fc from 'fast-check';
-import { deriveReferenceMonth, getTodayBoundary, getWeeklyDatesForMonth } from '../../services/weekly-recurring/dateUtils';
+import {
+  deriveReferenceMonth,
+  getTodayBoundary,
+  getWeeklyDatesForMonth,
+} from '../../services/weekly-recurring/dateUtils';
 import {
   validateWeeklyGroup,
   validateOccurrenceValue,
@@ -112,25 +116,29 @@ describe('Feature: weekly-recurring-expenses, Property 2: Idempotent Generation'
           };
 
           const mockOccRepo: IWeeklyOccurrenceRepository = {
-            create: jest.fn().mockImplementation(async (data: NewWeeklyOccurrenceRecord): Promise<WeeklyOccurrence> => {
-              createdOccurrences.push(data);
-              if (!isFirstRunComplete) {
-                createCallCountFirstRun++;
-              } else {
-                createCallCountSecondRun++;
-              }
-              return {
-                id: `occ-${createdOccurrences.length}`,
-                weeklyGroupId: data.weeklyGroupId!,
-                date: data.date!,
-                referenceMonth: data.referenceMonth!,
-                amount: data.amount!,
-                description: data.description ?? '',
-                isValueEdited: false,
-                createdAt: '2024-01-01T00:00:00.000Z',
-                updatedAt: '2024-01-01T00:00:00.000Z',
-              };
-            }),
+            create: jest
+              .fn()
+              .mockImplementation(
+                async (data: NewWeeklyOccurrenceRecord): Promise<WeeklyOccurrence> => {
+                  createdOccurrences.push(data);
+                  if (!isFirstRunComplete) {
+                    createCallCountFirstRun++;
+                  } else {
+                    createCallCountSecondRun++;
+                  }
+                  return {
+                    id: `occ-${createdOccurrences.length}`,
+                    weeklyGroupId: data.weeklyGroupId!,
+                    date: data.date!,
+                    referenceMonth: data.referenceMonth!,
+                    amount: data.amount!,
+                    description: data.description ?? '',
+                    isValueEdited: false,
+                    createdAt: '2024-01-01T00:00:00.000Z',
+                    updatedAt: '2024-01-01T00:00:00.000Z',
+                  };
+                }
+              ),
             createMany: jest.fn(),
             update: jest.fn(),
             delete: jest.fn(),
@@ -142,10 +150,14 @@ describe('Feature: weekly-recurring-expenses, Property 2: Idempotent Generation'
             getByMonth: jest.fn().mockResolvedValue([]),
             getByGroupAndMonth: jest.fn().mockResolvedValue([]),
             getMonthlyTotal: jest.fn().mockResolvedValue(0),
-            existsForGroupAndDate: jest.fn().mockImplementation(async (_gId: string, date: string): Promise<boolean> => {
-              // After first run, all created dates should return true
-              return createdOccurrences.some((occ) => occ.date === date && occ.weeklyGroupId === _gId);
-            }),
+            existsForGroupAndDate: jest
+              .fn()
+              .mockImplementation(async (_gId: string, date: string): Promise<boolean> => {
+                // After first run, all created dates should return true
+                return createdOccurrences.some(
+                  (occ) => occ.date === date && occ.weeklyGroupId === _gId
+                );
+              }),
             getFutureUnedited: jest.fn().mockResolvedValue([]),
             getFuture: jest.fn().mockResolvedValue([]),
             getPast: jest.fn().mockResolvedValue([]),
@@ -168,9 +180,9 @@ describe('Feature: weekly-recurring-expenses, Property 2: Idempotent Generation'
 
           // Total occurrences should be exactly what the first run created
           expect(createdOccurrences.length).toBe(createCallCountFirstRun);
-        },
+        }
       ),
-      { numRuns: 100 },
+      { numRuns: 100 }
     );
   });
 });
@@ -182,29 +194,26 @@ describe('Feature: weekly-recurring-expenses, Property 6: Date Change Derives Co
 
   it('should return exactly the first 7 characters (YYYY-MM) of any valid YYYY-MM-DD date', () => {
     fc.assert(
-      fc.property(
-        fc.date({ min: new Date(2019, 0, 1), max: new Date(2030, 11, 31) }),
-        (date) => {
-          const year = date.getFullYear().toString().padStart(4, '0');
-          const month = (date.getMonth() + 1).toString().padStart(2, '0');
-          const day = date.getDate().toString().padStart(2, '0');
-          const dateStr = `${year}-${month}-${day}`;
+      fc.property(fc.date({ min: new Date(2019, 0, 1), max: new Date(2030, 11, 31) }), (date) => {
+        const year = date.getFullYear().toString().padStart(4, '0');
+        const month = (date.getMonth() + 1).toString().padStart(2, '0');
+        const day = date.getDate().toString().padStart(2, '0');
+        const dateStr = `${year}-${month}-${day}`;
 
-          const result = deriveReferenceMonth(dateStr);
+        const result = deriveReferenceMonth(dateStr);
 
-          expect(result).toBe(dateStr.substring(0, 7));
-        },
-      ),
-      { numRuns: 100 },
+        expect(result).toBe(dateStr.substring(0, 7));
+      }),
+      { numRuns: 100 }
     );
   });
 
   it('should return a month value always between 01 and 12', () => {
     fc.assert(
       fc.property(
-        fc.date({ min: new Date(2019, 0, 1), max: new Date(2030, 11, 31) }).filter(
-          (d) => !isNaN(d.getTime()),
-        ),
+        fc
+          .date({ min: new Date(2019, 0, 1), max: new Date(2030, 11, 31) })
+          .filter((d) => !isNaN(d.getTime())),
         (date) => {
           const year = date.getFullYear().toString().padStart(4, '0');
           const month = (date.getMonth() + 1).toString().padStart(2, '0');
@@ -216,29 +225,26 @@ describe('Feature: weekly-recurring-expenses, Property 6: Date Change Derives Co
 
           expect(monthPart).toBeGreaterThanOrEqual(1);
           expect(monthPart).toBeLessThanOrEqual(12);
-        },
+        }
       ),
-      { numRuns: 100 },
+      { numRuns: 100 }
     );
   });
 
   it('should return a year that matches the input date year', () => {
     fc.assert(
-      fc.property(
-        fc.date({ min: new Date(2019, 0, 1), max: new Date(2030, 11, 31) }),
-        (date) => {
-          const year = date.getFullYear().toString().padStart(4, '0');
-          const month = (date.getMonth() + 1).toString().padStart(2, '0');
-          const day = date.getDate().toString().padStart(2, '0');
-          const dateStr = `${year}-${month}-${day}`;
+      fc.property(fc.date({ min: new Date(2019, 0, 1), max: new Date(2030, 11, 31) }), (date) => {
+        const year = date.getFullYear().toString().padStart(4, '0');
+        const month = (date.getMonth() + 1).toString().padStart(2, '0');
+        const day = date.getDate().toString().padStart(2, '0');
+        const dateStr = `${year}-${month}-${day}`;
 
-          const result = deriveReferenceMonth(dateStr);
-          const resultYear = result.split('-')[0];
+        const result = deriveReferenceMonth(dateStr);
+        const resultYear = result.split('-')[0];
 
-          expect(resultYear).toBe(year);
-        },
-      ),
-      { numRuns: 100 },
+        expect(resultYear).toBe(year);
+      }),
+      { numRuns: 100 }
     );
   });
 
@@ -256,13 +262,12 @@ describe('Feature: weekly-recurring-expenses, Property 6: Date Change Derives Co
 
           expect(result).toBe(expectedMonth);
           expect(result).toMatch(/^\d{4}-\d{2}$/);
-        },
+        }
       ),
-      { numRuns: 100 },
+      { numRuns: 100 }
     );
   });
 });
-
 
 // Feature: weekly-recurring-expenses, Property 3: Validation Rejects Invalid Inputs
 describe('Feature: weekly-recurring-expenses, Property 3: Validation Rejects Invalid Inputs', () => {
@@ -275,7 +280,7 @@ describe('Feature: weekly-recurring-expenses, Property 3: Validation Rejects Inv
   /** Generates invalid titles: empty string or whitespace-only */
   const invalidTitleEmpty = fc.oneof(
     fc.constant(''),
-    fc.integer({ min: 1, max: 5 }).map((n) => ' '.repeat(n)),
+    fc.integer({ min: 1, max: 5 }).map((n) => ' '.repeat(n))
   );
 
   /** Generates invalid titles: exceeds 100 characters */
@@ -293,9 +298,7 @@ describe('Feature: weekly-recurring-expenses, Property 3: Validation Rejects Inv
   const invalidAmountTooHigh = fc.double({ min: 1000000000, max: 2000000000, noNaN: true });
 
   /** Generates valid amounts: within [0.01, 999999999.99] with max 2 decimals */
-  const validAmount = fc
-    .integer({ min: 1, max: 99999999999 })
-    .map((n) => n / 100);
+  const validAmount = fc.integer({ min: 1, max: 99999999999 }).map((n) => n / 100);
 
   /** Generates invalid dayOfWeek: above 6 */
   const invalidDayOfWeekHigh = fc.integer({ min: 7, max: 100 });
@@ -312,7 +315,9 @@ describe('Feature: weekly-recurring-expenses, Property 3: Validation Rejects Inv
   const validDayOfWeek = fc.integer({ min: 0, max: 6 });
 
   /** Generates valid categoryId: non-empty string */
-  const validCategoryId = fc.string({ minLength: 1, maxLength: 36 }).filter((s) => s.trim().length > 0);
+  const validCategoryId = fc
+    .string({ minLength: 1, maxLength: 36 })
+    .filter((s) => s.trim().length > 0);
 
   // ─── Property Tests: validateWeeklyGroup ─────────────────────────────────────
 
@@ -329,9 +334,9 @@ describe('Feature: weekly-recurring-expenses, Property 3: Validation Rejects Inv
             expect(result.valid).toBe(false);
             expect(result.errors).toBeDefined();
             expect(result.errors!.length).toBeGreaterThanOrEqual(1);
-          },
+          }
         ),
-        { numRuns: 100 },
+        { numRuns: 100 }
       );
     });
 
@@ -347,9 +352,9 @@ describe('Feature: weekly-recurring-expenses, Property 3: Validation Rejects Inv
             expect(result.valid).toBe(false);
             expect(result.errors).toBeDefined();
             expect(result.errors!.length).toBeGreaterThanOrEqual(1);
-          },
+          }
         ),
-        { numRuns: 100 },
+        { numRuns: 100 }
       );
     });
 
@@ -365,9 +370,9 @@ describe('Feature: weekly-recurring-expenses, Property 3: Validation Rejects Inv
             expect(result.valid).toBe(false);
             expect(result.errors).toBeDefined();
             expect(result.errors!.length).toBeGreaterThanOrEqual(1);
-          },
+          }
         ),
-        { numRuns: 100 },
+        { numRuns: 100 }
       );
     });
 
@@ -388,9 +393,9 @@ describe('Feature: weekly-recurring-expenses, Property 3: Validation Rejects Inv
             expect(result.valid).toBe(false);
             expect(result.errors).toBeDefined();
             expect(result.errors!.length).toBeGreaterThanOrEqual(1);
-          },
+          }
         ),
-        { numRuns: 100 },
+        { numRuns: 100 }
       );
     });
 
@@ -406,9 +411,9 @@ describe('Feature: weekly-recurring-expenses, Property 3: Validation Rejects Inv
             expect(result.valid).toBe(false);
             expect(result.errors).toBeDefined();
             expect(result.errors!.length).toBeGreaterThanOrEqual(1);
-          },
+          }
         ),
-        { numRuns: 100 },
+        { numRuns: 100 }
       );
     });
 
@@ -424,9 +429,9 @@ describe('Feature: weekly-recurring-expenses, Property 3: Validation Rejects Inv
             expect(result.valid).toBe(false);
             expect(result.errors).toBeDefined();
             expect(result.errors!.length).toBeGreaterThanOrEqual(1);
-          },
+          }
         ),
-        { numRuns: 100 },
+        { numRuns: 100 }
       );
     });
 
@@ -441,9 +446,9 @@ describe('Feature: weekly-recurring-expenses, Property 3: Validation Rejects Inv
             const result = validateWeeklyGroup({ title, amount, dayOfWeek, categoryId });
             expect(result.valid).toBe(true);
             expect(result.errors).toBeUndefined();
-          },
+          }
         ),
-        { numRuns: 100 },
+        { numRuns: 100 }
       );
     });
   });
@@ -463,16 +468,16 @@ describe('Feature: weekly-recurring-expenses, Property 3: Validation Rejects Inv
         fc.property(
           fc.oneof(
             fc.double({ min: -2000000000, max: -999999999.01, noNaN: true }),
-            fc.double({ min: 999999999.01, max: 2000000000, noNaN: true }),
+            fc.double({ min: 999999999.01, max: 2000000000, noNaN: true })
           ),
           (amount) => {
             const result = validateOccurrenceValue({ amount });
             expect(result.valid).toBe(false);
             expect(result.errors).toBeDefined();
             expect(result.errors!.length).toBeGreaterThanOrEqual(1);
-          },
+          }
         ),
-        { numRuns: 100 },
+        { numRuns: 100 }
       );
     });
 
@@ -489,9 +494,9 @@ describe('Feature: weekly-recurring-expenses, Property 3: Validation Rejects Inv
             expect(result.valid).toBe(false);
             expect(result.errors).toBeDefined();
             expect(result.errors!.length).toBeGreaterThanOrEqual(1);
-          },
+          }
         ),
-        { numRuns: 100 },
+        { numRuns: 100 }
       );
     });
 
@@ -500,7 +505,7 @@ describe('Feature: weekly-recurring-expenses, Property 3: Validation Rejects Inv
         fc.property(
           fc.oneof(
             fc.integer({ min: 1, max: 99999999999 }).map((n) => n / 100),
-            fc.integer({ min: -99999999999, max: -1 }).map((n) => n / 100),
+            fc.integer({ min: -99999999999, max: -1 }).map((n) => n / 100)
           ),
           (amount) => {
             // Ensure within range
@@ -508,9 +513,9 @@ describe('Feature: weekly-recurring-expenses, Property 3: Validation Rejects Inv
             const result = validateOccurrenceValue({ amount });
             expect(result.valid).toBe(true);
             expect(result.errors).toBeUndefined();
-          },
+          }
         ),
-        { numRuns: 100 },
+        { numRuns: 100 }
       );
     });
   });
@@ -527,18 +532,18 @@ describe('Feature: weekly-recurring-expenses, Property 3: Validation Rejects Inv
             fc.constant('15-01-2024'),
             fc.constant('2024-1-5'),
             fc.constant('not-a-date'),
-            fc.string({ minLength: 1, maxLength: 20 }).filter(
-              (s) => !/^\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/.test(s),
-            ),
+            fc
+              .string({ minLength: 1, maxLength: 20 })
+              .filter((s) => !/^\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/.test(s))
           ),
           (date) => {
             const result = validateOccurrenceDate({ date });
             expect(result.valid).toBe(false);
             expect(result.errors).toBeDefined();
             expect(result.errors!.length).toBeGreaterThanOrEqual(1);
-          },
+          }
         ),
-        { numRuns: 100 },
+        { numRuns: 100 }
       );
     });
 
@@ -552,16 +557,16 @@ describe('Feature: weekly-recurring-expenses, Property 3: Validation Rejects Inv
             fc.constant('2024-04-31'),
             fc.constant('2024-06-31'),
             fc.constant('2024-09-31'),
-            fc.constant('2024-11-31'),
+            fc.constant('2024-11-31')
           ),
           (date) => {
             const result = validateOccurrenceDate({ date });
             expect(result.valid).toBe(false);
             expect(result.errors).toBeDefined();
             expect(result.errors!.length).toBeGreaterThanOrEqual(1);
-          },
+          }
         ),
-        { numRuns: 100 },
+        { numRuns: 100 }
       );
     });
 
@@ -584,16 +589,16 @@ describe('Feature: weekly-recurring-expenses, Property 3: Validation Rejects Inv
             fc.integer({ min: 1, max: 28 }).map((day) => {
               const month = String(Math.floor(Math.random() * 12) + 1).padStart(2, '0');
               return `${farFutureYear}-${month}-${String(day).padStart(2, '0')}`;
-            }),
+            })
           ),
           (date) => {
             const result = validateOccurrenceDate({ date });
             expect(result.valid).toBe(false);
             expect(result.errors).toBeDefined();
             expect(result.errors!.length).toBeGreaterThanOrEqual(1);
-          },
+          }
         ),
-        { numRuns: 100 },
+        { numRuns: 100 }
       );
     });
 
@@ -619,14 +624,13 @@ describe('Feature: weekly-recurring-expenses, Property 3: Validation Rejects Inv
             const result = validateOccurrenceDate({ date: dateStr });
             expect(result.valid).toBe(true);
             expect(result.errors).toBeUndefined();
-          },
+          }
         ),
-        { numRuns: 100 },
+        { numRuns: 100 }
       );
     });
   });
 });
-
 
 // Feature: weekly-recurring-expenses, Property 4: Monthly Total Equals Sum of Occurrences
 describe('Feature: weekly-recurring-expenses, Property 4: Monthly Total Equals Sum of Occurrences', () => {
@@ -641,7 +645,7 @@ describe('Feature: weekly-recurring-expenses, Property 4: Monthly Total Equals S
   // Generator: array of amounts with 2 decimal precision (positive and negative)
   const amountsArb = fc.array(
     fc.integer({ min: -99999999, max: 99999999 }).map((n) => n / 100),
-    { minLength: 0, maxLength: 20 },
+    { minLength: 0, maxLength: 20 }
   );
 
   it('monthly total from OccurrenceGenerator equals the arithmetic sum of all occurrence amounts (mock repository)', async () => {
@@ -690,7 +694,7 @@ describe('Feature: weekly-recurring-expenses, Property 4: Monthly Total Equals S
 
         expect(result).toBe(expectedTotal);
       }),
-      { numRuns: 100 },
+      { numRuns: 100 }
     );
   });
 
@@ -710,7 +714,7 @@ describe('Feature: weekly-recurring-expenses, Property 4: Monthly Total Equals S
 
         expect(roundedIndividualSum).toBe(roundedSum);
       }),
-      { numRuns: 100 },
+      { numRuns: 100 }
     );
   });
 
@@ -756,7 +760,7 @@ describe('Feature: weekly-recurring-expenses, Property 4: Monthly Total Equals S
 
         expect(result).toBe(0);
       }),
-      { numRuns: 100 },
+      { numRuns: 100 }
     );
   });
 
@@ -765,11 +769,11 @@ describe('Feature: weekly-recurring-expenses, Property 4: Monthly Total Equals S
       fc.property(
         fc.array(
           fc.integer({ min: 1, max: 99999999 }).map((n) => n / 100),
-          { minLength: 1, maxLength: 10 },
+          { minLength: 1, maxLength: 10 }
         ),
         fc.array(
           fc.integer({ min: -99999999, max: -1 }).map((n) => n / 100),
-          { minLength: 1, maxLength: 10 },
+          { minLength: 1, maxLength: 10 }
         ),
         (positiveAmounts, negativeAmounts) => {
           const allAmounts = [...positiveAmounts, ...negativeAmounts];
@@ -782,13 +786,12 @@ describe('Feature: weekly-recurring-expenses, Property 4: Monthly Total Equals S
           const combinedSum = Math.round((positiveSum + negativeSum) * 100) / 100;
 
           expect(combinedSum).toBe(roundedSum);
-        },
+        }
       ),
-      { numRuns: 100 },
+      { numRuns: 100 }
     );
   });
 });
-
 
 // Feature: weekly-recurring-expenses, Property 5: Occurrence Edit Isolation
 describe('Feature: weekly-recurring-expenses, Property 5: Occurrence Edit Isolation', () => {
@@ -805,7 +808,10 @@ describe('Feature: weekly-recurring-expenses, Property 5: Occurrence Edit Isolat
   it('editing one occurrence amount does not affect other occurrences in the same group', () => {
     fc.assert(
       fc.property(
-        fc.array(fc.double({ min: 0.01, max: 999999.99, noNaN: true }), { minLength: 2, maxLength: 10 }),
+        fc.array(fc.double({ min: 0.01, max: 999999.99, noNaN: true }), {
+          minLength: 2,
+          maxLength: 10,
+        }),
         fc.nat(),
         fc.double({ min: 0.01, max: 999999.99, noNaN: true }),
         (amounts, pickIndex, newAmount) => {
@@ -847,13 +853,12 @@ describe('Feature: weekly-recurring-expenses, Property 5: Occurrence Edit Isolat
 
           // Verify: the edited occurrence has the new amount
           expect(occurrences[editIndex].amount).toBe(newAmount);
-        },
+        }
       ),
-      { numRuns: 100 },
+      { numRuns: 100 }
     );
   });
 });
-
 
 // Feature: weekly-recurring-expenses, Property 9: Deletion Preserves Past and Removes Future
 describe('Feature: weekly-recurring-expenses, Property 9: Deletion Preserves Past and Removes Future', () => {
@@ -898,7 +903,7 @@ describe('Feature: weekly-recurring-expenses, Property 9: Deletion Preserves Pas
           const pastOccurrences: WeeklyOccurrence[] = [];
           for (let i = 0; i < numPast; i++) {
             const pastDate = new Date();
-            pastDate.setDate(pastDate.getDate() - (7 * (i + 1)));
+            pastDate.setDate(pastDate.getDate() - 7 * (i + 1));
             const dateStr = `${pastDate.getFullYear().toString().padStart(4, '0')}-${(pastDate.getMonth() + 1).toString().padStart(2, '0')}-${pastDate.getDate().toString().padStart(2, '0')}`;
             pastOccurrences.push({
               id: `past-occ-${i}`,
@@ -917,7 +922,7 @@ describe('Feature: weekly-recurring-expenses, Property 9: Deletion Preserves Pas
           const futureOccurrences: WeeklyOccurrence[] = [];
           for (let i = 0; i < numFuture; i++) {
             const futureDate = new Date();
-            futureDate.setDate(futureDate.getDate() + (7 * i)); // i=0 means today (which is "future")
+            futureDate.setDate(futureDate.getDate() + 7 * i); // i=0 means today (which is "future")
             const dateStr = `${futureDate.getFullYear().toString().padStart(4, '0')}-${(futureDate.getMonth() + 1).toString().padStart(2, '0')}-${futureDate.getDate().toString().padStart(2, '0')}`;
             futureOccurrences.push({
               id: `future-occ-${i}`,
@@ -998,13 +1003,12 @@ describe('Feature: weekly-recurring-expenses, Property 9: Deletion Preserves Pas
           // Only deleteFuture was called (which targets future occurrences)
           expect(mockOccRepo.delete).not.toHaveBeenCalled();
           expect(mockOccRepo.deleteMany).not.toHaveBeenCalled();
-        },
+        }
       ),
-      { numRuns: 100 },
+      { numRuns: 100 }
     );
   });
 });
-
 
 // Feature: weekly-recurring-expenses, Property 8: Day-of-Week Change Regenerates Correctly
 describe('Feature: weekly-recurring-expenses, Property 8: Day-of-Week Change Regenerates Correctly', () => {
@@ -1027,9 +1031,8 @@ describe('Feature: weekly-recurring-expenses, Property 8: Day-of-Week Change Reg
         fc.integer({ min: 1, max: 99999999 }).map((n) => n / 100),
         async (oldDayOfWeek, newDayOfWeekRaw, amount) => {
           // Ensure old and new dayOfWeek differ
-          const newDayOfWeek = newDayOfWeekRaw === oldDayOfWeek
-            ? (oldDayOfWeek + 1) % 7
-            : newDayOfWeekRaw;
+          const newDayOfWeek =
+            newDayOfWeekRaw === oldDayOfWeek ? (oldDayOfWeek + 1) % 7 : newDayOfWeekRaw;
 
           const groupId = 'test-group-prop8';
           const today = getTodayBoundary();
@@ -1123,21 +1126,25 @@ describe('Feature: weekly-recurring-expenses, Property 8: Day-of-Week Change Reg
             update: jest.fn(),
             delete: jest.fn(),
             deleteMany: jest.fn(),
-            deleteFutureUnedited: jest.fn().mockImplementation(async (gId: string, fromDate: string) => {
-              deleteFutureUneditedCalled = true;
-              deleteFutureUneditedGroupId = gId;
-              deleteFutureUneditedFromDate = fromDate;
-            }),
+            deleteFutureUnedited: jest
+              .fn()
+              .mockImplementation(async (gId: string, fromDate: string) => {
+                deleteFutureUneditedCalled = true;
+                deleteFutureUneditedGroupId = gId;
+                deleteFutureUneditedFromDate = fromDate;
+              }),
             deleteFuture: jest.fn(),
             getById: jest.fn().mockResolvedValue(null),
             getByGroupId: jest.fn().mockResolvedValue(existingOccurrences),
             getByMonth: jest.fn(),
             getByGroupAndMonth: jest.fn(),
             getMonthlyTotal: jest.fn(),
-            existsForGroupAndDate: jest.fn().mockImplementation(async (_gId: string, date: string) => {
-              // Edited occurrences that were preserved still exist
-              return futureEditedOccurrences.some((o) => o.date === date);
-            }),
+            existsForGroupAndDate: jest
+              .fn()
+              .mockImplementation(async (_gId: string, date: string) => {
+                // Edited occurrences that were preserved still exist
+                return futureEditedOccurrences.some((o) => o.date === date);
+              }),
             getFutureUnedited: jest.fn(),
             getFuture: jest.fn(),
             getPast: jest.fn(),
@@ -1177,9 +1184,9 @@ describe('Feature: weekly-recurring-expenses, Property 8: Day-of-Week Change Reg
           for (const created of createdOccurrences) {
             expect(created.date! >= today).toBe(true);
           }
-        },
+        }
       ),
-      { numRuns: 100 },
+      { numRuns: 100 }
     );
   });
 });
@@ -1230,7 +1237,7 @@ describe('Feature: weekly-recurring-expenses, Property 7: Group Edit Preserves P
           const pastOccurrences: WeeklyOccurrence[] = [];
           for (let i = 0; i < numPast; i++) {
             const pastDate = new Date();
-            pastDate.setDate(pastDate.getDate() - (7 * (i + 1)));
+            pastDate.setDate(pastDate.getDate() - 7 * (i + 1));
             const dateStr = `${pastDate.getFullYear().toString().padStart(4, '0')}-${(pastDate.getMonth() + 1).toString().padStart(2, '0')}-${pastDate.getDate().toString().padStart(2, '0')}`;
             pastOccurrences.push({
               id: `past-occ-${i}`,
@@ -1250,7 +1257,7 @@ describe('Feature: weekly-recurring-expenses, Property 7: Group Edit Preserves P
           const futureOccurrences: WeeklyOccurrence[] = [];
           for (let i = 0; i < numFuture; i++) {
             const futureDate = new Date();
-            futureDate.setDate(futureDate.getDate() + (7 * i)); // i=0 means today (which is "future")
+            futureDate.setDate(futureDate.getDate() + 7 * i); // i=0 means today (which is "future")
             const dateStr = `${futureDate.getFullYear().toString().padStart(4, '0')}-${(futureDate.getMonth() + 1).toString().padStart(2, '0')}-${futureDate.getDate().toString().padStart(2, '0')}`;
             const isEdited = editedFlags[i % editedFlags.length];
             futureOccurrences.push({
@@ -1352,9 +1359,9 @@ describe('Feature: weekly-recurring-expenses, Property 7: Group Edit Preserves P
           for (const editedOcc of futureEdited) {
             expect(updatedOccurrenceIds).not.toContain(editedOcc.id);
           }
-        },
+        }
       ),
-      { numRuns: 100 },
+      { numRuns: 100 }
     );
   });
 
@@ -1387,7 +1394,7 @@ describe('Feature: weekly-recurring-expenses, Property 7: Group Edit Preserves P
           const pastOccurrences: WeeklyOccurrence[] = [];
           for (let i = 0; i < numPast; i++) {
             const pastDate = new Date();
-            pastDate.setDate(pastDate.getDate() - (7 * (i + 1)));
+            pastDate.setDate(pastDate.getDate() - 7 * (i + 1));
             const dateStr = `${pastDate.getFullYear().toString().padStart(4, '0')}-${(pastDate.getMonth() + 1).toString().padStart(2, '0')}-${pastDate.getDate().toString().padStart(2, '0')}`;
             pastOccurrences.push({
               id: `past-occ-${i}`,
@@ -1406,7 +1413,7 @@ describe('Feature: weekly-recurring-expenses, Property 7: Group Edit Preserves P
           const futureOccurrences: WeeklyOccurrence[] = [];
           for (let i = 0; i < numFuture; i++) {
             const futureDate = new Date();
-            futureDate.setDate(futureDate.getDate() + (7 * i));
+            futureDate.setDate(futureDate.getDate() + 7 * i);
             const dateStr = `${futureDate.getFullYear().toString().padStart(4, '0')}-${(futureDate.getMonth() + 1).toString().padStart(2, '0')}-${futureDate.getDate().toString().padStart(2, '0')}`;
             futureOccurrences.push({
               id: `future-occ-${i}`,
@@ -1481,10 +1488,13 @@ describe('Feature: weekly-recurring-expenses, Property 7: Group Edit Preserves P
           expect(mockOccRepo.deleteFuture).not.toHaveBeenCalled();
 
           // ─── Verify: Group record was updated ─────────────────────────────
-          expect(mockGroupRepo.update).toHaveBeenCalledWith(groupId, expect.objectContaining({ title: 'New Title' }));
-        },
+          expect(mockGroupRepo.update).toHaveBeenCalledWith(
+            groupId,
+            expect.objectContaining({ title: 'New Title' })
+          );
+        }
       ),
-      { numRuns: 100 },
+      { numRuns: 100 }
     );
   });
 });

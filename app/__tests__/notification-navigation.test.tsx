@@ -160,7 +160,9 @@ function TestAppContent({ includeHandler = false }: { includeHandler?: boolean }
 
     // Listener for when notification is received while app is foregrounded
     const receivedSubscription = Notifications.addNotificationReceivedListener(
-      (notification: { request?: { content?: { data?: { slotHour?: number; slotMinute?: number } } } }) => {
+      (notification: {
+        request?: { content?: { data?: { slotHour?: number; slotMinute?: number } } };
+      }) => {
         const data = notification?.request?.content?.data;
         if (data && typeof data.slotHour === 'number' && typeof data.slotMinute === 'number') {
           notificationScheduler.handleSlotNotificationReceived(data.slotHour, data.slotMinute);

@@ -9,14 +9,7 @@
  */
 
 import React, { useState, useCallback, useMemo } from 'react';
-import {
-  View,
-  Text,
-  TextInput,
-  StyleSheet,
-  TouchableOpacity,
-  ScrollView,
-} from 'react-native';
+import { View, Text, TextInput, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 import { useThemeColors } from '../../hooks/useThemeColors';
 import { spacing, typography, borderRadius } from '../../constants/theme';
 import { validateWeeklyGroup } from '../../validation/weeklyRecurringValidation';
@@ -80,13 +73,10 @@ export function WeeklyRecurringForm({
     initialValues ? String(initialValues.amount / 100) : ''
   );
   const [dayOfWeek, setDayOfWeek] = useState<number>(initialValues?.dayOfWeek ?? 0);
-  const [categoryId, setCategoryId] = useState<string | null>(
-    initialValues?.categoryId ?? null
-  );
-  const [originId, setOriginId] = useState<string | null>(
-    initialValues?.originId ?? null
-  );
-  const [paymentStatusOption, setPaymentStatusOption] = useState<PaymentStatusCreationOption>('all_pending');
+  const [categoryId, setCategoryId] = useState<string | null>(initialValues?.categoryId ?? null);
+  const [originId, setOriginId] = useState<string | null>(initialValues?.originId ?? null);
+  const [paymentStatusOption, setPaymentStatusOption] =
+    useState<PaymentStatusCreationOption>('all_pending');
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
   const [showCategoryPicker, setShowCategoryPicker] = useState(false);
   const [showOriginPicker, setShowOriginPicker] = useState(false);
@@ -105,25 +95,22 @@ export function WeeklyRecurringForm({
 
   // ─── Validation ──────────────────────────────────────────────────────────
 
-  const parseFieldErrors = useCallback(
-    (errors: string[]): FieldErrors => {
-      const fieldErrs: FieldErrors = {};
-      for (const error of errors) {
-        const lowerErr = error.toLowerCase();
-        if (lowerErr.includes('title')) {
-          fieldErrs.title = error;
-        } else if (lowerErr.includes('amount')) {
-          fieldErrs.amount = error;
-        } else if (lowerErr.includes('day')) {
-          fieldErrs.dayOfWeek = error;
-        } else if (lowerErr.includes('category')) {
-          fieldErrs.categoryId = error;
-        }
+  const parseFieldErrors = useCallback((errors: string[]): FieldErrors => {
+    const fieldErrs: FieldErrors = {};
+    for (const error of errors) {
+      const lowerErr = error.toLowerCase();
+      if (lowerErr.includes('title')) {
+        fieldErrs.title = error;
+      } else if (lowerErr.includes('amount')) {
+        fieldErrs.amount = error;
+      } else if (lowerErr.includes('day')) {
+        fieldErrs.dayOfWeek = error;
+      } else if (lowerErr.includes('category')) {
+        fieldErrs.categoryId = error;
       }
-      return fieldErrs;
-    },
-    []
-  );
+    }
+    return fieldErrs;
+  }, []);
 
   // ─── Handlers ────────────────────────────────────────────────────────────
 
@@ -222,9 +209,7 @@ export function WeeklyRecurringForm({
             {
               backgroundColor: colors.background.secondary,
               color: colors.text.primary,
-              borderColor: fieldErrors.title
-                ? colors.semantic.danger.base
-                : colors.border.default,
+              borderColor: fieldErrors.title ? colors.semantic.danger.base : colors.border.default,
             },
           ]}
           value={title}
@@ -256,9 +241,7 @@ export function WeeklyRecurringForm({
             {
               backgroundColor: colors.background.secondary,
               color: colors.text.primary,
-              borderColor: fieldErrors.amount
-                ? colors.semantic.danger.base
-                : colors.border.default,
+              borderColor: fieldErrors.amount ? colors.semantic.danger.base : colors.border.default,
             },
           ]}
           value={amountText}
@@ -342,9 +325,7 @@ export function WeeklyRecurringForm({
             style={[
               styles.selectorText,
               {
-                color: selectedCategory
-                  ? colors.text.primary
-                  : colors.text.tertiary,
+                color: selectedCategory ? colors.text.primary : colors.text.tertiary,
               },
             ]}
           >
@@ -381,9 +362,7 @@ export function WeeklyRecurringForm({
                 accessibilityLabel={category.name}
                 testID={testID ? `${testID}-category-${category.id}` : undefined}
               >
-                <View
-                  style={[styles.categoryIcon, { backgroundColor: category.color }]}
-                >
+                <View style={[styles.categoryIcon, { backgroundColor: category.color }]}>
                   <Text style={styles.categoryIconText}>{category.icon}</Text>
                 </View>
                 <Text style={[styles.pickerItemText, { color: colors.text.primary }]}>
@@ -403,9 +382,7 @@ export function WeeklyRecurringForm({
       {/* Origin Selector (Optional) */}
       {origins && origins.length > 0 && (
         <View style={styles.fieldContainer}>
-          <Text style={[styles.label, { color: colors.text.secondary }]}>
-            Origem (opcional)
-          </Text>
+          <Text style={[styles.label, { color: colors.text.secondary }]}>Origem (opcional)</Text>
           <TouchableOpacity
             style={[
               styles.selectorButton,
@@ -423,9 +400,7 @@ export function WeeklyRecurringForm({
               style={[
                 styles.selectorText,
                 {
-                  color: selectedOrigin
-                    ? colors.text.primary
-                    : colors.text.tertiary,
+                  color: selectedOrigin ? colors.text.primary : colors.text.tertiary,
                 },
               ]}
             >
@@ -456,9 +431,7 @@ export function WeeklyRecurringForm({
                 accessibilityLabel="Nenhuma origem"
                 testID={testID ? `${testID}-origin-none` : undefined}
               >
-                <Text
-                  style={[styles.pickerItemText, { color: colors.text.secondary }]}
-                >
+                <Text style={[styles.pickerItemText, { color: colors.text.secondary }]}>
                   Nenhuma
                 </Text>
               </TouchableOpacity>
@@ -477,9 +450,7 @@ export function WeeklyRecurringForm({
                   accessibilityLabel={origin.name}
                   testID={testID ? `${testID}-origin-${origin.id}` : undefined}
                 >
-                  <Text
-                    style={[styles.pickerItemText, { color: colors.text.primary }]}
-                  >
+                  <Text style={[styles.pickerItemText, { color: colors.text.primary }]}>
                     {origin.name}
                   </Text>
                 </TouchableOpacity>
@@ -514,9 +485,7 @@ export function WeeklyRecurringForm({
             accessibilityLabel="Cancelar"
             testID={testID ? `${testID}-cancel` : undefined}
           >
-            <Text style={[styles.buttonText, { color: colors.text.primary }]}>
-              Cancelar
-            </Text>
+            <Text style={[styles.buttonText, { color: colors.text.primary }]}>Cancelar</Text>
           </TouchableOpacity>
         )}
         <TouchableOpacity

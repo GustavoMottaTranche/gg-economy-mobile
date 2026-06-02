@@ -100,29 +100,35 @@ export function OccurrenceEditModal({
 
   // ─── Handlers ────────────────────────────────────────────────────────────
 
-  const handleAmountChange = useCallback((text: string) => {
-    // Allow numeric input with optional negative sign and up to 2 decimal places
-    const cleaned = text.replace(/[^0-9.\-]/g, '');
-    // Allow only one negative sign at the start
-    const hasNegative = cleaned.startsWith('-');
-    const withoutNegative = cleaned.replace(/-/g, '');
-    // Prevent multiple dots
-    const parts = withoutNegative.split('.');
-    if (parts.length > 2) return;
-    // Limit decimal places to 2
-    if (parts.length === 2 && (parts[1]?.length ?? 0) > 2) return;
-    setAmountText(hasNegative ? `-${withoutNegative}` : withoutNegative);
-    if (fieldErrors.amount) {
-      setFieldErrors((prev) => ({ ...prev, amount: undefined }));
-    }
-  }, [fieldErrors.amount]);
+  const handleAmountChange = useCallback(
+    (text: string) => {
+      // Allow numeric input with optional negative sign and up to 2 decimal places
+      const cleaned = text.replace(/[^0-9.\-]/g, '');
+      // Allow only one negative sign at the start
+      const hasNegative = cleaned.startsWith('-');
+      const withoutNegative = cleaned.replace(/-/g, '');
+      // Prevent multiple dots
+      const parts = withoutNegative.split('.');
+      if (parts.length > 2) return;
+      // Limit decimal places to 2
+      if (parts.length === 2 && (parts[1]?.length ?? 0) > 2) return;
+      setAmountText(hasNegative ? `-${withoutNegative}` : withoutNegative);
+      if (fieldErrors.amount) {
+        setFieldErrors((prev) => ({ ...prev, amount: undefined }));
+      }
+    },
+    [fieldErrors.amount]
+  );
 
-  const handleDateChange = useCallback((text: string) => {
-    setDateText(text);
-    if (fieldErrors.date) {
-      setFieldErrors((prev) => ({ ...prev, date: undefined }));
-    }
-  }, [fieldErrors.date]);
+  const handleDateChange = useCallback(
+    (text: string) => {
+      setDateText(text);
+      if (fieldErrors.date) {
+        setFieldErrors((prev) => ({ ...prev, date: undefined }));
+      }
+    },
+    [fieldErrors.date]
+  );
 
   const handleSave = useCallback(() => {
     if (!occurrence) return;
@@ -140,9 +146,11 @@ export function OccurrenceEditModal({
     } else if (parsedAmount !== occurrence.amount) {
       const amountResult = validateOccurrenceValue({ amount: parsedAmount });
       if (!amountResult.valid) {
-        errors.amount = amountResult.errors?.[0] ?? t('weeklyRecurring.validation.invalidAmount', {
-          defaultValue: 'Valor inválido',
-        });
+        errors.amount =
+          amountResult.errors?.[0] ??
+          t('weeklyRecurring.validation.invalidAmount', {
+            defaultValue: 'Valor inválido',
+          });
       } else {
         dto.amount = parsedAmount;
         hasChanges = true;
@@ -154,9 +162,11 @@ export function OccurrenceEditModal({
     if (trimmedDate !== occurrence.date) {
       const dateResult = validateOccurrenceDate({ date: trimmedDate });
       if (!dateResult.valid) {
-        errors.date = dateResult.errors?.[0] ?? t('weeklyRecurring.validation.invalidDate', {
-          defaultValue: 'Data inválida',
-        });
+        errors.date =
+          dateResult.errors?.[0] ??
+          t('weeklyRecurring.validation.invalidDate', {
+            defaultValue: 'Data inválida',
+          });
       } else {
         dto.date = trimmedDate;
         hasChanges = true;
@@ -351,7 +361,10 @@ export function OccurrenceEditModal({
                   })}
                 />
                 {fieldErrors.amount && (
-                  <Text style={styles.errorText} testID={testID ? `${testID}-amount-error` : undefined}>
+                  <Text
+                    style={styles.errorText}
+                    testID={testID ? `${testID}-amount-error` : undefined}
+                  >
                     {fieldErrors.amount}
                   </Text>
                 )}
@@ -363,10 +376,7 @@ export function OccurrenceEditModal({
                   {t('weeklyRecurring.dateLabel', { defaultValue: 'Data' })}
                 </Text>
                 <TextInput
-                  style={[
-                    styles.input,
-                    fieldErrors.date ? styles.inputError : styles.inputDefault,
-                  ]}
+                  style={[styles.input, fieldErrors.date ? styles.inputError : styles.inputDefault]}
                   value={dateText}
                   onChangeText={handleDateChange}
                   placeholder="YYYY-MM-DD"
@@ -383,7 +393,10 @@ export function OccurrenceEditModal({
                   })}
                 </Text>
                 {fieldErrors.date && (
-                  <Text style={styles.errorText} testID={testID ? `${testID}-date-error` : undefined}>
+                  <Text
+                    style={styles.errorText}
+                    testID={testID ? `${testID}-date-error` : undefined}
+                  >
                     {fieldErrors.date}
                   </Text>
                 )}

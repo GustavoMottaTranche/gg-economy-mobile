@@ -66,10 +66,19 @@ function ToastItem({ toast, onDismiss }: ToastItemProps): React.JSX.Element {
 
   // Derive severity colors from theme
   const severityColorMap: Record<ToastSeverity, { background: string; text: string }> = {
-    error: { background: themeColors.semantic.danger.light, text: themeColors.semantic.danger.dark },
-    warning: { background: themeColors.semantic.warning.light, text: themeColors.semantic.warning.dark },
+    error: {
+      background: themeColors.semantic.danger.light,
+      text: themeColors.semantic.danger.dark,
+    },
+    warning: {
+      background: themeColors.semantic.warning.light,
+      text: themeColors.semantic.warning.dark,
+    },
     info: { background: themeColors.semantic.info.light, text: themeColors.semantic.info.dark },
-    success: { background: themeColors.semantic.success.light, text: themeColors.semantic.success.dark },
+    success: {
+      background: themeColors.semantic.success.light,
+      text: themeColors.semantic.success.dark,
+    },
   };
   const colors = severityColorMap[toast.severity];
   const icon = SEVERITY_ICONS[toast.severity];

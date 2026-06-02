@@ -109,7 +109,15 @@ function MonthSelectorComponent({
         accessibilityHint={t('common.previous')}
         testID={`${testID}-prev`}
       >
-        <Text style={[styles.buttonText, { color: colors.text.primary }, disablePrevious && { color: colors.text.tertiary }]}>‹</Text>
+        <Text
+          style={[
+            styles.buttonText,
+            { color: colors.text.primary },
+            disablePrevious && { color: colors.text.tertiary },
+          ]}
+        >
+          ‹
+        </Text>
       </TouchableOpacity>
 
       {/* Month Display */}
@@ -145,7 +153,15 @@ function MonthSelectorComponent({
         accessibilityHint={t('common.next')}
         testID={`${testID}-next`}
       >
-        <Text style={[styles.buttonText, { color: colors.text.primary }, disableNext && { color: colors.text.tertiary }]}>›</Text>
+        <Text
+          style={[
+            styles.buttonText,
+            { color: colors.text.primary },
+            disableNext && { color: colors.text.tertiary },
+          ]}
+        >
+          ›
+        </Text>
       </TouchableOpacity>
     </View>
   );

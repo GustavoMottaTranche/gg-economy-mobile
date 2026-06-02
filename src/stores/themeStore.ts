@@ -54,8 +54,7 @@ export const useThemeStore = create<ThemeState>((set) => ({
   preference: 'system',
   resolvedScheme: getSystemScheme(),
   setPreference: (pref) => {
-    const resolved: ResolvedScheme =
-      pref === 'system' ? getSystemScheme() : pref;
+    const resolved: ResolvedScheme = pref === 'system' ? getSystemScheme() : pref;
     set({ preference: pref, resolvedScheme: resolved });
   },
 }));

@@ -41,10 +41,7 @@ export interface IPaymentStatusService {
   bulkMarkMonthlyGroup(recurringId: string): Promise<BulkMarkResult>;
   getPendingItemsForMonth(month: string): Promise<PendingItem[]>;
   getPaymentTotalsForMonth(month: string): Promise<PaymentTotals>;
-  getGroupPaymentSummary(
-    groupId: string,
-    type: 'weekly' | 'monthly'
-  ): Promise<GroupPaymentSummary>;
+  getGroupPaymentSummary(groupId: string, type: 'weekly' | 'monthly'): Promise<GroupPaymentSummary>;
 }
 
 // ─── Service Implementation ──────────────────────────────────────────────────
@@ -171,10 +168,7 @@ export class PaymentStatusService implements IPaymentStatusService {
         })
         .from(weeklyOccurrences)
         .where(
-          and(
-            eq(weeklyOccurrences.weeklyGroupId, groupId),
-            eq(weeklyOccurrences.isPaid, false)
-          )
+          and(eq(weeklyOccurrences.weeklyGroupId, groupId), eq(weeklyOccurrences.isPaid, false))
         );
 
       if (unpaidOccurrences.length === 0) {
@@ -192,10 +186,7 @@ export class PaymentStatusService implements IPaymentStatusService {
         .update(weeklyOccurrences)
         .set({ isPaid: true, updatedAt: now })
         .where(
-          and(
-            eq(weeklyOccurrences.weeklyGroupId, groupId),
-            eq(weeklyOccurrences.isPaid, false)
-          )
+          and(eq(weeklyOccurrences.weeklyGroupId, groupId), eq(weeklyOccurrences.isPaid, false))
         );
 
       logger.debug('Bulk marked weekly group as paid', {
@@ -232,12 +223,7 @@ export class PaymentStatusService implements IPaymentStatusService {
           referenceMonth: transactions.referenceMonth,
         })
         .from(transactions)
-        .where(
-          and(
-            eq(transactions.recurringId, recurringId),
-            eq(transactions.isPaid, false)
-          )
-        );
+        .where(and(eq(transactions.recurringId, recurringId), eq(transactions.isPaid, false)));
 
       if (unpaidTransactions.length === 0) {
         return { markedCount: 0, affectedMonths: [] };
@@ -253,12 +239,7 @@ export class PaymentStatusService implements IPaymentStatusService {
       await db
         .update(transactions)
         .set({ isPaid: true, updatedAt: now })
-        .where(
-          and(
-            eq(transactions.recurringId, recurringId),
-            eq(transactions.isPaid, false)
-          )
-        );
+        .where(and(eq(transactions.recurringId, recurringId), eq(transactions.isPaid, false)));
 
       logger.debug('Bulk marked monthly group as paid', {
         recurringId,
@@ -303,12 +284,7 @@ export class PaymentStatusService implements IPaymentStatusService {
         eq(weeklyOccurrences.weeklyGroupId, weeklyRecurringGroups.id)
       )
       .leftJoin(categories, eq(weeklyRecurringGroups.categoryId, categories.id))
-      .where(
-        and(
-          eq(weeklyOccurrences.referenceMonth, month),
-          eq(weeklyOccurrences.isPaid, false)
-        )
-      );
+      .where(and(eq(weeklyOccurrences.referenceMonth, month), eq(weeklyOccurrences.isPaid, false)));
 
     // Query pending monthly transactions (recurring only) with recurring name and expense group
     const monthlyPending = await db
@@ -322,10 +298,7 @@ export class PaymentStatusService implements IPaymentStatusService {
         expenseGroup: categories.expenseGroup,
       })
       .from(transactions)
-      .innerJoin(
-        recurringTransactions,
-        eq(transactions.recurringId, recurringTransactions.id)
-      )
+      .innerJoin(recurringTransactions, eq(transactions.recurringId, recurringTransactions.id))
       .leftJoin(categories, eq(transactions.categoryId, categories.id))
       .where(
         and(
@@ -397,12 +370,7 @@ export class PaymentStatusService implements IPaymentStatusService {
         paidTotal: sql<number>`COALESCE(SUM(CASE WHEN ${transactions.isPaid} = 1 THEN ${transactions.amount} ELSE 0 END), 0)`,
       })
       .from(transactions)
-      .where(
-        and(
-          eq(transactions.referenceMonth, month),
-          isNotNull(transactions.recurringId)
-        )
-      );
+      .where(and(eq(transactions.referenceMonth, month), isNotNull(transactions.recurringId)));
 
     const weeklyPredicted = weeklyTotals[0]?.predictedTotal ?? 0;
     const weeklyPaid = weeklyTotals[0]?.paidTotal ?? 0;

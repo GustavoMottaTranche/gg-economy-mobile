@@ -136,9 +136,7 @@ function softDeleteGroup(
   today: string
 ): { group: WeeklyRecurringGroup; preservedOccurrences: OccurrenceWithPayment[] } {
   // Past occurrences are preserved with their isPaid intact
-  const preservedOccurrences = occurrences
-    .filter((o) => o.date < today)
-    .map((o) => ({ ...o }));
+  const preservedOccurrences = occurrences.filter((o) => o.date < today).map((o) => ({ ...o }));
 
   return {
     group: { ...group, isActive: false },
@@ -233,11 +231,7 @@ describe('Feature: payment-status-tracking, Property 8: Group mutations preserve
             isPaid: o.isPaid,
           }));
 
-          const { occurrences: updatedOccurrences } = editGroupName(
-            group,
-            newTitle,
-            occurrences
-          );
+          const { occurrences: updatedOccurrences } = editGroupName(group, newTitle, occurrences);
 
           // Every occurrence must retain its original isPaid value
           for (let i = 0; i < occurrences.length; i++) {
@@ -324,11 +318,7 @@ describe('Feature: payment-status-tracking, Property 8: Group mutations preserve
     fc.assert(
       fc.property(
         groupArbitrary.chain((group) =>
-          fc.tuple(
-            fc.constant(group),
-            occurrencesArbitrary(group.id),
-            fc.uuid()
-          )
+          fc.tuple(fc.constant(group), occurrencesArbitrary(group.id), fc.uuid())
         ),
         ([group, occurrences, newCategoryId]) => {
           const originalIsPaidValues = occurrences.map((o) => ({
@@ -356,11 +346,7 @@ describe('Feature: payment-status-tracking, Property 8: Group mutations preserve
     fc.assert(
       fc.property(
         groupArbitrary.chain((group) =>
-          fc.tuple(
-            fc.constant(group),
-            occurrencesArbitrary(group.id),
-            dateArbitrary
-          )
+          fc.tuple(fc.constant(group), occurrencesArbitrary(group.id), dateArbitrary)
         ),
         ([group, occurrences, today]) => {
           // Record original isPaid for past occurrences (those that will be preserved)
@@ -404,11 +390,18 @@ describe('Feature: payment-status-tracking, Property 8: Group mutations preserve
             fc.uuid()
           )
         ),
-        ([group, occurrences, operation, today, newTitle, newAmount, newDayOfWeek, newCategoryId]) => {
+        ([
+          group,
+          occurrences,
+          operation,
+          today,
+          newTitle,
+          newAmount,
+          newDayOfWeek,
+          newCategoryId,
+        ]) => {
           // Record original isPaid values
-          const originalIsPaidMap = new Map(
-            occurrences.map((o) => [o.id, o.isPaid])
-          );
+          const originalIsPaidMap = new Map(occurrences.map((o) => [o.id, o.isPaid]));
 
           let resultOccurrences: OccurrenceWithPayment[];
 

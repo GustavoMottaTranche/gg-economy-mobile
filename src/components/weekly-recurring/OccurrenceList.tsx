@@ -180,12 +180,7 @@ function OccurrenceListComponent({
             </View>
           )}
           <View style={styles.itemLeft}>
-            <Text
-              style={[
-                styles.dateText,
-                showStatusToggle && isPaid && styles.dateTextPaid,
-              ]}
-            >
+            <Text style={[styles.dateText, showStatusToggle && isPaid && styles.dateTextPaid]}>
               {formattedDate}
             </Text>
             {item.isValueEdited && (
@@ -196,12 +191,7 @@ function OccurrenceListComponent({
               </View>
             )}
           </View>
-          <Text
-            style={[
-              styles.amountText,
-              showStatusToggle && isPaid && styles.amountTextPaid,
-            ]}
-          >
+          <Text style={[styles.amountText, showStatusToggle && isPaid && styles.amountTextPaid]}>
             {formattedAmount}
           </Text>
         </TouchableOpacity>

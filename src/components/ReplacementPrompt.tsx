@@ -106,12 +106,20 @@ function ReplacementPromptComponent({
 
             {/* Header */}
             <View style={styles.header}>
-              <Text style={[styles.title, { color: colors.text.primary }]} testID="replacement-prompt-title">
+              <Text
+                style={[styles.title, { color: colors.text.primary }]}
+                testID="replacement-prompt-title"
+              >
                 Excluir categoria
               </Text>
-              <Text style={[styles.subtitle, { color: colors.text.primary }]} testID="replacement-prompt-subtitle">
+              <Text
+                style={[styles.subtitle, { color: colors.text.primary }]}
+                testID="replacement-prompt-subtitle"
+              >
                 A categoria &quot;{category.name}&quot; possui{' '}
-                <Text style={[styles.countHighlight, { color: colors.semantic.danger.base }]}>{transactionCount}</Text>{' '}
+                <Text style={[styles.countHighlight, { color: colors.semantic.danger.base }]}>
+                  {transactionCount}
+                </Text>{' '}
                 {transactionCount === 1 ? 'transação associada' : 'transações associadas'}.
               </Text>
               <Text style={[styles.description, { color: colors.text.secondary }]}>
@@ -122,7 +130,9 @@ function ReplacementPromptComponent({
 
             {/* Category Selector */}
             <View style={styles.selectorContainer}>
-              <Text style={[styles.selectorLabel, { color: colors.text.primary }]}>Categoria substituta:</Text>
+              <Text style={[styles.selectorLabel, { color: colors.text.primary }]}>
+                Categoria substituta:
+              </Text>
               <CategorySelector
                 selectedCategoryId={selectedReplacementId}
                 onSelect={handleCategorySelect}
@@ -146,24 +156,27 @@ function ReplacementPromptComponent({
                 accessibilityState={{ disabled: !selectedReplacementId }}
                 testID="replacement-prompt-replace-button"
               >
-                <Text
-                  style={[
-                    styles.replaceButtonText,
-                    { color: colors.text.inverse },
-                  ]}
-                >
+                <Text style={[styles.replaceButtonText, { color: colors.text.inverse }]}>
                   Substituir e excluir
                 </Text>
               </TouchableOpacity>
 
               <TouchableOpacity
-                style={[styles.softDeleteButton, { backgroundColor: colors.semantic.danger.light, borderColor: colors.semantic.danger.base }]}
+                style={[
+                  styles.softDeleteButton,
+                  {
+                    backgroundColor: colors.semantic.danger.light,
+                    borderColor: colors.semantic.danger.base,
+                  },
+                ]}
                 onPress={handleSoftDelete}
                 accessibilityRole="button"
                 accessibilityLabel="Excluir sem substituição"
                 testID="replacement-prompt-soft-delete-button"
               >
-                <Text style={[styles.softDeleteButtonText, { color: colors.semantic.danger.base }]}>Excluir sem substituição</Text>
+                <Text style={[styles.softDeleteButtonText, { color: colors.semantic.danger.base }]}>
+                  Excluir sem substituição
+                </Text>
               </TouchableOpacity>
 
               <TouchableOpacity
@@ -173,7 +186,9 @@ function ReplacementPromptComponent({
                 accessibilityLabel="Cancelar"
                 testID="replacement-prompt-cancel-button"
               >
-                <Text style={[styles.cancelButtonText, { color: colors.text.secondary }]}>Cancelar</Text>
+                <Text style={[styles.cancelButtonText, { color: colors.text.secondary }]}>
+                  Cancelar
+                </Text>
               </TouchableOpacity>
             </View>
           </SafeAreaView>

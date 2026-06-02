@@ -50,9 +50,9 @@ describe('Property 6: Month advancement produces correct next month', () => {
             expect(resultMonth).toBe(month + 1);
             expect(resultYear).toBe(year);
           }
-        },
+        }
       ),
-      { numRuns: 100 },
+      { numRuns: 100 }
     );
   });
 });

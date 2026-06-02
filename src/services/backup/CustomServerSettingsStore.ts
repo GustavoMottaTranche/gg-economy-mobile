@@ -5,6 +5,13 @@
  * in expo-secure-store (sensitive). Provides validation for inputs and
  * device ID generation using expo-crypto.
  *
+ * Device ID Strategy:
+ * The device ID is derived deterministically from the API key using SHA-256.
+ * This ensures that different app variants (dev, preview, production) with the
+ * same server configuration will produce the same device ID and see the same
+ * backups on the server. If no API key is configured, a random device ID is
+ * generated as fallback.
+ *
  * @module services/backup/CustomServerSettingsStore
  */
 
@@ -104,6 +111,7 @@ export class CustomServerSettingsStore {
   /**
    * Save server URL and API key after validation.
    * Server URL is stored in AsyncStorage, API key in SecureStore.
+   * Also regenerates the device ID based on the new API key.
    * Throws if validation fails.
    */
   async saveSettings(serverUrl: string, apiKey: string): Promise<void> {
@@ -117,8 +125,14 @@ export class CustomServerSettingsStore {
       throw new Error(apiKeyValidation.error ?? 'Invalid API key');
     }
 
+    const trimmedApiKey = apiKey.trim();
+
     await AsyncStorage.setItem(STORAGE_KEYS.SERVER_URL, serverUrl);
-    await SecureStore.setItemAsync(STORAGE_KEYS.API_KEY, apiKey.trim());
+    await SecureStore.setItemAsync(STORAGE_KEYS.API_KEY, trimmedApiKey);
+
+    // Regenerate device ID based on the API key for cross-variant consistency
+    const deviceId = await this.generateDeviceIdFromApiKey(trimmedApiKey);
+    await SecureStore.setItemAsync(STORAGE_KEYS.DEVICE_ID, deviceId);
   }
 
   /**
@@ -138,10 +152,23 @@ export class CustomServerSettingsStore {
   }
 
   /**
+   * Generate a deterministic device ID from the API key using SHA-256.
+   * This ensures all app variants with the same API key produce the same device ID.
+   * Returns first 32 hex characters of the hash.
+   */
+  private async generateDeviceIdFromApiKey(apiKey: string): Promise<string> {
+    const hash = await Crypto.digestStringAsync(
+      Crypto.CryptoDigestAlgorithm.SHA256,
+      `gg-economy-device:${apiKey}`
+    );
+    // SHA-256 produces 64 hex chars, take first 32 for device ID
+    return hash.substring(0, 32);
+  }
+
+  /**
    * Get or create device ID.
-   * Checks SecureStore for existing device ID. If absent, generates a
-   * 32-character hex string (16 random bytes) via expo-crypto, persists it,
-   * and returns it.
+   * If an API key is stored, derives the device ID deterministically from it.
+   * Otherwise generates a random 32-character hex string as fallback.
    */
   async getOrCreateDeviceId(): Promise<string> {
     const existingId = await SecureStore.getItemAsync(STORAGE_KEYS.DEVICE_ID);
@@ -150,7 +177,15 @@ export class CustomServerSettingsStore {
       return existingId;
     }
 
-    // Generate 16 random bytes → 32 hex characters
+    // Try to derive from API key for cross-variant consistency
+    const apiKey = await SecureStore.getItemAsync(STORAGE_KEYS.API_KEY);
+    if (apiKey) {
+      const deviceId = await this.generateDeviceIdFromApiKey(apiKey);
+      await SecureStore.setItemAsync(STORAGE_KEYS.DEVICE_ID, deviceId);
+      return deviceId;
+    }
+
+    // Fallback: generate random ID (will differ between app variants)
     const randomBytes = await Crypto.getRandomBytesAsync(DEVICE_ID_BYTE_LENGTH);
     const deviceId = Array.from(randomBytes)
       .map((byte) => byte.toString(16).padStart(2, '0'))

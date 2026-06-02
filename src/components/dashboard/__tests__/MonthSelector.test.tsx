@@ -157,9 +157,7 @@ describe('MonthSelector', () => {
     });
 
     it('displays the correct formatted month label', () => {
-      const { rerender } = render(
-        <MonthSelector {...defaultProps} selectedMonth="2025-03" />
-      );
+      const { rerender } = render(<MonthSelector {...defaultProps} selectedMonth="2025-03" />);
 
       const monthText = screen.getByTestId('month-selector-text');
       expect(monthText).toBeTruthy();

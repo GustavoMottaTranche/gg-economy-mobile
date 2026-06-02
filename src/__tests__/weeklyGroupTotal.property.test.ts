@@ -25,9 +25,7 @@ const uuidArb = fc.uuid();
 const referenceMonthArb = fc
   .integer({ min: 2020, max: 2030 })
   .chain((year) =>
-    fc
-      .integer({ min: 1, max: 12 })
-      .map((month) => `${year}-${String(month).padStart(2, '0')}`)
+    fc.integer({ min: 1, max: 12 }).map((month) => `${year}-${String(month).padStart(2, '0')}`)
   );
 
 /** Generates a positive amount (in currency units, e.g. 0.01 to 99999.99) */
@@ -62,10 +60,7 @@ const weeklyGroupArb = (groupId: string): fc.Arbitrary<WeeklyRecurringGroup> =>
   });
 
 /** Generates a WeeklyOccurrence for a given group and month */
-const weeklyOccurrenceArb = (
-  groupId: string,
-  refMonth: string
-): fc.Arbitrary<WeeklyOccurrence> =>
+const weeklyOccurrenceArb = (groupId: string, refMonth: string): fc.Arbitrary<WeeklyOccurrence> =>
   fc.record({
     id: uuidArb,
     weeklyGroupId: fc.constant(groupId),
@@ -112,9 +107,7 @@ describe('Feature: statement-payment-integration, Property 2: Weekly group month
 
           // Find the weeklyGroupHeader for our group
           const headerItem = result.find(
-            (item) =>
-              item.type === 'weeklyGroupHeader' &&
-              item.data.group.id === group.id
+            (item) => item.type === 'weeklyGroupHeader' && item.data.group.id === group.id
           );
 
           expect(headerItem).toBeDefined();
@@ -123,10 +116,7 @@ describe('Feature: statement-payment-integration, Property 2: Weekly group month
           const headerData = headerItem!.data as WeeklyGroupHeaderData;
 
           // The monthlyTotal should equal the sum of all occurrence amounts
-          const expectedTotal = occurrences.reduce(
-            (sum, occ) => sum + occ.amount,
-            0
-          );
+          const expectedTotal = occurrences.reduce((sum, occ) => sum + occ.amount, 0);
 
           expect(headerData.monthlyTotal).toBeCloseTo(expectedTotal, 5);
         }
@@ -167,9 +157,7 @@ describe('Feature: statement-payment-integration, Property 2: Weekly group month
 
           // Find the weeklyGroupHeader for our group
           const headerItem = result.find(
-            (item) =>
-              item.type === 'weeklyGroupHeader' &&
-              item.data.group.id === group.id
+            (item) => item.type === 'weeklyGroupHeader' && item.data.group.id === group.id
           );
 
           expect(headerItem).toBeDefined();
@@ -192,29 +180,32 @@ describe('Feature: statement-payment-integration, Property 2: Weekly group month
   it('monthlyTotal is consistent across multiple groups (each group total is independent)', () => {
     fc.assert(
       fc.property(
-        fc.tuple(uuidArb, uuidArb).filter(([a, b]) => a !== b).chain(([groupId1, groupId2]) =>
-          referenceMonthArb.chain((refMonth) =>
-            fc
-              .tuple(
-                weeklyGroupArb(groupId1),
-                weeklyGroupArb(groupId2),
-                fc.array(weeklyOccurrenceArb(groupId1, refMonth), {
-                  minLength: 1,
-                  maxLength: 8,
-                }),
-                fc.array(weeklyOccurrenceArb(groupId2, refMonth), {
-                  minLength: 1,
-                  maxLength: 8,
-                })
-              )
-              .map(([group1, group2, occs1, occs2]) => ({
-                group1,
-                group2,
-                occs1,
-                occs2,
-              }))
-          )
-        ),
+        fc
+          .tuple(uuidArb, uuidArb)
+          .filter(([a, b]) => a !== b)
+          .chain(([groupId1, groupId2]) =>
+            referenceMonthArb.chain((refMonth) =>
+              fc
+                .tuple(
+                  weeklyGroupArb(groupId1),
+                  weeklyGroupArb(groupId2),
+                  fc.array(weeklyOccurrenceArb(groupId1, refMonth), {
+                    minLength: 1,
+                    maxLength: 8,
+                  }),
+                  fc.array(weeklyOccurrenceArb(groupId2, refMonth), {
+                    minLength: 1,
+                    maxLength: 8,
+                  })
+                )
+                .map(([group1, group2, occs1, occs2]) => ({
+                  group1,
+                  group2,
+                  occs1,
+                  occs2,
+                }))
+            )
+          ),
         ({ group1, group2, occs1, occs2 }) => {
           const transactions: PaginatedTransactionWithCategory[] = [];
           const expandedGroupIds = new Set<string>();
@@ -230,14 +221,10 @@ describe('Feature: statement-payment-integration, Property 2: Weekly group month
 
           // Find headers for both groups
           const header1 = result.find(
-            (item) =>
-              item.type === 'weeklyGroupHeader' &&
-              item.data.group.id === group1.id
+            (item) => item.type === 'weeklyGroupHeader' && item.data.group.id === group1.id
           );
           const header2 = result.find(
-            (item) =>
-              item.type === 'weeklyGroupHeader' &&
-              item.data.group.id === group2.id
+            (item) => item.type === 'weeklyGroupHeader' && item.data.group.id === group2.id
           );
 
           expect(header1).toBeDefined();

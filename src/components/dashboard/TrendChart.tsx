@@ -98,19 +98,27 @@ function TrendChartComponent({
   // Empty state
   if (data.length === 0) {
     return (
-      <View style={[styles.container, { backgroundColor: colors.surface.card }, style]} testID={testID}>
+      <View
+        style={[styles.container, { backgroundColor: colors.surface.card }, style]}
+        testID={testID}
+      >
         <View style={styles.header}>
           <Text style={[styles.title, { color: colors.text.primary }]}>{t('dashboard.trend')}</Text>
         </View>
         <View style={styles.emptyState}>
-          <Text style={[styles.emptyText, { color: colors.text.tertiary }]}>{t('dashboard.noData')}</Text>
+          <Text style={[styles.emptyText, { color: colors.text.tertiary }]}>
+            {t('dashboard.noData')}
+          </Text>
         </View>
       </View>
     );
   }
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.surface.card }, style]} testID={testID}>
+    <View
+      style={[styles.container, { backgroundColor: colors.surface.card }, style]}
+      testID={testID}
+    >
       {/* Header with title and period selector */}
       <View style={styles.header}>
         <Text style={[styles.title, { color: colors.text.primary }]}>{t('dashboard.trend')}</Text>
@@ -120,7 +128,10 @@ function TrendChartComponent({
               key={period}
               style={[
                 styles.periodButton,
-                selectedPeriod === period && [styles.periodButtonActive, { backgroundColor: colors.surface.card }],
+                selectedPeriod === period && [
+                  styles.periodButtonActive,
+                  { backgroundColor: colors.surface.card },
+                ],
               ]}
               onPress={() => onPeriodChange(period)}
               accessibilityRole="button"

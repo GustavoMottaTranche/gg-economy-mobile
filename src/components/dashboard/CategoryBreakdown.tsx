@@ -82,18 +82,30 @@ function CategoryBreakdownComponent({
   // Empty state
   if (data.length === 0 || totalExpenses === 0) {
     return (
-      <View style={[styles.container, { backgroundColor: colors.surface.card }, style]} testID={testID}>
-        <Text style={[styles.title, { color: colors.text.primary }]}>{t('dashboard.categoryBreakdown')}</Text>
+      <View
+        style={[styles.container, { backgroundColor: colors.surface.card }, style]}
+        testID={testID}
+      >
+        <Text style={[styles.title, { color: colors.text.primary }]}>
+          {t('dashboard.categoryBreakdown')}
+        </Text>
         <View style={styles.emptyState}>
-          <Text style={[styles.emptyText, { color: colors.text.tertiary }]}>{t('dashboard.noData')}</Text>
+          <Text style={[styles.emptyText, { color: colors.text.tertiary }]}>
+            {t('dashboard.noData')}
+          </Text>
         </View>
       </View>
     );
   }
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.surface.card }, style]} testID={testID}>
-      <Text style={[styles.title, { color: colors.text.primary }]}>{t('dashboard.categoryBreakdown')}</Text>
+    <View
+      style={[styles.container, { backgroundColor: colors.surface.card }, style]}
+      testID={testID}
+    >
+      <Text style={[styles.title, { color: colors.text.primary }]}>
+        {t('dashboard.categoryBreakdown')}
+      </Text>
 
       {/* Donut Chart */}
       <DonutChart
@@ -128,7 +140,9 @@ function CategoryBreakdownComponent({
               <Text style={[styles.categoryAmount, { color: colors.text.primary }]}>
                 {formatCurrencyLocale(item.total / 100, locale)}
               </Text>
-              <Text style={[styles.categoryPercent, { color: colors.text.tertiary }]}>{item.percentage.toFixed(1)}%</Text>
+              <Text style={[styles.categoryPercent, { color: colors.text.tertiary }]}>
+                {item.percentage.toFixed(1)}%
+              </Text>
             </View>
           </TouchableOpacity>
         ))}
@@ -142,7 +156,9 @@ function CategoryBreakdownComponent({
             accessibilityLabel={t('dashboard.viewAll')}
             testID={`${testID}-view-all`}
           >
-            <Text style={[styles.viewAllText, { color: colors.interactive.primary }]}>{t('dashboard.viewAll')}</Text>
+            <Text style={[styles.viewAllText, { color: colors.interactive.primary }]}>
+              {t('dashboard.viewAll')}
+            </Text>
           </TouchableOpacity>
         )}
       </View>

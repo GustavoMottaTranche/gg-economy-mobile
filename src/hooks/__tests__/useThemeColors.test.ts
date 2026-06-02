@@ -125,7 +125,6 @@ describe('useThemeStyles', () => {
   });
 });
 
-
 // ─── getToken Fallback Behavior ──────────────────────────────────────────────
 
 describe('getToken fallback behavior', () => {
@@ -157,9 +156,7 @@ describe('getToken fallback behavior', () => {
 
     getToken(tokenObj, 'unknown', '#000');
 
-    expect(warnSpy).toHaveBeenCalledWith(
-      '[Theme] Token "unknown" not found, using fallback'
-    );
+    expect(warnSpy).toHaveBeenCalledWith('[Theme] Token "unknown" not found, using fallback');
 
     warnSpy.mockRestore();
   });

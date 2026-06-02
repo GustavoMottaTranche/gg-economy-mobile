@@ -230,14 +230,22 @@ export const weeklyRecurringGroups = sqliteTable(
     title: text('title').notNull(),
     amount: real('amount').notNull(),
     dayOfWeek: integer('day_of_week').notNull(), // 0-6
-    categoryId: text('category_id').notNull().references(() => categories.id, { onDelete: 'cascade' }),
-    categoryType: text('category_type', { enum: ['income', 'expense'] }).notNull().default('expense'),
+    categoryId: text('category_id')
+      .notNull()
+      .references(() => categories.id, { onDelete: 'cascade' }),
+    categoryType: text('category_type', { enum: ['income', 'expense'] })
+      .notNull()
+      .default('expense'),
     description: text('description').notNull().default(''),
     originId: text('origin_id').references(() => origins.id, { onDelete: 'set null' }),
     startDate: text('start_date').notNull(), // YYYY-MM-DD
     isActive: integer('is_active', { mode: 'boolean' }).notNull().default(true),
-    createdAt: text('created_at').notNull().default(sql`(datetime('now'))`),
-    updatedAt: text('updated_at').notNull().default(sql`(datetime('now'))`),
+    createdAt: text('created_at')
+      .notNull()
+      .default(sql`(datetime('now'))`),
+    updatedAt: text('updated_at')
+      .notNull()
+      .default(sql`(datetime('now'))`),
   },
   (table) => [
     index('idx_weekly_groups_active').on(table.isActive),
@@ -249,14 +257,20 @@ export const weeklyOccurrences = sqliteTable(
   'weekly_occurrences',
   {
     id: text('id').primaryKey(),
-    weeklyGroupId: text('weekly_group_id').notNull().references(() => weeklyRecurringGroups.id, { onDelete: 'cascade' }),
+    weeklyGroupId: text('weekly_group_id')
+      .notNull()
+      .references(() => weeklyRecurringGroups.id, { onDelete: 'cascade' }),
     date: text('date').notNull(), // YYYY-MM-DD
     referenceMonth: text('reference_month').notNull(), // YYYY-MM
     amount: real('amount').notNull(),
     description: text('description').notNull().default(''),
     isValueEdited: integer('is_value_edited', { mode: 'boolean' }).notNull().default(false),
-    createdAt: text('created_at').notNull().default(sql`(datetime('now'))`),
-    updatedAt: text('updated_at').notNull().default(sql`(datetime('now'))`),
+    createdAt: text('created_at')
+      .notNull()
+      .default(sql`(datetime('now'))`),
+    updatedAt: text('updated_at')
+      .notNull()
+      .default(sql`(datetime('now'))`),
   },
   (table) => [
     index('idx_weekly_occurrences_group').on(table.weeklyGroupId),
@@ -361,59 +375,59 @@ function isPastDate(date: string): boolean;
 
 ## Correctness Properties
 
-*A property is a characteristic or behavior that should hold true across all valid executions of a system — essentially, a formal statement about what the system should do. Properties serve as the bridge between human-readable specifications and machine-verifiable correctness guarantees.*
+_A property is a characteristic or behavior that should hold true across all valid executions of a system — essentially, a formal statement about what the system should do. Properties serve as the bridge between human-readable specifications and machine-verifiable correctness guarantees._
 
 ### Property 1: Occurrence Date Calculation Correctness
 
-*For any* valid month (YYYY-MM) and day of week (0-6), all dates returned by `getWeeklyDatesForMonth` SHALL fall on the specified day of week, be within the target month boundaries, be on or after the group's start date, and the count SHALL be exactly 4 or 5.
+_For any_ valid month (YYYY-MM) and day of week (0-6), all dates returned by `getWeeklyDatesForMonth` SHALL fall on the specified day of week, be within the target month boundaries, be on or after the group's start date, and the count SHALL be exactly 4 or 5.
 
 **Validates: Requirements 1.3, 1.6, 6.1, 6.4**
 
 ### Property 2: Idempotent Generation
 
-*For any* active weekly recurring group and target month, calling `generateForMonth` multiple times SHALL produce the same set of occurrences as calling it once — the occurrence count and data for that group and month SHALL not change after the first successful generation.
+_For any_ active weekly recurring group and target month, calling `generateForMonth` multiple times SHALL produce the same set of occurrences as calling it once — the occurrence count and data for that group and month SHALL not change after the first successful generation.
 
 **Validates: Requirements 1.4, 6.3**
 
 ### Property 3: Validation Rejects Invalid Inputs
 
-*For any* input where the title is empty or whitespace-only or exceeds 100 characters, OR the amount is outside [0.01, 999999999.99], OR the dayOfWeek is outside [0, 6], OR the categoryId is null/empty, the validation function SHALL return `{ valid: false }` with at least one error message. Conversely, *for any* input within all valid ranges, validation SHALL return `{ valid: true }`.
+_For any_ input where the title is empty or whitespace-only or exceeds 100 characters, OR the amount is outside [0.01, 999999999.99], OR the dayOfWeek is outside [0, 6], OR the categoryId is null/empty, the validation function SHALL return `{ valid: false }` with at least one error message. Conversely, _for any_ input within all valid ranges, validation SHALL return `{ valid: true }`.
 
 **Validates: Requirements 1.2, 3.3, 3.5, 4.7**
 
 ### Property 4: Monthly Total Equals Sum of Occurrences
 
-*For any* set of weekly occurrences within a reference month, the computed monthly total SHALL equal the arithmetic sum of all occurrence amounts for that month, regardless of which groups they belong to or whether those groups are active or inactive.
+_For any_ set of weekly occurrences within a reference month, the computed monthly total SHALL equal the arithmetic sum of all occurrence amounts for that month, regardless of which groups they belong to or whether those groups are active or inactive.
 
 **Validates: Requirements 2.1**
 
 ### Property 5: Occurrence Edit Isolation
 
-*For any* weekly recurring group with multiple occurrences, editing the value of one specific occurrence SHALL leave all other occurrences in the same group with their original values unchanged.
+_For any_ weekly recurring group with multiple occurrences, editing the value of one specific occurrence SHALL leave all other occurrences in the same group with their original values unchanged.
 
 **Validates: Requirements 3.2**
 
 ### Property 6: Date Change Derives Correct Reference Month
 
-*For any* valid date in YYYY-MM-DD format, updating an occurrence's date SHALL set its reference month to the YYYY-MM prefix of that date.
+_For any_ valid date in YYYY-MM-DD format, updating an occurrence's date SHALL set its reference month to the YYYY-MM prefix of that date.
 
 **Validates: Requirements 3.4**
 
 ### Property 7: Group Edit Preserves Past, Updates Eligible Future
 
-*For any* weekly recurring group with a mix of past and future occurrences, editing the group's name or base value SHALL leave all past occurrences (date < today) completely unchanged in all fields, AND SHALL only update future occurrences (date >= today) that have `is_value_edited = false` when the base value changes.
+_For any_ weekly recurring group with a mix of past and future occurrences, editing the group's name or base value SHALL leave all past occurrences (date < today) completely unchanged in all fields, AND SHALL only update future occurrences (date >= today) that have `is_value_edited = false` when the base value changes.
 
 **Validates: Requirements 4.1, 4.2, 4.3, 4.6, 7.1, 7.5**
 
 ### Property 8: Day-of-Week Change Regenerates Correctly
 
-*For any* weekly recurring group, changing the day of week SHALL delete all future unedited occurrences, preserve all future edited occurrences (with `is_value_edited = true`), and generate new occurrences on the new day of week for all months that previously had generated occurrences. All new occurrences SHALL fall on the new day of week.
+_For any_ weekly recurring group, changing the day of week SHALL delete all future unedited occurrences, preserve all future edited occurrences (with `is_value_edited = true`), and generate new occurrences on the new day of week for all months that previously had generated occurrences. All new occurrences SHALL fall on the new day of week.
 
 **Validates: Requirements 4.4, 4.5**
 
 ### Property 9: Deletion Preserves Past and Removes Future
 
-*For any* weekly recurring group with both past and future occurrences, confirming deletion SHALL set `is_active = false` on the group, remove all occurrences with date >= today from the database, and preserve all occurrences with date < today with their original data intact.
+_For any_ weekly recurring group with both past and future occurrences, confirming deletion SHALL set `is_active = false` on the group, remove all occurrences with date >= today from the database, and preserve all occurrences with date < today with their original data intact.
 
 **Validates: Requirements 5.2, 5.3, 5.4, 7.2**
 
@@ -421,21 +435,21 @@ function isPastDate(date: string): boolean;
 
 ### Validation Errors
 
-| Operation | Error Condition | Behavior |
-|-----------|----------------|----------|
-| Create Group | Invalid title/amount/dayOfWeek/category | Return `ValidationResult` with field-specific errors, form retains values |
-| Edit Group | Same as creation | Return `ValidationResult`, form retains previous valid values |
-| Edit Occurrence Value | Zero, out of range, >2 decimals | Reject, show error toast, retain previous value |
-| Edit Occurrence Date | Empty, invalid format, non-existent, out of range | Reject, show error toast, retain previous date |
+| Operation             | Error Condition                                   | Behavior                                                                  |
+| --------------------- | ------------------------------------------------- | ------------------------------------------------------------------------- |
+| Create Group          | Invalid title/amount/dayOfWeek/category           | Return `ValidationResult` with field-specific errors, form retains values |
+| Edit Group            | Same as creation                                  | Return `ValidationResult`, form retains previous valid values             |
+| Edit Occurrence Value | Zero, out of range, >2 decimals                   | Reject, show error toast, retain previous value                           |
+| Edit Occurrence Date  | Empty, invalid format, non-existent, out of range | Reject, show error toast, retain previous date                            |
 
 ### Database Errors
 
-| Operation | Error Condition | Behavior |
-|-----------|----------------|----------|
-| Create Group | Insert failure | Rollback group + occurrences, show error notification |
-| Edit Group | Partial update failure | Rollback all changes (SQLite transaction), show error notification |
-| Delete Group | Partial deletion failure | Rollback all changes (SQLite transaction), show error notification |
-| Generate Occurrences | Single group failure | Rollback that group's insertions, continue with other groups, log error internally |
+| Operation            | Error Condition          | Behavior                                                                           |
+| -------------------- | ------------------------ | ---------------------------------------------------------------------------------- |
+| Create Group         | Insert failure           | Rollback group + occurrences, show error notification                              |
+| Edit Group           | Partial update failure   | Rollback all changes (SQLite transaction), show error notification                 |
+| Delete Group         | Partial deletion failure | Rollback all changes (SQLite transaction), show error notification                 |
+| Generate Occurrences | Single group failure     | Rollback that group's insertions, continue with other groups, log error internally |
 
 ### Transaction Safety
 
@@ -459,17 +473,17 @@ The project already uses `fast-check` (v4.7.0) with Jest. Each correctness prope
 
 **Test file**: `src/__tests__/weekly-recurring/properties.test.ts`
 
-| Property | Test Description | Key Generators |
-|----------|-----------------|----------------|
-| 1 | Date calculation correctness | `fc.integer({min:2020, max:2030})`, `fc.integer({min:1, max:12})`, `fc.integer({min:0, max:6})` |
-| 2 | Idempotent generation | Random groups + months, call generate twice |
-| 3 | Validation rejects invalid inputs | `fc.oneof(invalidTitle, invalidAmount, invalidDay, nullCategory)` |
-| 4 | Monthly total = sum | `fc.array(fc.float({min:0.01, max:999999.99}))` |
-| 5 | Edit isolation | Random group with N occurrences, edit one |
-| 6 | Date → reference month | `fc.date()` within valid range |
-| 7 | Group edit preserves past | Random group with past+future occurrences |
-| 8 | Day-of-week regeneration | Random group, change dayOfWeek |
-| 9 | Deletion preserves past | Random group with past+future occurrences |
+| Property | Test Description                  | Key Generators                                                                                  |
+| -------- | --------------------------------- | ----------------------------------------------------------------------------------------------- |
+| 1        | Date calculation correctness      | `fc.integer({min:2020, max:2030})`, `fc.integer({min:1, max:12})`, `fc.integer({min:0, max:6})` |
+| 2        | Idempotent generation             | Random groups + months, call generate twice                                                     |
+| 3        | Validation rejects invalid inputs | `fc.oneof(invalidTitle, invalidAmount, invalidDay, nullCategory)`                               |
+| 4        | Monthly total = sum               | `fc.array(fc.float({min:0.01, max:999999.99}))`                                                 |
+| 5        | Edit isolation                    | Random group with N occurrences, edit one                                                       |
+| 6        | Date → reference month            | `fc.date()` within valid range                                                                  |
+| 7        | Group edit preserves past         | Random group with past+future occurrences                                                       |
+| 8        | Day-of-week regeneration          | Random group, change dayOfWeek                                                                  |
+| 9        | Deletion preserves past           | Random group with past+future occurrences                                                       |
 
 **Configuration**: Each property test runs with `{ numRuns: 100 }` minimum.
 

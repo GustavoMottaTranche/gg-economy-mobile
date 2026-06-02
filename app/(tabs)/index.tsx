@@ -103,12 +103,9 @@ export default function DashboardScreen() {
   }, [refresh, selectedMonth]);
 
   // Handle toggle payment status from PendingSection (Requirement 4.2)
-  const handleTogglePaymentStatus = useCallback(
-    (id: string, type: 'weekly' | 'monthly') => {
-      usePaymentStatusStore.getState().togglePaymentStatus(id, type);
-    },
-    []
-  );
+  const handleTogglePaymentStatus = useCallback((id: string, type: 'weekly' | 'monthly') => {
+    usePaymentStatusStore.getState().togglePaymentStatus(id, type);
+  }, []);
 
   // Handle item press - navigate to Entry_Screen (Requirement 4.6)
   const handlePendingItemPress = useCallback(
@@ -218,7 +215,10 @@ export default function DashboardScreen() {
 
   // Check if there's any data
   const hasData =
-    summary.totalIncome > 0 || summary.totalExpenses > 0 || summary.transactionCount > 0 || weeklyTotal > 0;
+    summary.totalIncome > 0 ||
+    summary.totalExpenses > 0 ||
+    summary.transactionCount > 0 ||
+    weeklyTotal > 0;
 
   return (
     <ScrollView
@@ -258,11 +258,17 @@ export default function DashboardScreen() {
               .filter((item) => {
                 if (chartFilter === 'all') return true;
                 if (chartFilter === 'fixed') return item.expenseGroup === 'fixed';
-                if (chartFilter === 'variable') return item.expenseGroup === 'variable' || item.expenseGroup === null;
+                if (chartFilter === 'variable')
+                  return item.expenseGroup === 'variable' || item.expenseGroup === null;
                 return true;
               })
               .reduce((sum, item) => sum + item.amount, 0);
-            const totalForFilter = chartFilter === 'fixed' ? fixedTotal : chartFilter === 'variable' ? variableTotal : (fixedTotal + variableTotal);
+            const totalForFilter =
+              chartFilter === 'fixed'
+                ? fixedTotal
+                : chartFilter === 'variable'
+                  ? variableTotal
+                  : fixedTotal + variableTotal;
             const paidForFilter = totalForFilter - Math.abs(filteredPending);
             return (
               <ExpenseSummaryCard

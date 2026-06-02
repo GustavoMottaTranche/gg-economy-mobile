@@ -57,12 +57,7 @@ export async function createCustomServerBackup(
           error
         );
       }
-      throw new CustomServerError(
-        'Failed to export database',
-        'EXPORT_FAILED',
-        undefined,
-        error
-      );
+      throw new CustomServerError('Failed to export database', 'EXPORT_FAILED', undefined, error);
     }
 
     // Step 3: Report export complete
