@@ -1,0 +1,30 @@
+# EAS Build ignore file
+# Exclude files not needed for the build
+
+# Test files
+__tests__/
+src/__tests__/
+app/__tests__/
+*.test.ts
+*.test.tsx
+*.spec.ts
+*.spec.tsx
+
+# Coverage reports
+coverage/
+
+# Documentation
+*.md
+!README.md
+
+# Kiro specs
+.kiro/
+
+# VS Code
+.vscode/
+
+# Maestro E2E
+.maestro/
+
+# Git
+.git/
