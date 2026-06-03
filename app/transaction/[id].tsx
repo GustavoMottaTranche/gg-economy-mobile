@@ -25,7 +25,8 @@ import { useLocalSearchParams, router } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { eq } from 'drizzle-orm';
 
-import { useTransactions } from '../../src/hooks/useTransactions';
+import { useTransactions, type TransactionWithCategory } from '../../src/hooks/useTransactions';
+import { getTransactionWithRelations } from '../../src/db/queries/transactions';
 import { useThemeColors } from '../../src/hooks/useThemeColors';
 import { useThemeStore } from '../../src/stores/themeStore';
 import { spacing, borderRadius, typography, shadows } from '../../src/constants/theme';
@@ -157,8 +158,43 @@ export default function TransactionDetailScreen(): React.ReactElement {
   // Fetch all transactions and find the one we need
   const { transactions, isLoading, remove, update } = useTransactions();
 
-  // Find the transaction by ID
-  const transaction = useMemo(() => transactions.find((tx) => tx.id === id), [transactions, id]);
+  // Find the transaction by ID from paginated list
+  const transactionFromList = useMemo(
+    () => transactions.find((tx) => tx.id === id),
+    [transactions, id]
+  );
+
+  // If not found in paginated list, fetch directly from DB
+  const [directFetchedTx, setDirectFetchedTx] = useState<TransactionWithCategory | null>(null);
+  const [isDirectFetching, setIsDirectFetching] = useState(false);
+
+  useEffect(() => {
+    if (transactionFromList || isLoading || !id) return;
+
+    let cancelled = false;
+    setIsDirectFetching(true);
+
+    async function fetchDirect() {
+      try {
+        const result = await getTransactionWithRelations(id);
+        if (!cancelled && result) {
+          setDirectFetchedTx(result as TransactionWithCategory);
+        }
+      } catch {
+        // Will show not found state
+      } finally {
+        if (!cancelled) setIsDirectFetching(false);
+      }
+    }
+
+    fetchDirect();
+    return () => {
+      cancelled = true;
+    };
+  }, [transactionFromList, isLoading, id]);
+
+  // Use whichever source has the transaction
+  const transaction = transactionFromList ?? directFetchedTx;
 
   // State for the input prompt dialog
   const [promptVisible, setPromptVisible] = useState(false);
@@ -669,7 +705,7 @@ export default function TransactionDetailScreen(): React.ReactElement {
   }, [t]);
 
   // Loading state
-  if (isLoading) {
+  if (isLoading || isDirectFetching) {
     return (
       <SafeAreaView style={[styles.container, { backgroundColor: colors.background.secondary }]}>
         <LoadingIndicator message={t('common.loading')} testID="loading-indicator" />

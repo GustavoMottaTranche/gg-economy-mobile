@@ -6,7 +6,7 @@
  * categorization_rules, schema_version
  */
 import { sql } from 'drizzle-orm';
-import { sqliteTable, text, integer, real, index } from 'drizzle-orm/sqlite-core';
+import { sqliteTable, text, integer, real, index, uniqueIndex } from 'drizzle-orm/sqlite-core';
 import { relations } from 'drizzle-orm';
 
 // ============================================================================
@@ -312,6 +312,34 @@ export const weeklyOccurrencesRelations = relations(weeklyOccurrences, ({ one })
 }));
 
 // ============================================================================
+// Category Goals Table
+// ============================================================================
+export const categoryGoals = sqliteTable(
+  'category_goals',
+  {
+    id: text('id').primaryKey(),
+    categoryId: text('category_id')
+      .notNull()
+      .references(() => categories.id, { onDelete: 'cascade' }),
+    amount: real('amount').notNull(), // stored in cents, must be > 0
+    createdAt: text('created_at')
+      .notNull()
+      .default(sql`(datetime('now'))`),
+    updatedAt: text('updated_at')
+      .notNull()
+      .default(sql`(datetime('now'))`),
+  },
+  (table) => [uniqueIndex('idx_category_goals_category').on(table.categoryId)]
+);
+
+export const categoryGoalsRelations = relations(categoryGoals, ({ one }) => ({
+  category: one(categories, {
+    fields: [categoryGoals.categoryId],
+    references: [categories.id],
+  }),
+}));
+
+// ============================================================================
 // Schema Version Table (for migration tracking)
 // ============================================================================
 export const schemaVersion = sqliteTable('schema_version', {
@@ -356,3 +384,6 @@ export type NewWeeklyRecurringGroupRecord = typeof weeklyRecurringGroups.$inferI
 
 export type WeeklyOccurrenceRecord = typeof weeklyOccurrences.$inferSelect;
 export type NewWeeklyOccurrenceRecord = typeof weeklyOccurrences.$inferInsert;
+
+export type CategoryGoalRecord = typeof categoryGoals.$inferSelect;
+export type NewCategoryGoalRecord = typeof categoryGoals.$inferInsert;

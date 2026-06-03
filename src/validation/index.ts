@@ -51,3 +51,5 @@ export type {
 export { validateParcelAmount, validateParcelAmountStandard } from './parcelAmountValidation';
 
 export type { ParcelAmountValidationResult } from './parcelAmountValidation';
+
+export { validateGoalAmount } from './goalValidation';

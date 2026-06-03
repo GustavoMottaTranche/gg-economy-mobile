@@ -19,7 +19,8 @@ export type PreferenceKey =
   | 'backup_time'
   | 'last_backup_time'
   | 'last_backup_status'
-  | 'google_account_email';
+  | 'google_account_email'
+  | 'general_variable_goal';
 
 /**
  * Backup frequency options

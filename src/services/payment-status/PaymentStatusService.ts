@@ -10,7 +10,7 @@
  * Requirements: 1.1, 1.4, 1.5, 4.1, 5.1, 5.5, 6.3
  */
 
-import { eq, and, sql, isNotNull } from 'drizzle-orm';
+import { eq, and, sql, isNotNull, isNull } from 'drizzle-orm';
 import { getDb, withTransaction } from '../../db/client';
 import {
   weeklyOccurrences,
@@ -277,6 +277,8 @@ export class PaymentStatusService implements IPaymentStatusService {
         date: weeklyOccurrences.date,
         referenceMonth: weeklyOccurrences.referenceMonth,
         expenseGroup: categories.expenseGroup,
+        categoryId: categories.id,
+        categoryName: categories.name,
       })
       .from(weeklyOccurrences)
       .innerJoin(
@@ -296,6 +298,8 @@ export class PaymentStatusService implements IPaymentStatusService {
         date: transactions.date,
         referenceMonth: transactions.referenceMonth,
         expenseGroup: categories.expenseGroup,
+        categoryId: categories.id,
+        categoryName: categories.name,
       })
       .from(transactions)
       .innerJoin(recurringTransactions, eq(transactions.recurringId, recurringTransactions.id))
@@ -305,6 +309,30 @@ export class PaymentStatusService implements IPaymentStatusService {
           eq(transactions.referenceMonth, month),
           eq(transactions.isPaid, false),
           isNotNull(transactions.recurringId)
+        )
+      );
+
+    // Query pending installment parcels (installmentGroupId set, no recurringId)
+    const installmentPending = await db
+      .select({
+        id: transactions.id,
+        groupId: transactions.installmentGroupId,
+        groupName: transactions.description,
+        amount: transactions.amount,
+        date: transactions.date,
+        referenceMonth: transactions.referenceMonth,
+        expenseGroup: categories.expenseGroup,
+        categoryId: categories.id,
+        categoryName: categories.name,
+      })
+      .from(transactions)
+      .leftJoin(categories, eq(transactions.categoryId, categories.id))
+      .where(
+        and(
+          eq(transactions.referenceMonth, month),
+          eq(transactions.isPaid, false),
+          isNotNull(transactions.installmentGroupId),
+          isNull(transactions.recurringId)
         )
       );
 
@@ -319,6 +347,8 @@ export class PaymentStatusService implements IPaymentStatusService {
         date: item.date,
         referenceMonth: item.referenceMonth,
         expenseGroup: (item.expenseGroup as 'fixed' | 'variable' | null) ?? null,
+        categoryId: item.categoryId ?? null,
+        categoryName: item.categoryName ?? null,
       })),
       ...monthlyPending.map((item) => ({
         id: item.id,
@@ -329,6 +359,20 @@ export class PaymentStatusService implements IPaymentStatusService {
         date: typeof item.date === 'string' ? item.date : item.date,
         referenceMonth: item.referenceMonth,
         expenseGroup: (item.expenseGroup as 'fixed' | 'variable' | null) ?? null,
+        categoryId: item.categoryId ?? null,
+        categoryName: item.categoryName ?? null,
+      })),
+      ...installmentPending.map((item) => ({
+        id: item.id,
+        type: 'installment' as const,
+        groupId: item.groupId!,
+        groupName: item.groupName,
+        amount: item.amount,
+        date: item.date,
+        referenceMonth: item.referenceMonth,
+        expenseGroup: (item.expenseGroup as 'fixed' | 'variable' | null) ?? null,
+        categoryId: item.categoryId ?? null,
+        categoryName: item.categoryName ?? null,
       })),
     ];
 
@@ -372,13 +416,30 @@ export class PaymentStatusService implements IPaymentStatusService {
       .from(transactions)
       .where(and(eq(transactions.referenceMonth, month), isNotNull(transactions.recurringId)));
 
+    // Get totals from installment parcels (installmentGroupId set, no recurringId)
+    const installmentTotals = await db
+      .select({
+        predictedTotal: sql<number>`COALESCE(SUM(${transactions.amount}), 0)`,
+        paidTotal: sql<number>`COALESCE(SUM(CASE WHEN ${transactions.isPaid} = 1 THEN ${transactions.amount} ELSE 0 END), 0)`,
+      })
+      .from(transactions)
+      .where(
+        and(
+          eq(transactions.referenceMonth, month),
+          isNotNull(transactions.installmentGroupId),
+          isNull(transactions.recurringId)
+        )
+      );
+
     const weeklyPredicted = weeklyTotals[0]?.predictedTotal ?? 0;
     const weeklyPaid = weeklyTotals[0]?.paidTotal ?? 0;
     const monthlyPredicted = monthlyTotals[0]?.predictedTotal ?? 0;
     const monthlyPaid = monthlyTotals[0]?.paidTotal ?? 0;
+    const installmentPredicted = installmentTotals[0]?.predictedTotal ?? 0;
+    const installmentPaid = installmentTotals[0]?.paidTotal ?? 0;
 
-    const predictedTotal = weeklyPredicted + monthlyPredicted;
-    const paidTotal = weeklyPaid + monthlyPaid;
+    const predictedTotal = weeklyPredicted + monthlyPredicted + installmentPredicted;
+    const paidTotal = weeklyPaid + monthlyPaid + installmentPaid;
     const pendingTotal = predictedTotal - paidTotal;
 
     return {

@@ -97,9 +97,21 @@ export {
 export { useThemeColors } from './useThemeColors';
 export { useThemeStyles, type ThemeStylesResult } from './useThemeStyles';
 
+// Category detail hooks
+export {
+  useCategoryDetailData,
+  type UseCategoryDetailDataReturn,
+  type CategoryDetailItem,
+  type CategoryInfo,
+  type InstallmentInfoMap,
+} from './useCategoryDetailData';
+
 // Unified statement hooks
 export {
   useUnifiedStatementItems,
   buildUnifiedStatementItems,
   type UseUnifiedStatementItemsParams,
 } from './useUnifiedStatementItems';
+
+// Goal hooks
+export { useGoals, type UseGoalsReturn, type CategorySpendingInput } from './useGoals';

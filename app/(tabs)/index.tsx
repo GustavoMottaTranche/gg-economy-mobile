@@ -27,6 +27,7 @@ import { LoadingIndicator } from '../../src/components/ui/LoadingIndicator';
 import { EmptyState } from '../../src/components/ui/EmptyState';
 import {
   MonthSelector,
+  MonthPickerModal,
   CollapsibleSection,
   ChartFilter,
   ExpenseChart,
@@ -62,9 +63,13 @@ export default function DashboardScreen() {
     fixedTotal,
     variableTotal,
     weeklyTotal,
+    generalGoal,
+    categoryGoals,
+    expectedFutureSpending,
     chartFilter,
     setChartFilter,
     selectedMonth,
+    setSelectedMonth,
     isLoading,
     error,
     previousMonth,
@@ -85,16 +90,37 @@ export default function DashboardScreen() {
   // Local state for collapsible sections (expanded by default)
   const [isFixedExpanded, setFixedExpanded] = useState(true);
   const [isVariableExpanded, setVariableExpanded] = useState(true);
-  const [expandedCategoryId, setExpandedCategoryId] = useState<string | null>(null);
+
+  // Month picker modal state
+  const [isMonthPickerVisible, setMonthPickerVisible] = useState(false);
 
   // Check if selected month is in the future
   const currentMonth = getCurrentMonth();
   const isFutureMonth = selectedMonth > currentMonth;
 
-  // Handle category press in collapsible sections (toggle transaction list)
-  const handleCategoryPress = useCallback((categoryId: string) => {
-    setExpandedCategoryId((prev) => (prev === categoryId ? null : categoryId));
+  // Handle category press in collapsible sections (navigate to category detail)
+  const handleCategoryPress = useCallback(
+    (categoryId: string) => {
+      router.push(`/category/${categoryId}?month=${selectedMonth}`);
+    },
+    [router, selectedMonth]
+  );
+
+  // Month picker handlers
+  const handleOpenMonthPicker = useCallback(() => {
+    setMonthPickerVisible(true);
   }, []);
+
+  const handleCloseMonthPicker = useCallback(() => {
+    setMonthPickerVisible(false);
+  }, []);
+
+  const handleSelectMonth = useCallback(
+    (month: string) => {
+      setSelectedMonth(month);
+    },
+    [setSelectedMonth]
+  );
 
   // Handle refresh
   const handleRefresh = useCallback(() => {
@@ -103,16 +129,20 @@ export default function DashboardScreen() {
   }, [refresh, selectedMonth]);
 
   // Handle toggle payment status from PendingSection (Requirement 4.2)
-  const handleTogglePaymentStatus = useCallback((id: string, type: 'weekly' | 'monthly') => {
-    usePaymentStatusStore.getState().togglePaymentStatus(id, type);
-  }, []);
+  const handleTogglePaymentStatus = useCallback(
+    (id: string, type: 'weekly' | 'monthly' | 'installment') => {
+      usePaymentStatusStore.getState().togglePaymentStatus(id, type);
+    },
+    []
+  );
 
   // Handle item press - navigate to Entry_Screen (Requirement 4.6)
   const handlePendingItemPress = useCallback(
-    (groupId: string, type: 'weekly' | 'monthly') => {
+    (groupId: string, type: 'weekly' | 'monthly' | 'installment') => {
       if (type === 'weekly') {
         router.push(`/weekly-recurring/${groupId}`);
       } else {
+        // For monthly and installment, groupId is actually the transaction id (passed from PendingSection)
         router.push(`/transaction/${groupId}`);
       }
     },
@@ -244,9 +274,19 @@ export default function DashboardScreen() {
         selectedMonth={selectedMonth}
         onPreviousMonth={previousMonth}
         onNextMonth={nextMonth}
+        onMonthPress={handleOpenMonthPicker}
         isFutureMonth={isFutureMonth}
         style={dynamicStyles.monthSelector}
         testID="dashboard-month-selector"
+      />
+
+      {/* Month Picker Modal */}
+      <MonthPickerModal
+        visible={isMonthPickerVisible}
+        selectedMonth={selectedMonth}
+        onSelectMonth={handleSelectMonth}
+        onClose={handleCloseMonthPicker}
+        testID="dashboard-month-picker"
       />
 
       {/* Expense Chart with ChartFilter - top of the page after month selector */}
@@ -254,7 +294,9 @@ export default function DashboardScreen() {
         <>
           {/* Expense Summary - Paid vs Pending (uses same filter as chart) */}
           {(() => {
-            const filteredPending = pendingItems
+            // Sum pending amounts using absolute value since weekly occurrences
+            // store positive amounts while monthly transactions store negative amounts
+            const filteredPendingAbs = pendingItems
               .filter((item) => {
                 if (chartFilter === 'all') return true;
                 if (chartFilter === 'fixed') return item.expenseGroup === 'fixed';
@@ -262,18 +304,19 @@ export default function DashboardScreen() {
                   return item.expenseGroup === 'variable' || item.expenseGroup === null;
                 return true;
               })
-              .reduce((sum, item) => sum + item.amount, 0);
+              .reduce((sum, item) => sum + Math.abs(item.amount), 0);
+            // totalForFilter already represents only PAID amounts (queries filter isPaid=1)
+            // So: Total previsto = paid (totalForFilter) + pending (filteredPendingAbs)
             const totalForFilter =
               chartFilter === 'fixed'
                 ? fixedTotal
                 : chartFilter === 'variable'
                   ? variableTotal
                   : fixedTotal + variableTotal;
-            const paidForFilter = totalForFilter - Math.abs(filteredPending);
             return (
               <ExpenseSummaryCard
-                paid={Math.max(0, paidForFilter)}
-                pending={filteredPending}
+                paid={totalForFilter}
+                pending={filteredPendingAbs}
                 testID="dashboard-expense-summary"
               />
             );
@@ -305,7 +348,7 @@ export default function DashboardScreen() {
               isExpanded={isFixedExpanded}
               onToggle={() => setFixedExpanded((prev) => !prev)}
               onCategoryPress={handleCategoryPress}
-              expandedCategoryId={expandedCategoryId}
+              expandedCategoryId={null}
               selectedMonth={selectedMonth}
               testID="dashboard-fixed-section"
             />
@@ -320,8 +363,11 @@ export default function DashboardScreen() {
               isExpanded={isVariableExpanded}
               onToggle={() => setVariableExpanded((prev) => !prev)}
               onCategoryPress={handleCategoryPress}
-              expandedCategoryId={expandedCategoryId}
+              expandedCategoryId={null}
               selectedMonth={selectedMonth}
+              generalGoal={generalGoal}
+              categoryGoals={categoryGoals}
+              expectedFutureSpending={expectedFutureSpending}
               testID="dashboard-variable-section"
             />
           </View>

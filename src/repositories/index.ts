@@ -17,3 +17,4 @@ export {
   WeeklyOccurrenceRepository,
   weeklyOccurrenceRepository,
 } from './WeeklyOccurrenceRepository';
+export { CategoryGoalRepository, categoryGoalRepository } from './CategoryGoalRepository';

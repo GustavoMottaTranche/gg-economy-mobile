@@ -41,6 +41,7 @@ describe('PendingSection', () => {
       amount: 9990,
       date: '2024-03-05',
       referenceMonth: '2024-03',
+      expenseGroup: 'fixed',
     },
     {
       id: 'occ-2',
@@ -50,6 +51,7 @@ describe('PendingSection', () => {
       amount: 150000,
       date: '2024-03-10',
       referenceMonth: '2024-03',
+      expenseGroup: 'fixed',
     },
   ];
 
@@ -184,7 +186,8 @@ describe('PendingSection', () => {
       );
 
       fireEvent.press(getByTestId('pending-section-item-occ-2-pressable'));
-      expect(onItemPress).toHaveBeenCalledWith('group-2', 'monthly');
+      // For monthly items, the navigation ID is the transaction id (not groupId)
+      expect(onItemPress).toHaveBeenCalledWith('occ-2', 'monthly');
     });
   });
 });

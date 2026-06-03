@@ -6,3 +6,4 @@ export type {
   WeeklyOccurrenceUpdateFields,
 } from './IWeeklyOccurrenceRepository';
 export type { IWeeklyGroupRepository, WeeklyGroupUpdateFields } from './IWeeklyGroupRepository';
+export type { ICategoryGoalRepository } from './ICategoryGoalRepository';

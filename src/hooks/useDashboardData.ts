@@ -17,6 +17,7 @@ import {
 } from '../db/queries/dashboard';
 import { roundPercentages } from '../utils/roundPercentages';
 import { useWeeklyRecurringStore, useWeeklyMonthlyTotal } from '../stores/weeklyRecurringStore';
+import { useGoals } from './useGoals';
 import type { CategoryType } from '../types';
 
 /**
@@ -115,6 +116,14 @@ export interface UseDashboardDataReturn {
   selectedMonth: string;
   /** Selected trend period */
   trendPeriod: TrendPeriod;
+  /** General variable expense goal in cents, null if not configured */
+  generalGoal: number | null;
+  /** Per-category goals: categoryId → amount in cents */
+  categoryGoals: Map<string, number>;
+  /** Expected future spending in cents (always >= 0) */
+  expectedFutureSpending: number;
+  /** Whether goal data is loading */
+  isGoalsLoading: boolean;
   /** Whether data is loading */
   isLoading: boolean;
   /** Error message if any */
@@ -373,6 +382,24 @@ export function useDashboardData(): UseDashboardDataReturn {
     return variableBreakdown.reduce((sum, item) => sum + item.total, 0);
   }, [variableBreakdown]);
 
+  // Compute variable category spending for goal calculations
+  const variableCategorySpending = useMemo(() => {
+    return variableBreakdown
+      .filter((item) => item.categoryId != null)
+      .map((item) => ({
+        categoryId: item.categoryId!,
+        actualSpending: item.total,
+      }));
+  }, [variableBreakdown]);
+
+  // Wire useGoals with variable category spending
+  const {
+    generalGoal,
+    categoryGoals,
+    expectedFutureSpending,
+    isLoading: isGoalsLoading,
+  } = useGoals(variableCategorySpending);
+
   // Transform income breakdown
   const incomeBreakdown = useMemo<CategoryBreakdownItem[]>(() => {
     if (!mergedBreakdownData) return [];
@@ -456,6 +483,10 @@ export function useDashboardData(): UseDashboardDataReturn {
     fixedTotal,
     variableTotal,
     weeklyTotal,
+    generalGoal,
+    categoryGoals,
+    expectedFutureSpending,
+    isGoalsLoading,
     chartFilter,
     setChartFilter,
     trendData,

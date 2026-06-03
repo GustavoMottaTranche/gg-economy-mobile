@@ -25,5 +25,8 @@ export * from './categorizationRules';
 // Dashboard queries
 export * from './dashboard';
 
+// Category detail queries
+export * from './categoryDetail';
+
 // Live query hooks
 export * from './hooks';

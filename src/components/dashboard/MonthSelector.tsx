@@ -24,6 +24,8 @@ export interface MonthSelectorProps {
   onPreviousMonth: () => void;
   /** Callback when next month is pressed */
   onNextMonth: () => void;
+  /** Callback when the month text is pressed (opens month picker) */
+  onMonthPress?: () => void;
   /** Whether to disable the next button (e.g., for current month) */
   disableNext?: boolean;
   /** Whether to disable the previous button */
@@ -76,6 +78,7 @@ function MonthSelectorComponent({
   selectedMonth,
   onPreviousMonth,
   onNextMonth,
+  onMonthPress,
   disableNext = false,
   disablePrevious = false,
   isFutureMonth = false,
@@ -121,7 +124,15 @@ function MonthSelectorComponent({
       </TouchableOpacity>
 
       {/* Month Display */}
-      <View style={styles.monthDisplay}>
+      <TouchableOpacity
+        style={styles.monthDisplay}
+        onPress={onMonthPress}
+        disabled={!onMonthPress}
+        activeOpacity={onMonthPress ? 0.6 : 1}
+        accessibilityRole={onMonthPress ? 'button' : undefined}
+        accessibilityHint={onMonthPress ? t('transactions.referenceMonth') : undefined}
+        testID={`${testID}-month-press`}
+      >
         <Text
           style={[
             styles.monthText,
@@ -141,7 +152,7 @@ function MonthSelectorComponent({
             </Text>
           </View>
         )}
-      </View>
+      </TouchableOpacity>
 
       {/* Next Month Button */}
       <TouchableOpacity

@@ -326,11 +326,16 @@ function PieChartComponent({
         <View
           style={[
             styles.centerLabelContainer,
-            { width: innerRadius * 1.4, height: innerRadius * 1.4 },
+            { width: innerRadius * 1.6, height: innerRadius * 1.4 },
           ]}
         >
           {centerLabel && (
-            <Text style={[styles.centerLabel, { color: colors.text.primary }]} numberOfLines={1}>
+            <Text
+              style={[styles.centerLabel, { color: colors.text.primary }]}
+              numberOfLines={1}
+              adjustsFontSizeToFit
+              minimumFontScale={0.6}
+            >
               {centerLabel}
             </Text>
           )}

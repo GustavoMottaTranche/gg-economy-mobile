@@ -1,16 +1,23 @@
 /**
  * PendingSection Component
  *
- * Displays a list of pending (unpaid) recurring occurrences on the Home screen.
- * Each item shows the group name, formatted amount, date, and an OccurrenceStatusToggle.
- * Tapping the toggle marks the item as paid; tapping the row navigates to the group detail.
- * The section is hidden (returns null) when the items list is empty.
+ * Displays pending (unpaid) recurring occurrences on the Home screen,
+ * grouped by category. Each category is collapsible and shows its pending total.
+ * A summary footer displays overall total and per-category totals.
  *
  * **Validates: Requirements 4.1, 4.2, 4.3, 4.4, 4.5, 4.6**
  */
 
-import React, { memo, useCallback } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import React, { memo, useCallback, useMemo, useState } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  LayoutAnimation,
+  UIManager,
+  Platform,
+} from 'react-native';
 import { useTranslation } from 'react-i18next';
 
 import { OccurrenceStatusToggle } from '../ui/OccurrenceStatusToggle';
@@ -20,6 +27,11 @@ import { spacing, borderRadius, shadows } from '../../constants/theme';
 import { useThemeStore } from '../../stores/themeStore';
 import type { PendingItem } from '../../types/paymentStatus';
 
+// Enable LayoutAnimation on Android
+if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
+  UIManager.setLayoutAnimationEnabledExperimental(true);
+}
+
 /**
  * Props for the PendingSection component
  */
@@ -27,15 +39,34 @@ export interface PendingSectionProps {
   /** List of pending items to display */
   items: PendingItem[];
   /** Callback when the status toggle is tapped */
-  onToggleStatus: (id: string, type: 'weekly' | 'monthly') => void;
-  /** Callback when the item row (not the toggle) is tapped */
-  onItemPress: (groupId: string, type: 'weekly' | 'monthly') => void;
+  onToggleStatus: (id: string, type: 'weekly' | 'monthly' | 'installment') => void;
+  /** Callback when the item row (not the toggle) is tapped — receives the navigation ID */
+  onItemPress: (navId: string, type: 'weekly' | 'monthly' | 'installment') => void;
   /** Test ID for testing */
   testID?: string;
 }
 
 /**
- * Formats a date string (YYYY-MM-DD) into a short readable format (DD/MM).
+ * Represents a group of pending items under a category.
+ */
+interface PendingCategoryGroup {
+  categoryId: string;
+  categoryName: string;
+  items: PendingItem[];
+  total: number;
+}
+
+/**
+ * Custom LayoutAnimation config for expand/collapse
+ */
+const TOGGLE_ANIMATION = LayoutAnimation.create(
+  250,
+  LayoutAnimation.Types.easeInEaseOut,
+  LayoutAnimation.Properties.opacity
+);
+
+/**
+ * Formats a date string (YYYY-MM-DD) into a short readable format.
  */
 function formatShortDate(dateStr: string, locale: string): string {
   try {
@@ -50,20 +81,38 @@ function formatShortDate(dateStr: string, locale: string): string {
 }
 
 /**
+ * Groups pending items by category and computes per-category totals.
+ */
+function groupByCategory(items: PendingItem[]): PendingCategoryGroup[] {
+  const groupMap = new Map<string, PendingCategoryGroup>();
+
+  for (const item of items) {
+    const catId = item.categoryId ?? '__uncategorized__';
+    const catName = item.categoryName ?? 'Sem categoria';
+
+    const existing = groupMap.get(catId);
+    if (existing) {
+      existing.items.push(item);
+      existing.total += Math.abs(item.amount);
+    } else {
+      groupMap.set(catId, {
+        categoryId: catId,
+        categoryName: catName,
+        items: [item],
+        total: Math.abs(item.amount),
+      });
+    }
+  }
+
+  // Sort groups by total descending (biggest pending first)
+  return Array.from(groupMap.values()).sort((a, b) => b.total - a.total);
+}
+
+/**
  * PendingSection component
  *
- * Renders a section with a title and a list of pending items.
- * Returns null when items list is empty (hides the section).
- *
- * @example
- * ```tsx
- * <PendingSection
- *   items={pendingItems}
- *   onToggleStatus={(id, type) => store.togglePaymentStatus(id, type)}
- *   onItemPress={(groupId, type) => navigation.navigate('Entry', { groupId, type })}
- *   testID="pending-section"
- * />
- * ```
+ * Renders pending items grouped by category with collapsible sections
+ * and a totals footer.
  */
 function PendingSectionComponent({
   items,
@@ -77,7 +126,42 @@ function PendingSectionComponent({
   const locale = getCurrentLocale();
   const sectionShadow = shadows[resolvedScheme].sm;
 
-  // Hide section when items list is empty (Requirement 4.3)
+  // Track which categories are expanded (all expanded by default)
+  const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
+  const [initialized, setInitialized] = useState(false);
+
+  // Group items by category
+  const groups = useMemo(() => groupByCategory(items), [items]);
+
+  // Initialize all categories as expanded on first render with data
+  useMemo(() => {
+    if (!initialized && groups.length > 0) {
+      setExpandedCategories(new Set(groups.map((g) => g.categoryId)));
+      setInitialized(true);
+    }
+  }, [groups, initialized]);
+
+  // Compute overall total
+  const overallTotal = useMemo(
+    () => items.reduce((sum, item) => sum + Math.abs(item.amount), 0),
+    [items]
+  );
+
+  // Toggle category expansion
+  const handleToggleCategory = useCallback((categoryId: string) => {
+    LayoutAnimation.configureNext(TOGGLE_ANIMATION);
+    setExpandedCategories((prev) => {
+      const next = new Set(prev);
+      if (next.has(categoryId)) {
+        next.delete(categoryId);
+      } else {
+        next.add(categoryId);
+      }
+      return next;
+    });
+  }, []);
+
+  // Hide section when empty
   if (items.length === 0) {
     return null;
   }
@@ -91,36 +175,116 @@ function PendingSectionComponent({
     >
       {/* Section Title */}
       <Text
-        style={[styles.title, { color: colors.text.primary }]}
+        style={[styles.sectionTitle, { color: colors.text.primary }]}
         testID={testID ? `${testID}-title` : undefined}
       >
         {t('dashboard.pendingSection', { defaultValue: 'Contas pendentes' })}
       </Text>
 
-      {/* Pending Items List */}
-      <View style={styles.list} testID={testID ? `${testID}-list` : undefined}>
-        {items.map((item, index) => {
-          const isLast = index === items.length - 1;
-          const formattedAmount = formatCurrencyLocale(item.amount / 100, locale);
-          const formattedDate = formatShortDate(item.date, locale);
+      {/* Category Groups */}
+      {groups.map((group) => {
+        const isExpanded = expandedCategories.has(group.categoryId);
+        const chevron = isExpanded ? '▼' : '▶';
+        const formattedGroupTotal = formatCurrencyLocale(group.total / 100, locale);
 
-          return (
-            <PendingItemRow
-              key={`${item.type}-${item.id}`}
-              item={item}
-              formattedAmount={formattedAmount}
-              formattedDate={formattedDate}
-              isLast={isLast}
-              onToggleStatus={onToggleStatus}
-              onItemPress={onItemPress}
-              borderColor={colors.border.subtle}
-              textPrimaryColor={colors.text.primary}
-              textSecondaryColor={colors.text.secondary}
-              textTertiaryColor={colors.text.tertiary}
-              testID={testID ? `${testID}-item-${item.id}` : undefined}
-            />
-          );
-        })}
+        return (
+          <View
+            key={group.categoryId}
+            style={[styles.categoryGroup, { borderBottomColor: colors.border.subtle }]}
+            testID={testID ? `${testID}-group-${group.categoryId}` : undefined}
+          >
+            {/* Category Header (collapsible) */}
+            <TouchableOpacity
+              style={styles.categoryHeader}
+              onPress={() => handleToggleCategory(group.categoryId)}
+              activeOpacity={0.7}
+              accessibilityRole="button"
+              accessibilityState={{ expanded: isExpanded }}
+              accessibilityLabel={`${group.categoryName}, ${formattedGroupTotal}, ${group.items.length} ${group.items.length === 1 ? 'conta' : 'contas'}`}
+              testID={testID ? `${testID}-group-header-${group.categoryId}` : undefined}
+            >
+              <View style={styles.categoryHeaderLeft}>
+                <Text
+                  style={[styles.chevron, { color: colors.text.secondary }]}
+                  accessibilityElementsHidden
+                >
+                  {chevron}
+                </Text>
+                <Text
+                  style={[styles.categoryName, { color: colors.text.primary }]}
+                  numberOfLines={1}
+                >
+                  {group.categoryName}
+                </Text>
+                <Text style={[styles.categoryCount, { color: colors.text.tertiary }]}>
+                  ({group.items.length})
+                </Text>
+              </View>
+              <Text style={[styles.categoryTotal, { color: colors.semantic.warning.dark }]}>
+                {formattedGroupTotal}
+              </Text>
+            </TouchableOpacity>
+
+            {/* Items within category (visible when expanded) */}
+            {isExpanded && (
+              <View style={styles.itemsList}>
+                {group.items.map((item, index) => {
+                  const isLast = index === group.items.length - 1;
+                  const formattedAmount = formatCurrencyLocale(Math.abs(item.amount) / 100, locale);
+                  const formattedDate = formatShortDate(item.date, locale);
+
+                  return (
+                    <PendingItemRow
+                      key={`${item.type}-${item.id}`}
+                      item={item}
+                      formattedAmount={formattedAmount}
+                      formattedDate={formattedDate}
+                      isLast={isLast}
+                      onToggleStatus={onToggleStatus}
+                      onItemPress={onItemPress}
+                      borderColor={colors.border.subtle}
+                      textPrimaryColor={colors.text.primary}
+                      textSecondaryColor={colors.text.secondary}
+                      textTertiaryColor={colors.text.tertiary}
+                      testID={testID ? `${testID}-item-${item.id}` : undefined}
+                    />
+                  );
+                })}
+              </View>
+            )}
+          </View>
+        );
+      })}
+
+      {/* Totals Footer */}
+      <View
+        style={[styles.totalsFooter, { borderTopColor: colors.border.default }]}
+        testID={testID ? `${testID}-totals` : undefined}
+      >
+        {/* Per-category totals */}
+        {groups.map((group) => (
+          <View key={group.categoryId} style={styles.totalRow}>
+            <Text
+              style={[styles.totalCategoryName, { color: colors.text.secondary }]}
+              numberOfLines={1}
+            >
+              {group.categoryName}
+            </Text>
+            <Text style={[styles.totalCategoryAmount, { color: colors.semantic.warning.dark }]}>
+              {formatCurrencyLocale(group.total / 100, locale)}
+            </Text>
+          </View>
+        ))}
+
+        {/* Grand total */}
+        <View style={[styles.grandTotalRow, { borderTopColor: colors.border.subtle }]}>
+          <Text style={[styles.grandTotalLabel, { color: colors.text.primary }]}>
+            {t('dashboard.pendingTotal', { defaultValue: 'Total pendente' })}
+          </Text>
+          <Text style={[styles.grandTotalAmount, { color: colors.semantic.warning.dark }]}>
+            {formatCurrencyLocale(overallTotal / 100, locale)}
+          </Text>
+        </View>
       </View>
     </View>
   );
@@ -134,8 +298,8 @@ interface PendingItemRowProps {
   formattedAmount: string;
   formattedDate: string;
   isLast: boolean;
-  onToggleStatus: (id: string, type: 'weekly' | 'monthly') => void;
-  onItemPress: (groupId: string, type: 'weekly' | 'monthly') => void;
+  onToggleStatus: (id: string, type: 'weekly' | 'monthly' | 'installment') => void;
+  onItemPress: (navId: string, type: 'weekly' | 'monthly' | 'installment') => void;
   borderColor: string;
   textPrimaryColor: string;
   textSecondaryColor: string;
@@ -164,8 +328,9 @@ const PendingItemRow = memo(function PendingItemRow({
   }, [onToggleStatus, item.id, item.type]);
 
   const handlePress = useCallback(() => {
-    onItemPress(item.groupId, item.type);
-  }, [onItemPress, item.groupId, item.type]);
+    const navId = item.type === 'weekly' ? item.groupId : item.id;
+    onItemPress(navId, item.type);
+  }, [onItemPress, item.groupId, item.id, item.type]);
 
   return (
     <View
@@ -183,7 +348,7 @@ const PendingItemRow = memo(function PendingItemRow({
         testID={testID ? `${testID}-toggle` : undefined}
       />
 
-      {/* Pressable content area (Requirement 4.6) */}
+      {/* Pressable content area */}
       <TouchableOpacity
         style={styles.itemContent}
         onPress={handlePress}
@@ -211,12 +376,52 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.base,
     paddingHorizontal: spacing.lg,
   },
-  title: {
+  sectionTitle: {
     fontSize: 16,
     fontWeight: '600',
     marginBottom: spacing.md,
   },
-  list: {},
+  // Category group
+  categoryGroup: {
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    marginBottom: spacing.xs,
+  },
+  categoryHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: spacing.sm,
+  },
+  categoryHeaderLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+    marginRight: spacing.sm,
+  },
+  chevron: {
+    fontSize: 10,
+    marginRight: spacing.sm,
+    width: 14,
+    textAlign: 'center',
+  },
+  categoryName: {
+    fontSize: 14,
+    fontWeight: '600',
+    flexShrink: 1,
+  },
+  categoryCount: {
+    fontSize: 12,
+    marginLeft: spacing.xs,
+  },
+  categoryTotal: {
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  // Items list
+  itemsList: {
+    paddingLeft: spacing.lg,
+    paddingBottom: spacing.sm,
+  },
   itemContainer: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -234,16 +439,53 @@ const styles = StyleSheet.create({
     marginRight: spacing.sm,
   },
   itemName: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '500',
   },
   itemDate: {
-    fontSize: 12,
+    fontSize: 11,
     marginTop: 2,
   },
   itemAmount: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '600',
+  },
+  // Totals footer
+  totalsFooter: {
+    marginTop: spacing.md,
+    paddingTop: spacing.md,
+    borderTopWidth: 1,
+  },
+  totalRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: spacing.xs,
+  },
+  totalCategoryName: {
+    fontSize: 12,
+    flex: 1,
+    marginRight: spacing.sm,
+  },
+  totalCategoryAmount: {
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  grandTotalRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingTop: spacing.sm,
+    marginTop: spacing.xs,
+    borderTopWidth: StyleSheet.hairlineWidth,
+  },
+  grandTotalLabel: {
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  grandTotalAmount: {
+    fontSize: 14,
+    fontWeight: '700',
   },
 });
 

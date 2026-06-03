@@ -33,9 +33,12 @@ interface PaymentStatusActions {
   /** Load payment totals for a given month */
   loadPaymentTotalsForMonth(month: string): Promise<void>;
   /** Toggle payment status of a single occurrence */
-  togglePaymentStatus(id: string, type: 'weekly' | 'monthly'): Promise<void>;
+  togglePaymentStatus(id: string, type: 'weekly' | 'monthly' | 'installment'): Promise<void>;
   /** Bulk mark all unpaid occurrences in a group as paid */
-  bulkMarkAsPaid(groupId: string, type: 'weekly' | 'monthly'): Promise<BulkMarkResult>;
+  bulkMarkAsPaid(
+    groupId: string,
+    type: 'weekly' | 'monthly' | 'installment'
+  ): Promise<BulkMarkResult>;
 }
 
 type PaymentStatusStore = PaymentStatusState & PaymentStatusActions;
@@ -95,7 +98,7 @@ export const usePaymentStatusStore = create<PaymentStatusStore>()((set, get) => 
     }
   },
 
-  togglePaymentStatus: async (id: string, type: 'weekly' | 'monthly') => {
+  togglePaymentStatus: async (id: string, type: 'weekly' | 'monthly' | 'installment') => {
     const { isLoading, pendingItems, paymentTotals } = get();
 
     // Prevent concurrent operations
@@ -136,6 +139,7 @@ export const usePaymentStatusStore = create<PaymentStatusStore>()((set, get) => 
       if (type === 'weekly') {
         await paymentStatusService.toggleWeeklyOccurrence(id);
       } else {
+        // Both 'monthly' and 'installment' are regular transactions
         await paymentStatusService.toggleMonthlyTransaction(id);
       }
 
@@ -171,7 +175,10 @@ export const usePaymentStatusStore = create<PaymentStatusStore>()((set, get) => 
     }
   },
 
-  bulkMarkAsPaid: async (groupId: string, type: 'weekly' | 'monthly'): Promise<BulkMarkResult> => {
+  bulkMarkAsPaid: async (
+    groupId: string,
+    type: 'weekly' | 'monthly' | 'installment'
+  ): Promise<BulkMarkResult> => {
     const { isLoading, pendingItems, paymentTotals } = get();
 
     // Prevent concurrent operations
@@ -191,6 +198,7 @@ export const usePaymentStatusStore = create<PaymentStatusStore>()((set, get) => 
       if (type === 'weekly') {
         result = await paymentStatusService.bulkMarkWeeklyGroup(groupId);
       } else {
+        // Both 'monthly' and 'installment' use the same bulk mark logic
         result = await paymentStatusService.bulkMarkMonthlyGroup(groupId);
       }
 

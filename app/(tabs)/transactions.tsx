@@ -38,6 +38,7 @@ import { useFilterStore } from '../../src/stores/filterStore';
 import { useCategories } from '../../src/hooks/useCategories';
 import { FilterPanel } from '../../src/components/filters/FilterPanel';
 import { MonthSelector } from '../../src/components/dashboard/MonthSelector';
+import { MonthPickerModal } from '../../src/components/dashboard/MonthPickerModal';
 import { TransactionCard } from '../../src/components/ui/TransactionCard';
 import { LoadingIndicator } from '../../src/components/ui/LoadingIndicator';
 import { EmptyState } from '../../src/components/ui/EmptyState';
@@ -260,6 +261,7 @@ function MonthlySummary({ summary, weeklyTotal }: MonthlySummaryProps): React.Re
 export default function TransactionsScreen(): React.ReactElement {
   const { t } = useTranslation();
   const [selectedMonth, setSelectedMonth] = useState(getCurrentMonth);
+  const [isMonthPickerVisible, setMonthPickerVisible] = useState(false);
 
   const colors = useThemeColors();
   const locale = getCurrentLocale();
@@ -345,6 +347,22 @@ export default function TransactionsScreen(): React.ReactElement {
       resetDateRange();
     },
     [resetDateRange]
+  );
+
+  // Month picker handlers
+  const handleOpenMonthPicker = useCallback(() => {
+    setMonthPickerVisible(true);
+  }, []);
+
+  const handleCloseMonthPicker = useCallback(() => {
+    setMonthPickerVisible(false);
+  }, []);
+
+  const handleSelectMonthFromPicker = useCallback(
+    (month: string) => {
+      handleMonthChange(month);
+    },
+    [handleMonthChange]
   );
 
   // Dynamic styles based on theme
@@ -693,6 +711,7 @@ export default function TransactionsScreen(): React.ReactElement {
             selectedMonth={selectedMonth}
             onPreviousMonth={handlePreviousMonth}
             onNextMonth={handleNextMonth}
+            onMonthPress={handleOpenMonthPicker}
             disableNext={isNextDisabled}
             testID="month-selector"
           />
@@ -714,6 +733,7 @@ export default function TransactionsScreen(): React.ReactElement {
       selectedMonth,
       handlePreviousMonth,
       handleNextMonth,
+      handleOpenMonthPicker,
       isNextDisabled,
       isExpanded,
       handleFilterToggle,
@@ -798,6 +818,15 @@ export default function TransactionsScreen(): React.ReactElement {
           testID="transactions-list"
         />
       </View>
+
+      {/* Month Picker Modal */}
+      <MonthPickerModal
+        visible={isMonthPickerVisible}
+        selectedMonth={selectedMonth}
+        onSelectMonth={handleSelectMonthFromPicker}
+        onClose={handleCloseMonthPicker}
+        testID="transactions-month-picker"
+      />
     </SafeAreaView>
   );
 }

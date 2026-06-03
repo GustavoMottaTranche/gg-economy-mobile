@@ -406,24 +406,32 @@ export class NotificationScheduler implements INotificationScheduler {
    *
    * Called when a notification is delivered. Records the delivery
    * and schedules the next notification based on current settings.
+   * Skips processing in multipleDaily mode (handled by handleSlotNotificationReceived).
    */
   async handleNotificationReceived(): Promise<void> {
     const store = useNotificationStore.getState();
+    const settings = store.settings;
+
+    // In multipleDaily mode, slot notifications are handled by handleSlotNotificationReceived
+    // This method should only handle single-notification frequencies
+    if (settings.frequency === 'multipleDaily') {
+      return;
+    }
 
     // Record the delivery time
     store.recordDelivery();
 
     // Get current settings after recording delivery
-    const settings = useNotificationStore.getState().settings;
+    const updatedSettings = useNotificationStore.getState().settings;
 
     // If notifications are still enabled, schedule the next one
-    if (settings.isEnabled && settings.frequency !== 'disabled') {
+    if (updatedSettings.isEnabled && updatedSettings.frequency !== 'disabled') {
       try {
         // Cancel any existing scheduled notifications first
         await this.cancelAll();
 
         // Schedule the next notification
-        const newNotificationId = await this.scheduleNext(settings);
+        const newNotificationId = await this.scheduleNext(updatedSettings);
         store.setScheduledNotificationId(newNotificationId);
       } catch (error) {
         logger.warn('Failed to reschedule notification after delivery', {

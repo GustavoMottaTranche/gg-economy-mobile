@@ -6,7 +6,11 @@
  * When expanded, renders category rows within the section.
  * Uses LayoutAnimation for smooth expand/collapse transitions (max 300ms).
  *
- * **Validates: Requirements 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 1.10**
+ * When a generalGoal is configured, also displays the goal value formatted as
+ * currency with a suggestion indicator ("meta"/"goal") and expected future spending
+ * with a label ("expectativa"/"expected") in secondary styling.
+ *
+ * **Validates: Requirements 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 1.10, 3.1, 3.2, 3.3, 3.4, 3.5, 5.2, 5.3, 9.2, 9.4, 9.5, 10.1, 10.7, 10.8, 10.9**
  */
 
 import React, { memo, useMemo, useCallback } from 'react';
@@ -20,6 +24,7 @@ import {
   Platform,
   ViewStyle,
 } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { formatCurrencyLocale, getCurrentLocale } from '../../i18n';
 import { useThemeColors } from '../../hooks/useThemeColors';
 import { spacing, borderRadius, shadows } from '../../constants/theme';
@@ -51,6 +56,12 @@ export interface CollapsibleSectionProps {
   expandedCategoryId: string | null;
   /** Currently selected month in YYYY-MM format */
   selectedMonth: string;
+  /** General variable expense goal in cents, null if not configured */
+  generalGoal?: number | null;
+  /** Expected future spending in cents (always >= 0) */
+  expectedFutureSpending?: number;
+  /** Per-category goals: categoryId → amount in cents */
+  categoryGoals?: Map<string, number>;
   /** Optional container style */
   style?: ViewStyle;
   /** Test ID for testing */
@@ -92,9 +103,13 @@ function CollapsibleSectionComponent({
   onCategoryPress,
   expandedCategoryId: _expandedCategoryId,
   selectedMonth: _selectedMonth,
+  generalGoal,
+  expectedFutureSpending,
+  categoryGoals,
   style,
   testID,
 }: CollapsibleSectionProps): React.ReactElement {
+  const { t } = useTranslation();
   const colors = useThemeColors();
   const resolvedScheme = useThemeStore((s) => s.resolvedScheme);
   const locale = getCurrentLocale();
@@ -103,6 +118,18 @@ function CollapsibleSectionComponent({
   const formattedTotal = useMemo(() => {
     return formatCurrencyLocale(total / 100, locale);
   }, [total, locale]);
+
+  // Format general goal if configured
+  const formattedGoal = useMemo(() => {
+    if (generalGoal == null) return null;
+    return formatCurrencyLocale(generalGoal / 100, locale);
+  }, [generalGoal, locale]);
+
+  // Format expected future spending if available
+  const formattedExpected = useMemo(() => {
+    if (expectedFutureSpending == null) return null;
+    return formatCurrencyLocale(expectedFutureSpending / 100, locale);
+  }, [expectedFutureSpending, locale]);
 
   // Chevron indicator: ▼ when expanded, ▶ when collapsed
   const chevron = isExpanded ? '▼' : '▶';
@@ -123,6 +150,15 @@ function CollapsibleSectionComponent({
     [onCategoryPress]
   );
 
+  // Build accessibility label including goal when configured
+  const headerAccessibilityLabel = useMemo(() => {
+    const expandedState = isExpanded ? 'expandido' : 'colapsado';
+    if (generalGoal != null && formattedGoal) {
+      return `${title}, ${formattedTotal}, ${t('goals.suggestionIndicator')} ${formattedGoal}, ${expandedState}`;
+    }
+    return `${title}, ${formattedTotal}, ${expandedState}`;
+  }, [title, formattedTotal, formattedGoal, generalGoal, isExpanded, t]);
+
   // Get shadow based on theme mode
   const sectionShadow = shadows[resolvedScheme].sm;
 
@@ -137,7 +173,7 @@ function CollapsibleSectionComponent({
         onPress={handleToggle}
         activeOpacity={0.7}
         accessibilityRole="button"
-        accessibilityLabel={`${title}, ${formattedTotal}, ${isExpanded ? 'expandido' : 'colapsado'}`}
+        accessibilityLabel={headerAccessibilityLabel}
         accessibilityState={{ expanded: isExpanded }}
         testID={testID ? `${testID}-header` : undefined}
       >
@@ -150,42 +186,91 @@ function CollapsibleSectionComponent({
           </Text>
           <Text style={[styles.title, { color: colors.text.primary }]}>{title}</Text>
         </View>
-        <Text style={[styles.total, { color: colors.text.primary }]}>{formattedTotal}</Text>
+        <View style={styles.headerRight}>
+          <Text style={[styles.total, { color: colors.text.primary }]}>{formattedTotal}</Text>
+          {formattedExpected != null && (
+            <Text
+              style={[styles.expectedSpending, { color: colors.text.secondary }]}
+              testID={testID ? `${testID}-expected` : undefined}
+            >
+              {t('goals.expectedSpendingLabel')} {formattedExpected}
+            </Text>
+          )}
+          {formattedGoal != null && (
+            <Text
+              style={[styles.goalValue, { color: colors.text.tertiary }]}
+              testID={testID ? `${testID}-goal` : undefined}
+            >
+              {t('goals.suggestionIndicator')} {formattedGoal}
+            </Text>
+          )}
+        </View>
       </TouchableOpacity>
 
       {/* Category List (visible when expanded) */}
       {isExpanded && categories.length > 0 && (
         <View style={styles.categoryList} testID={testID ? `${testID}-list` : undefined}>
-          {categories.map((category) => (
-            <TouchableOpacity
-              key={category.categoryId ?? 'uncategorized'}
-              style={[styles.categoryItem, { borderBottomColor: colors.border.subtle }]}
-              onPress={() => handleCategoryPress(category.categoryId)}
-              accessibilityRole="button"
-              accessibilityLabel={`${category.categoryName}: ${formatCurrencyLocale(category.total / 100, locale)}, ${category.percentage}%`}
-              testID={
-                testID ? `${testID}-category-${category.categoryId ?? 'uncategorized'}` : undefined
-              }
-            >
-              <View style={styles.categoryLeft}>
-                <View style={[styles.categoryColor, { backgroundColor: category.categoryColor }]} />
-                <Text
-                  style={[styles.categoryName, { color: colors.text.primary }]}
-                  numberOfLines={1}
-                >
-                  {category.categoryName}
-                </Text>
-              </View>
-              <View style={styles.categoryRight}>
-                <Text style={[styles.categoryAmount, { color: colors.text.primary }]}>
-                  {formatCurrencyLocale(category.total / 100, locale)}
-                </Text>
-                <Text style={[styles.categoryPercent, { color: colors.text.tertiary }]}>
-                  {category.percentage}%
-                </Text>
-              </View>
-            </TouchableOpacity>
-          ))}
+          {categories.map((category) => {
+            const catGoal = categoryGoals?.get(category.categoryId ?? '') ?? null;
+            const hasCatGoal = catGoal != null && catGoal > 0;
+            const formattedCatGoal = hasCatGoal
+              ? formatCurrencyLocale(catGoal / 100, locale)
+              : null;
+            // Difference: goal - spending (positive = under budget, negative = over budget)
+            const difference = hasCatGoal ? catGoal - category.total : null;
+            const formattedDifference =
+              difference != null ? formatCurrencyLocale(difference / 100, locale) : null;
+
+            return (
+              <TouchableOpacity
+                key={category.categoryId ?? 'uncategorized'}
+                style={[styles.categoryItem, { borderBottomColor: colors.border.subtle }]}
+                onPress={() => handleCategoryPress(category.categoryId)}
+                accessibilityRole="button"
+                accessibilityLabel={
+                  hasCatGoal
+                    ? `${category.categoryName}: ${formatCurrencyLocale(category.total / 100, locale)}, ${t('goals.suggestionIndicator')} ${formattedCatGoal}, ${t('goals.differenceLabel')} ${formattedDifference}`
+                    : `${category.categoryName}: ${formatCurrencyLocale(category.total / 100, locale)}, ${category.percentage}%`
+                }
+                testID={
+                  testID
+                    ? `${testID}-category-${category.categoryId ?? 'uncategorized'}`
+                    : undefined
+                }
+              >
+                <View style={styles.categoryLeft}>
+                  <View
+                    style={[styles.categoryColor, { backgroundColor: category.categoryColor }]}
+                  />
+                  <Text
+                    style={[styles.categoryName, { color: colors.text.primary }]}
+                    numberOfLines={1}
+                  >
+                    {category.categoryName}
+                  </Text>
+                </View>
+                <View style={styles.categoryRight}>
+                  <Text style={[styles.categoryAmount, { color: colors.text.primary }]}>
+                    {formatCurrencyLocale(category.total / 100, locale)}
+                  </Text>
+                  {hasCatGoal && formattedCatGoal ? (
+                    <>
+                      <Text style={[styles.categoryGoalText, { color: colors.text.tertiary }]}>
+                        {t('goals.suggestionIndicator')} {formattedCatGoal}
+                      </Text>
+                      <Text style={[styles.categoryDiffText, { color: colors.text.secondary }]}>
+                        {t('goals.differenceLabel')} {formattedDifference}
+                      </Text>
+                    </>
+                  ) : (
+                    <Text style={[styles.categoryPercent, { color: colors.text.tertiary }]}>
+                      {category.percentage}%
+                    </Text>
+                  )}
+                </View>
+              </TouchableOpacity>
+            );
+          })}
         </View>
       )}
 
@@ -231,6 +316,17 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '700',
   },
+  headerRight: {
+    alignItems: 'flex-end',
+  },
+  expectedSpending: {
+    fontSize: 12,
+    marginTop: 2,
+  },
+  goalValue: {
+    fontSize: 12,
+    marginTop: 2,
+  },
   categoryList: {
     paddingHorizontal: spacing.lg,
     paddingBottom: spacing.md,
@@ -265,6 +361,14 @@ const styles = StyleSheet.create({
   categoryAmount: {
     fontSize: 14,
     fontWeight: '600',
+  },
+  categoryGoalText: {
+    fontSize: 11,
+    marginTop: 2,
+  },
+  categoryDiffText: {
+    fontSize: 11,
+    marginTop: 1,
   },
   categoryPercent: {
     fontSize: 12,

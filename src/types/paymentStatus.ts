@@ -1,13 +1,15 @@
 /** Represents a pending item displayed in the Home Pending Section */
 export interface PendingItem {
   id: string;
-  type: 'weekly' | 'monthly';
+  type: 'weekly' | 'monthly' | 'installment';
   groupId: string;
   groupName: string;
   amount: number;
   date: string; // YYYY-MM-DD
   referenceMonth: string; // YYYY-MM
   expenseGroup: 'fixed' | 'variable' | null;
+  categoryId: string | null;
+  categoryName: string | null;
 }
 
 /** Payment totals for a given month */

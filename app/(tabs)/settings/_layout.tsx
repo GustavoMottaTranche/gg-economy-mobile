@@ -72,6 +72,12 @@ export default function SettingsLayout() {
           title: t('notifications.settingsTitle'),
         }}
       />
+      <Stack.Screen
+        name="budget-goals"
+        options={{
+          title: t('goals.screenTitle'),
+        }}
+      />
     </Stack>
   );
 }

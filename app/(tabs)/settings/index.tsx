@@ -271,6 +271,14 @@ export default function SettingsScreen() {
         title: t('settings.dataManagement', 'Data Management'),
         data: [
           {
+            id: 'budget-goals',
+            icon: '🎯',
+            title: t('goals.settingsMenuItem'),
+            description: t('goals.settingsMenuDescription'),
+            type: 'navigation' as const,
+            href: '/(tabs)/settings/budget-goals',
+          },
+          {
             id: 'categories',
             icon: '🏷️',
             title: t('settings.categories'),

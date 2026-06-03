@@ -50,7 +50,8 @@
     "last6Months": "Last 6 months",
     "last12Months": "Last 12 months",
     "weeklyExpenses": "Weekly expenses",
-    "pendingSection": "Pending bills"
+    "pendingSection": "Pending bills",
+    "pendingTotal": "Total pending"
   },
   "paymentStatus": {
     "toggleError": "Could not change payment status.",
@@ -627,6 +628,42 @@
     "editOccurrence": "Edit Occurrence",
     "save": "Save",
     "create": "Create"
+  },
+  "categoryDetail": {
+    "title": "Category Details",
+    "transactionCount": "{{count}} transaction(s)",
+    "emptyTitle": "No transactions",
+    "emptyDescription": "No transactions found for this category this month.",
+    "badgeFixed": "Fixed",
+    "badgeVariable": "Variable",
+    "weeklyIndicator": "Weekly",
+    "errorTitle": "Error",
+    "errorDescription": "Could not load category details.",
+    "retry": "Retry",
+    "paid": "Paid",
+    "pending": "Pending",
+    "predictedTotal": "Predicted total",
+    "installmentLabel": "Installment {{current}} of {{total}}",
+    "recurringLabel": "Recurring"
+  },
+  "goals": {
+    "settingsMenuItem": "Variable Expense Goals",
+    "settingsMenuDescription": "Configure budget goals for variable expenses",
+    "screenTitle": "Variable Expense Goals",
+    "generalGoalLabel": "Total variable expense goal",
+    "categoryGoalLabel": "Goal per category",
+    "suggestionIndicator": "goal",
+    "differenceLabel": "diff",
+    "expectedSpendingLabel": "expected",
+    "explanatoryText": "Goals are personal reference values. They do not block or alert when spending exceeds the defined amount.",
+    "inputPlaceholder": "1,000.00",
+    "saved": "Goal saved",
+    "removed": "Goal removed",
+    "validation": {
+      "tooLow": "Value must be at least 0.01",
+      "tooHigh": "Value cannot exceed 999,999,999.99",
+      "invalidFormat": "Invalid format. Enter a valid numeric value"
+    }
   },
   "notifications": {
     "title": "Update your finances",

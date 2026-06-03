@@ -66,6 +66,19 @@ jest.mock('../../stores/weeklyRecurringStore', () => {
   };
 });
 
+jest.mock('../../stores/goalStore', () => ({
+  useGoalStore: (selector: (state: Record<string, unknown>) => unknown) =>
+    selector({
+      generalGoal: null,
+      categoryGoals: new Map(),
+      isLoading: false,
+    }),
+}));
+
+jest.mock('../../services/goals/ExpectedFutureSpending', () => ({
+  calculateExpectedFutureSpending: () => 0,
+}));
+
 jest.mock('drizzle-orm', () => ({
   eq: jest.fn((a, b) => ({ type: 'eq', a, b })),
   and: jest.fn((...args) => ({ type: 'and', args })),

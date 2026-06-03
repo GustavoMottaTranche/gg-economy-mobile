@@ -8,6 +8,7 @@
 
 export { SummaryCard, type SummaryCardProps } from './SummaryCard';
 export { MonthSelector, type MonthSelectorProps } from './MonthSelector';
+export { MonthPickerModal, type MonthPickerModalProps } from './MonthPickerModal';
 export { CategoryBreakdown, type CategoryBreakdownProps } from './CategoryBreakdown';
 export { TrendChart, type TrendChartProps } from './TrendChart';
 export { CollapsibleSection, type CollapsibleSectionProps } from './CollapsibleSection';

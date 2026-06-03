@@ -13,3 +13,4 @@ export * from './recurring';
 export * from './weeklyRecurring';
 export * from './paymentStatus';
 export * from './unifiedStatementItem';
+export * from './goal';

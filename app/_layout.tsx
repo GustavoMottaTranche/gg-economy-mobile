@@ -14,7 +14,7 @@
  *
  * **Validates: Requirements 28, 30, 34, 3.2, 3.3, 3.4, 4.3, 7.4, 8.2**
  */
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { Stack, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
@@ -32,6 +32,7 @@ import { useAppStateCleanup } from '../src/hooks';
 import { notificationScheduler } from '../src/services/notifications';
 import { useNotificationStore } from '../src/stores/notificationStore';
 import { useThemeStore } from '../src/stores/themeStore';
+import { useGoalStore } from '../src/stores/goalStore';
 
 // Check if running in Expo Go (notifications not supported since SDK 53)
 const isExpoGo = Constants.appOwnership === 'expo';
@@ -82,8 +83,13 @@ function AppContent() {
   const resolvedScheme = useThemeStore((s) => s.resolvedScheme);
   const statusBarStyle = resolvedScheme === 'dark' ? 'light' : 'dark';
 
-  // Get notification store state for restoration on app startup
-  const { settings, isHydrated } = useNotificationStore();
+  // Get notification store hydration state for restoration on app startup
+  const isHydrated = useNotificationStore((state) => state.isHydrated);
+
+  // Load budget goals from persistence on app startup
+  useEffect(() => {
+    useGoalStore.getState().loadGoals();
+  }, []);
 
   // Initialize app state cleanup for security
   // This clears sensitive in-memory data when app goes to background
@@ -93,16 +99,18 @@ function AppContent() {
     clearBackupStatusOnBackground: false, // Keep backup status for UX
   });
 
-  // Restore notification schedule on app startup
-  // Waits for store hydration, then verifies/restores scheduled notifications
-  // Handles case where scheduled time has passed by scheduling next valid time
+  // Restore notification schedule on app startup (ONCE after hydration)
+  // Only depends on isHydrated to avoid re-triggering when scheduling updates the store.
   // **Validates: Requirements 3.3, 3.4, 8.2**
   // Skip if running in Expo Go (notifications not supported)
+  const hasRestoredRef = useRef(false);
   useEffect(() => {
-    if (isHydrated && !isExpoGo) {
-      notificationScheduler.restore(settings);
+    if (isHydrated && !isExpoGo && !hasRestoredRef.current) {
+      hasRestoredRef.current = true;
+      const currentSettings = useNotificationStore.getState().settings;
+      notificationScheduler.restore(currentSettings);
     }
-  }, [isHydrated, settings]);
+  }, [isHydrated]);
 
   // Set up notification listeners for foreground delivery and tap handling
   // Skip if running in Expo Go (notifications not supported)
@@ -169,10 +177,23 @@ function AppContent() {
     if (isExpoGo) return;
 
     const handleLanguageChange = async () => {
+      // Read current settings at the time of the event to avoid stale closures
+      const currentSettings = useNotificationStore.getState().settings;
+
       // Only reschedule if notifications are enabled
-      if (settings.isEnabled && settings.frequency !== 'disabled') {
+      if (currentSettings.isEnabled && currentSettings.frequency !== 'disabled') {
         await notificationScheduler.cancelAll();
-        await notificationScheduler.scheduleNext(settings);
+
+        if (currentSettings.frequency === 'multipleDaily') {
+          const newMapping = await notificationScheduler.scheduleAllSlots(
+            currentSettings.timeSlots,
+            currentSettings
+          );
+          useNotificationStore.getState().setTimeSlotNotificationIds(newMapping);
+        } else {
+          const newId = await notificationScheduler.scheduleNext(currentSettings);
+          useNotificationStore.getState().setScheduledNotificationId(newId);
+        }
       }
     };
 
@@ -181,7 +202,7 @@ function AppContent() {
     return () => {
       i18n.off('languageChanged', handleLanguageChange);
     };
-  }, [settings]);
+  }, []);
 
   const onLayoutRootView = useCallback(async () => {
     // Hide splash screen once the app is ready
@@ -212,6 +233,18 @@ function AppContent() {
             presentation: 'modal',
             title: t('transactions.editTransaction'),
             headerShown: true,
+            headerStyle: {
+              backgroundColor: resolvedScheme === 'dark' ? '#1C1C1E' : '#F5F5F7',
+            },
+            headerTintColor: resolvedScheme === 'dark' ? '#FFFFFF' : '#1C1C1E',
+          }}
+        />
+        <Stack.Screen
+          name="category/[id]"
+          options={{
+            presentation: 'card',
+            headerShown: true,
+            title: '',
             headerStyle: {
               backgroundColor: resolvedScheme === 'dark' ? '#1C1C1E' : '#F5F5F7',
             },

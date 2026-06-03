@@ -50,7 +50,8 @@
     "last6Months": "Últimos 6 meses",
     "last12Months": "Últimos 12 meses",
     "weeklyExpenses": "Gastos semanais",
-    "pendingSection": "Contas pendentes"
+    "pendingSection": "Contas pendentes",
+    "pendingTotal": "Total pendente"
   },
   "paymentStatus": {
     "toggleError": "Não foi possível alterar o status de pagamento.",
@@ -627,6 +628,42 @@
     "editOccurrence": "Editar Ocorrência",
     "save": "Salvar",
     "create": "Criar"
+  },
+  "categoryDetail": {
+    "title": "Detalhes da Categoria",
+    "transactionCount": "{{count}} lançamento(s)",
+    "emptyTitle": "Nenhum lançamento",
+    "emptyDescription": "Nenhum lançamento encontrado para esta categoria neste mês.",
+    "badgeFixed": "Fixo",
+    "badgeVariable": "Variável",
+    "weeklyIndicator": "Semanal",
+    "errorTitle": "Erro",
+    "errorDescription": "Não foi possível carregar os detalhes da categoria.",
+    "retry": "Tentar novamente",
+    "paid": "Pago",
+    "pending": "Pendente",
+    "predictedTotal": "Total previsto",
+    "installmentLabel": "Parcela {{current}} de {{total}}",
+    "recurringLabel": "Recorrente"
+  },
+  "goals": {
+    "settingsMenuItem": "Metas de Gastos Variáveis",
+    "settingsMenuDescription": "Configurar metas de orçamento para despesas variáveis",
+    "screenTitle": "Metas de Gastos Variáveis",
+    "generalGoalLabel": "Meta total de gastos variáveis",
+    "categoryGoalLabel": "Meta por categoria",
+    "suggestionIndicator": "meta",
+    "differenceLabel": "dif",
+    "expectedSpendingLabel": "expectativa",
+    "explanatoryText": "Metas são valores de referência pessoal. Não bloqueiam nem alertam quando o gasto ultrapassa o valor definido.",
+    "inputPlaceholder": "1.000,00",
+    "saved": "Meta salva",
+    "removed": "Meta removida",
+    "validation": {
+      "tooLow": "O valor deve ser pelo menos 0,01",
+      "tooHigh": "O valor não pode ultrapassar 999.999.999,99",
+      "invalidFormat": "Formato inválido. Use um valor numérico válido"
+    }
   },
   "notifications": {
     "title": "Atualize suas finanças",
