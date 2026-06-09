@@ -312,6 +312,152 @@ export const weeklyOccurrencesRelations = relations(weeklyOccurrences, ({ one })
 }));
 
 // ============================================================================
+// Funds Table
+// ============================================================================
+export const funds = sqliteTable('funds', {
+  id: text('id').primaryKey(),
+  name: text('name').notNull(),
+  icon: text('icon'),
+  color: text('color'),
+  isActive: integer('is_active', { mode: 'boolean' }).notNull().default(true),
+  createdAt: text('created_at')
+    .notNull()
+    .default(sql`(datetime('now'))`),
+  updatedAt: text('updated_at')
+    .notNull()
+    .default(sql`(datetime('now'))`),
+});
+
+export const fundsRelations = relations(funds, ({ many }) => ({
+  allocations: many(fundAllocations),
+  balance: many(fundBalances),
+  fundTransactions: many(fundTransactions),
+  recurringFundLinks: many(recurringFundLinks),
+}));
+
+// ============================================================================
+// Fund Allocations Table
+// ============================================================================
+export const fundAllocations = sqliteTable(
+  'fund_allocations',
+  {
+    id: text('id').primaryKey(),
+    fundId: text('fund_id')
+      .notNull()
+      .references(() => funds.id, { onDelete: 'cascade' }),
+    referenceMonth: text('reference_month').notNull(),
+    amount: real('amount').notNull(),
+    createdAt: text('created_at')
+      .notNull()
+      .default(sql`(datetime('now'))`),
+    updatedAt: text('updated_at')
+      .notNull()
+      .default(sql`(datetime('now'))`),
+  },
+  (table) => [uniqueIndex('idx_fund_allocations_fund_month').on(table.fundId, table.referenceMonth)]
+);
+
+export const fundAllocationsRelations = relations(fundAllocations, ({ one }) => ({
+  fund: one(funds, {
+    fields: [fundAllocations.fundId],
+    references: [funds.id],
+  }),
+}));
+
+// ============================================================================
+// Fund Balances Table
+// ============================================================================
+export const fundBalances = sqliteTable(
+  'fund_balances',
+  {
+    id: text('id').primaryKey(),
+    fundId: text('fund_id')
+      .notNull()
+      .references(() => funds.id, { onDelete: 'cascade' }),
+    baseAmount: real('base_amount').notNull().default(0),
+    updatedAt: text('updated_at')
+      .notNull()
+      .default(sql`(datetime('now'))`),
+  },
+  (table) => [uniqueIndex('idx_fund_balances_fund').on(table.fundId)]
+);
+
+export const fundBalancesRelations = relations(fundBalances, ({ one }) => ({
+  fund: one(funds, {
+    fields: [fundBalances.fundId],
+    references: [funds.id],
+  }),
+}));
+
+// ============================================================================
+// Fund Transactions Table
+// ============================================================================
+export const fundTransactions = sqliteTable(
+  'fund_transactions',
+  {
+    id: text('id').primaryKey(),
+    fundId: text('fund_id')
+      .notNull()
+      .references(() => funds.id, { onDelete: 'cascade' }),
+    transactionId: text('transaction_id')
+      .notNull()
+      .references(() => transactions.id, { onDelete: 'cascade' }),
+    createdAt: text('created_at')
+      .notNull()
+      .default(sql`(datetime('now'))`),
+  },
+  (table) => [
+    index('idx_fund_transactions_fund').on(table.fundId),
+    uniqueIndex('idx_fund_transactions_transaction').on(table.transactionId),
+  ]
+);
+
+export const fundTransactionsRelations = relations(fundTransactions, ({ one }) => ({
+  fund: one(funds, {
+    fields: [fundTransactions.fundId],
+    references: [funds.id],
+  }),
+  transaction: one(transactions, {
+    fields: [fundTransactions.transactionId],
+    references: [transactions.id],
+  }),
+}));
+
+// ============================================================================
+// Recurring Fund Links Table
+// ============================================================================
+export const recurringFundLinks = sqliteTable(
+  'recurring_fund_links',
+  {
+    id: text('id').primaryKey(),
+    recurringId: text('recurring_id')
+      .notNull()
+      .references(() => recurringTransactions.id, { onDelete: 'cascade' }),
+    fundId: text('fund_id')
+      .notNull()
+      .references(() => funds.id, { onDelete: 'cascade' }),
+    createdAt: text('created_at')
+      .notNull()
+      .default(sql`(datetime('now'))`),
+  },
+  (table) => [
+    index('idx_recurring_fund_links_fund').on(table.fundId),
+    uniqueIndex('idx_recurring_fund_links_recurring').on(table.recurringId),
+  ]
+);
+
+export const recurringFundLinksRelations = relations(recurringFundLinks, ({ one }) => ({
+  recurringTransaction: one(recurringTransactions, {
+    fields: [recurringFundLinks.recurringId],
+    references: [recurringTransactions.id],
+  }),
+  fund: one(funds, {
+    fields: [recurringFundLinks.fundId],
+    references: [funds.id],
+  }),
+}));
+
+// ============================================================================
 // Category Goals Table
 // ============================================================================
 export const categoryGoals = sqliteTable(
@@ -387,3 +533,18 @@ export type NewWeeklyOccurrenceRecord = typeof weeklyOccurrences.$inferInsert;
 
 export type CategoryGoalRecord = typeof categoryGoals.$inferSelect;
 export type NewCategoryGoalRecord = typeof categoryGoals.$inferInsert;
+
+export type FundRecord = typeof funds.$inferSelect;
+export type NewFundRecord = typeof funds.$inferInsert;
+
+export type FundAllocationRecord = typeof fundAllocations.$inferSelect;
+export type NewFundAllocationRecord = typeof fundAllocations.$inferInsert;
+
+export type FundBalanceRecord = typeof fundBalances.$inferSelect;
+export type NewFundBalanceRecord = typeof fundBalances.$inferInsert;
+
+export type FundTransactionRecord = typeof fundTransactions.$inferSelect;
+export type NewFundTransactionRecord = typeof fundTransactions.$inferInsert;
+
+export type RecurringFundLinkRecord = typeof recurringFundLinks.$inferSelect;
+export type NewRecurringFundLinkRecord = typeof recurringFundLinks.$inferInsert;

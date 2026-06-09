@@ -581,3 +581,22 @@ export async function getDistinctReferenceMonths(): Promise<string[]> {
 
   return results.map((r) => r.referenceMonth);
 }
+
+/**
+ * Get the last manually added transaction (batchId is null).
+ * Returns the title and createdAt timestamp.
+ */
+export async function getLastManualTransaction(): Promise<{
+  title: string;
+  createdAt: string;
+} | null> {
+  const db = getDb();
+  const results = await db
+    .select({ title: transactions.title, createdAt: transactions.createdAt })
+    .from(transactions)
+    .where(isNull(transactions.batchId))
+    .orderBy(desc(transactions.createdAt))
+    .limit(1);
+
+  return results[0] ?? null;
+}

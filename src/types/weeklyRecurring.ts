@@ -34,6 +34,7 @@ export interface CreateWeeklyGroupDTO {
   categoryType?: 'income' | 'expense';
   description?: string;
   originId?: string;
+  fundId?: string | null;
   paymentStatusOption?: import('./paymentStatus').PaymentStatusCreationOption;
 }
 
@@ -44,6 +45,7 @@ export interface UpdateWeeklyGroupDTO {
   categoryId?: string;
   description?: string;
   originId?: string | null;
+  fundId?: string | null;
 }
 
 export interface UpdateOccurrenceDTO {

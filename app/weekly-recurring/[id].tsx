@@ -25,6 +25,7 @@ import { EmptyState } from '../../src/components/ui/EmptyState';
 import { weeklyRecurringService } from '../../src/services/weekly-recurring/WeeklyRecurringService';
 import { weeklyOccurrenceRepository } from '../../src/repositories/WeeklyOccurrenceRepository';
 import { paymentStatusService } from '../../src/services/payment-status/PaymentStatusService';
+import { recurringFundLinkRepository } from '../../src/repositories/RecurringFundLinkRepository';
 import { useToastStore } from '../../src/stores/toastStore';
 import { spacing } from '../../src/constants/theme';
 import type {
@@ -59,6 +60,9 @@ export default function WeeklyRecurringDetailScreen() {
   const [editModalVisible, setEditModalVisible] = useState(false);
   const [selectedOccurrence, setSelectedOccurrence] = useState<WeeklyOccurrence | null>(null);
 
+  // Fund link state (Requirements 11.4, 11.5, 11.6)
+  const [linkedFundId, setLinkedFundId] = useState<string | null>(null);
+
   // Load group and occurrences
   useEffect(() => {
     async function loadData() {
@@ -77,6 +81,10 @@ export default function WeeklyRecurringDetailScreen() {
           // Load payment summary
           const summary = await paymentStatusService.getGroupPaymentSummary(id, 'weekly');
           setPaymentSummary(summary);
+
+          // Load fund link
+          const fundLink = await recurringFundLinkRepository.getByRecurringId(groupData.id);
+          setLinkedFundId(fundLink ? fundLink.fundId : null);
         }
       } catch (error) {
         console.error('Failed to load weekly recurring group:', error);
@@ -178,22 +186,41 @@ export default function WeeklyRecurringDetailScreen() {
 
   // Handle group edit submit
   const handleGroupEditSubmit = useCallback(
-    (data: UpdateWeeklyGroupDTO | CreateWeeklyGroupDTO) => {
+    async (data: UpdateWeeklyGroupDTO | CreateWeeklyGroupDTO) => {
       if (!id) return;
-      updateGroup(id, data as UpdateWeeklyGroupDTO)
-        .then(() => {
-          router.back();
-        })
-        .catch(() => {
-          Alert.alert(
-            t('common.error', { defaultValue: 'Erro' }),
-            t('weeklyRecurring.errors.updateFailed', {
-              defaultValue: 'Não foi possível atualizar o grupo.',
-            })
-          );
-        });
+      try {
+        const dto = data as UpdateWeeklyGroupDTO;
+        const newFundId = dto.fundId;
+
+        // Update the group (without fundId - that's handled separately)
+        const { fundId: _fundId, ...groupUpdates } = dto;
+        await updateGroup(id, groupUpdates);
+
+        // Handle fund link changes (Requirements 11.4, 11.5)
+        if (newFundId !== undefined) {
+          if (newFundId === null && linkedFundId !== null) {
+            // Unlink: remove the recurring_fund_links record
+            await recurringFundLinkRepository.unlink(id);
+          } else if (newFundId !== null && newFundId !== linkedFundId) {
+            // Link or change: unlink first if needed, then link
+            if (linkedFundId !== null) {
+              await recurringFundLinkRepository.unlink(id);
+            }
+            await recurringFundLinkRepository.link(id, newFundId);
+          }
+        }
+
+        router.back();
+      } catch {
+        Alert.alert(
+          t('common.error', { defaultValue: 'Erro' }),
+          t('weeklyRecurring.errors.updateFailed', {
+            defaultValue: 'Não foi possível atualizar o grupo.',
+          })
+        );
+      }
     },
-    [id, updateGroup, router, t]
+    [id, updateGroup, linkedFundId, router, t]
   );
 
   // Handle cancel edit
@@ -351,6 +378,7 @@ export default function WeeklyRecurringDetailScreen() {
         <WeeklyRecurringForm
           initialValues={group}
           categories={expenseCategories}
+          initialFundId={linkedFundId}
           onSubmit={handleGroupEditSubmit}
           onCancel={handleCancelEdit}
           testID="weekly-recurring-edit-form"

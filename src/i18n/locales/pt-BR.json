@@ -267,6 +267,7 @@
     "draftSaved": "Rascunho salvo",
     "draftRestored": "Rascunho restaurado",
     "transactionSaved": "Lançamento salvo com sucesso",
+    "lastAdded": "Último: {{title}} em {{date}}",
     "validationError": "Por favor, preencha todos os campos obrigatórios",
     "duplicateWarning": {
       "title": "Possível Duplicata",
@@ -315,7 +316,10 @@
       "applyToThisOccurrence": "Aplicar apenas a esta ocorrência",
       "applyToAllFuture": "Aplicar a todas as ocorrências futuras",
       "recurringUpdateSuccess": "Valor recorrente atualizado para todas as ocorrências futuras",
-      "recurringUpdateError": "Falha ao atualizar valor recorrente. Tente novamente."
+      "recurringUpdateError": "Falha ao atualizar valor recorrente. Tente novamente.",
+      "recurringDeleteTitle": "Excluir Transação Recorrente",
+      "recurringDeleteMessage": "Esta transação faz parte de uma série recorrente. O que deseja fazer?",
+      "recurringDeleteFuture": "Excluir esta e todas as futuras"
     },
     "batch": {
       "toggle": "Modo lote",
@@ -694,5 +698,59 @@
     "duplicateTimeSlot": "Este horário já existe",
     "hour": "Hora",
     "minute": "Minuto"
+  },
+  "futurePlans": {
+    "tab": "Planos",
+    "screenTitle": "Planos Futuros",
+    "savingsGoal": "Meta de economia",
+    "actualSavings": "Guardando",
+    "remaining": "Restante",
+    "monthlyIncome": "Renda mensal",
+    "fundExpenses": "Gastos de fundos",
+    "funds": {
+      "title": "Fundos",
+      "create": "Criar fundo",
+      "edit": "Editar fundo",
+      "delete": "Excluir fundo",
+      "deactivate": "Desativar fundo",
+      "name": "Nome do fundo",
+      "icon": "Ícone",
+      "color": "Cor",
+      "baseBalance": "Saldo base",
+      "allocation": "Alocação mensal",
+      "balance": "Saldo acumulado",
+      "noFunds": "Nenhum fundo criado",
+      "noFundsHint": "Crie um fundo para começar a distribuir suas economias",
+      "deleteConfirmation": "Tem certeza que deseja excluir este fundo? Todos os dados associados serão removidos."
+    },
+    "config": {
+      "screenTitle": "Configurar Fundos",
+      "monthlyIncomeLabel": "Renda mensal esperada",
+      "monthlyIncomePlaceholder": "5.000,00",
+      "noIncomeConfigured": "Renda mensal não configurada",
+      "noIncomeHint": "Configure sua renda mensal para calcular a meta de economia",
+      "goToConfig": "Configurar",
+      "monthlyIncomeInline": "Renda deste mês",
+      "monthlyIncomeInlinePlaceholder": "0,00"
+    },
+    "validation": {
+      "nameRequired": "Nome do fundo é obrigatório",
+      "nameTooLong": "Nome deve ter no máximo 50 caracteres",
+      "invalidFormat": "Formato inválido. Use um valor numérico válido",
+      "amountTooLow": "O valor deve ser pelo menos 0,01",
+      "amountTooHigh": "O valor não pode ultrapassar 999.999.999,99"
+    },
+    "transactions": {
+      "linked": "Vinculado ao fundo",
+      "linkToFund": "Vincular a um fundo",
+      "unlinkFromFund": "Desvincular do fundo",
+      "noLinkedTransactions": "Nenhuma transação vinculada",
+      "futureIndicator": "futuro",
+      "selectFund": "Selecionar fundo",
+      "noneFund": "Nenhum"
+    },
+    "dashboard": {
+      "fundExpensesLabel": "Gastos de fundos"
+    }
   }
 }

@@ -10,9 +10,10 @@
 import { eq, and, lte, sql } from 'drizzle-orm';
 import { randomUUID } from 'expo-crypto';
 import { getDb, withTransaction } from '../../db/client';
-import { recurringTransactions, transactions } from '../../db/schema';
+import { recurringTransactions, transactions, fundTransactions } from '../../db/schema';
 import type { RecurringTransaction, CreateRecurringDTO } from '../../types/recurring';
 import type { PaymentStatusCreationOption } from '../../types/paymentStatus';
+import { recurringFundLinkRepository } from '../../repositories/RecurringFundLinkRepository';
 
 /**
  * Create a new recurring transaction record.
@@ -54,6 +55,9 @@ export async function createRecurring(dto: CreateRecurringDTO): Promise<Recurrin
     const transactionId = randomUUID();
     const isPaidValue = paymentStatusOption === 'all_pending' ? false : true;
 
+    // If fund linked, set isExcludedFromTotals to true
+    const hasFundLink = !!dto.fundId;
+
     await db.insert(transactions).values({
       id: transactionId,
       title: dto.title,
@@ -65,7 +69,7 @@ export async function createRecurring(dto: CreateRecurringDTO): Promise<Recurrin
       batchId: null,
       referenceMonth: dto.startMonth,
       needsReview: false,
-      isExcludedFromTotals: false,
+      isExcludedFromTotals: hasFundLink,
       isPaid: isPaidValue,
       duplicateOf: null,
       installmentGroupId: null,
@@ -73,6 +77,18 @@ export async function createRecurring(dto: CreateRecurringDTO): Promise<Recurrin
       createdAt: now,
       updatedAt: now,
     });
+
+    // If fund linked, create recurring_fund_links and fund_transactions records
+    if (dto.fundId) {
+      await recurringFundLinkRepository.link(id, dto.fundId);
+
+      await db.insert(fundTransactions).values({
+        id: randomUUID(),
+        fundId: dto.fundId,
+        transactionId,
+        createdAt: now,
+      });
+    }
 
     return {
       id: record.id,
@@ -119,17 +135,86 @@ export async function reactivateRecurring(id: string): Promise<void> {
 }
 
 /**
- * Update the base amount of a recurring transaction.
- * Future generated transactions will use this new amount.
+ * Update the base amount of a recurring transaction and propagate
+ * to all generated transactions from a given month onward.
+ *
+ * Updates:
+ * 1. The recurring parent record's amount (stored as absolute value)
+ * 2. All transactions linked to this recurring with referenceMonth >= fromMonth
+ *    (stored with sign matching their existing sign)
+ *
+ * Transactions before fromMonth are NOT modified.
+ *
+ * @param id - The recurring transaction ID
+ * @param newAmount - The new absolute amount value
+ * @param fromMonth - The month boundary (format: YYYY-MM). Transactions from this month onward are updated.
  */
-export async function updateRecurringAmount(id: string, newAmount: number): Promise<void> {
-  const db = getDb();
-  const now = new Date().toISOString();
+export async function updateRecurringAmount(
+  id: string,
+  newAmount: number,
+  fromMonth: string
+): Promise<void> {
+  await withTransaction(async () => {
+    const db = getDb();
+    const now = new Date().toISOString();
 
-  await db
-    .update(recurringTransactions)
-    .set({ amount: newAmount, updatedAt: now })
-    .where(eq(recurringTransactions.id, id));
+    // 1. Update the recurring parent record (stores absolute value)
+    await db
+      .update(recurringTransactions)
+      .set({ amount: newAmount, updatedAt: now })
+      .where(eq(recurringTransactions.id, id));
+
+    // 2. Get a sample transaction to determine sign convention
+    const sampleTx = await db
+      .select({ amount: transactions.amount })
+      .from(transactions)
+      .where(
+        and(eq(transactions.recurringId, id), sql`${transactions.referenceMonth} >= ${fromMonth}`)
+      )
+      .limit(1);
+
+    // Determine signed amount: preserve existing sign convention
+    const signedAmount =
+      sampleTx.length > 0 && sampleTx[0].amount < 0 ? -Math.abs(newAmount) : Math.abs(newAmount);
+
+    // 3. Update all transactions from fromMonth onward
+    await db
+      .update(transactions)
+      .set({ amount: signedAmount, updatedAt: now })
+      .where(
+        and(eq(transactions.recurringId, id), sql`${transactions.referenceMonth} >= ${fromMonth}`)
+      );
+  });
+}
+
+/**
+ * Deactivate a recurring transaction and delete all future generated transactions.
+ *
+ * 1. Sets isActive=false on the recurring parent record
+ * 2. Deletes all transactions linked to this recurring with referenceMonth > currentMonth
+ *    (preserves the current month's transaction)
+ *
+ * @param id - The recurring transaction ID
+ * @param currentMonth - The current month (format: YYYY-MM). Transactions after this month are deleted.
+ */
+export async function deactivateAndDeleteFuture(id: string, currentMonth: string): Promise<void> {
+  await withTransaction(async () => {
+    const db = getDb();
+    const now = new Date().toISOString();
+
+    // 1. Deactivate the recurring parent
+    await db
+      .update(recurringTransactions)
+      .set({ isActive: false, updatedAt: now })
+      .where(eq(recurringTransactions.id, id));
+
+    // 2. Delete all future transactions (after current month)
+    await db
+      .delete(transactions)
+      .where(
+        and(eq(transactions.recurringId, id), sql`${transactions.referenceMonth} > ${currentMonth}`)
+      );
+  });
 }
 
 /**
@@ -212,6 +297,9 @@ export async function generateMonthlyTransactions(targetMonth: string): Promise<
       continue; // Already generated for this month
     }
 
+    // Check if this recurring transaction has a fund link
+    const fundLink = await recurringFundLinkRepository.getByRecurringId(recurring.id);
+
     // Create the transaction for this month
     const id = randomUUID();
     const now = new Date().toISOString();
@@ -227,13 +315,23 @@ export async function generateMonthlyTransactions(targetMonth: string): Promise<
       batchId: null,
       referenceMonth: targetMonth,
       needsReview: false,
-      isExcludedFromTotals: false,
+      isExcludedFromTotals: fundLink ? true : false,
       duplicateOf: null,
       installmentGroupId: null,
       recurringId: recurring.id,
       createdAt: now,
       updatedAt: now,
     });
+
+    // If fund link exists, create a fund_transactions record
+    if (fundLink) {
+      await db.insert(fundTransactions).values({
+        id: randomUUID(),
+        fundId: fundLink.fundId,
+        transactionId: id,
+        createdAt: now,
+      });
+    }
   }
 }
 

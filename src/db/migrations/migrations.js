@@ -10,6 +10,7 @@ import m0005 from './0005_add_weekly_recurring';
 import m0006 from './0006_add_payment_status';
 import m0007 from './0007_add_category_goals';
 import m0008 from './0008_non_recurring_paid_by_default';
+import m0009 from './0009_add_funds_tables';
 
 export default {
   journal,
@@ -23,5 +24,6 @@ export default {
     m0006,
     m0007,
     m0008,
+    m0009,
   },
 };

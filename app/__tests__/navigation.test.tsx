@@ -1,8 +1,8 @@
 /**
  * Navigation Tests
  *
- * Tests for the navigation setup after the manual entry refactoring:
- * - Tab bar renders exactly 4 tabs with correct labels
+ * Tests for the navigation setup:
+ * - Tab bar renders exactly 5 tabs with correct labels
  * - Import/review routes redirect to manual entry
  *
  * **Validates: Requirements 1.1, 1.3**
@@ -91,6 +91,7 @@ jest.mock('react-i18next', () => ({
         'navigation.transactions': 'Transações',
         'navigation.manual': 'Entrada Manual',
         'navigation.settings': 'Configurações',
+        'futurePlans.tab': 'Planos',
       };
       return translations[key] ?? key;
     },
@@ -105,22 +106,23 @@ import ImportProgressRedirect from '../import/progress';
 import ImportLayoutRedirect from '../import/_layout';
 import ReviewRedirect from '../(tabs)/review';
 
-describe('Tab Navigation - 4 Tabs Structure', () => {
+describe('Tab Navigation - 5 Tabs Structure', () => {
   /**
    * Validates: Requirement 1.1
-   * The tab bar should present exactly 4 visible tabs:
-   * Dashboard, Transações, Entrada Manual, Configurações
+   * The tab bar should present exactly 5 visible tabs:
+   * Dashboard, Transações, Entrada Manual, Planos, Configurações
    */
-  it('renders exactly 4 visible tabs', () => {
+  it('renders exactly 5 visible tabs', () => {
     const { getByTestId, queryAllByTestId } = render(<TabLayout />);
 
     // Verify the tabs container exists
     expect(getByTestId('tabs-container')).toBeTruthy();
 
-    // Verify the 4 visible tabs exist
+    // Verify the 5 visible tabs exist
     expect(getByTestId('tab-screen-index')).toBeTruthy();
     expect(getByTestId('tab-screen-transactions')).toBeTruthy();
     expect(getByTestId('tab-screen-manual')).toBeTruthy();
+    expect(getByTestId('tab-screen-future-plans')).toBeTruthy();
     expect(getByTestId('tab-screen-settings')).toBeTruthy();
 
     // Verify the review tab is hidden (href: null)
@@ -130,7 +132,7 @@ describe('Tab Navigation - 4 Tabs Structure', () => {
     const allHiddenMarkers = queryAllByTestId(/^tab-hidden-/);
     const allTabs = queryAllByTestId(/^tab-screen-/);
     const visibleTabCount = allTabs.length - allHiddenMarkers.length;
-    expect(visibleTabCount).toBe(4);
+    expect(visibleTabCount).toBe(5);
   });
 
   it('renders Dashboard tab with correct label', () => {
@@ -149,6 +151,12 @@ describe('Tab Navigation - 4 Tabs Structure', () => {
     const { getByTestId } = render(<TabLayout />);
     const label = getByTestId('tab-label-manual');
     expect(label.props.children).toBe('Entrada Manual');
+  });
+
+  it('renders Future Plans tab with correct label', () => {
+    const { getByTestId } = render(<TabLayout />);
+    const label = getByTestId('tab-label-future-plans');
+    expect(label.props.children).toBe('Planos');
   });
 
   it('renders Settings tab with correct label', () => {

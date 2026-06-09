@@ -279,6 +279,14 @@ export default function SettingsScreen() {
             href: '/(tabs)/settings/budget-goals',
           },
           {
+            id: 'fund-config',
+            icon: '💰',
+            title: t('futurePlans.config.screenTitle'),
+            description: t('futurePlans.config.monthlyIncomeLabel'),
+            type: 'navigation' as const,
+            href: '/(tabs)/settings/fund-config',
+          },
+          {
             id: 'categories',
             icon: '🏷️',
             title: t('settings.categories'),

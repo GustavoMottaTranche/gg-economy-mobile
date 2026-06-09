@@ -267,6 +267,7 @@
     "draftSaved": "Draft saved",
     "draftRestored": "Draft restored",
     "transactionSaved": "Transaction saved successfully",
+    "lastAdded": "Last: {{title}} on {{date}}",
     "validationError": "Please fill in all required fields",
     "duplicateWarning": {
       "title": "Possible Duplicate",
@@ -315,7 +316,10 @@
       "applyToThisOccurrence": "Apply to this occurrence only",
       "applyToAllFuture": "Apply to all future occurrences",
       "recurringUpdateSuccess": "Recurring amount updated for all future occurrences",
-      "recurringUpdateError": "Failed to update recurring amount. Please try again."
+      "recurringUpdateError": "Failed to update recurring amount. Please try again.",
+      "recurringDeleteTitle": "Delete Recurring Transaction",
+      "recurringDeleteMessage": "This transaction is part of a recurring series. What would you like to do?",
+      "recurringDeleteFuture": "Delete this and all future"
     },
     "batch": {
       "toggle": "Batch mode",
@@ -694,5 +698,59 @@
     "duplicateTimeSlot": "This time slot already exists",
     "hour": "Hour",
     "minute": "Minute"
+  },
+  "futurePlans": {
+    "tab": "Plans",
+    "screenTitle": "Future Plans",
+    "savingsGoal": "Savings goal",
+    "actualSavings": "Saving",
+    "remaining": "Remaining",
+    "monthlyIncome": "Monthly income",
+    "fundExpenses": "Fund expenses",
+    "funds": {
+      "title": "Funds",
+      "create": "Create fund",
+      "edit": "Edit fund",
+      "delete": "Delete fund",
+      "deactivate": "Deactivate fund",
+      "name": "Fund name",
+      "icon": "Icon",
+      "color": "Color",
+      "baseBalance": "Base balance",
+      "allocation": "Monthly allocation",
+      "balance": "Accumulated balance",
+      "noFunds": "No funds created",
+      "noFundsHint": "Create a fund to start distributing your savings",
+      "deleteConfirmation": "Are you sure you want to delete this fund? All associated data will be removed."
+    },
+    "config": {
+      "screenTitle": "Configure Funds",
+      "monthlyIncomeLabel": "Expected monthly income",
+      "monthlyIncomePlaceholder": "5,000.00",
+      "noIncomeConfigured": "Monthly income not configured",
+      "noIncomeHint": "Configure your monthly income to calculate savings goal",
+      "goToConfig": "Configure",
+      "monthlyIncomeInline": "Income this month",
+      "monthlyIncomeInlinePlaceholder": "0.00"
+    },
+    "validation": {
+      "nameRequired": "Fund name is required",
+      "nameTooLong": "Name must be at most 50 characters",
+      "invalidFormat": "Invalid format. Use a valid numeric value",
+      "amountTooLow": "Amount must be at least 0.01",
+      "amountTooHigh": "Amount cannot exceed 999,999,999.99"
+    },
+    "transactions": {
+      "linked": "Linked to fund",
+      "linkToFund": "Link to a fund",
+      "unlinkFromFund": "Unlink from fund",
+      "noLinkedTransactions": "No linked transactions",
+      "futureIndicator": "future",
+      "selectFund": "Select fund",
+      "noneFund": "None"
+    },
+    "dashboard": {
+      "fundExpensesLabel": "Fund expenses"
+    }
   }
 }

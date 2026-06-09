@@ -14,6 +14,8 @@ import {
   getWeeklyOccurrenceBreakdownQuery,
   getTrendDataQuery,
   getAvailableMonthsQuery,
+  getVariableCategoriesWithGoalsQuery,
+  getFundExpensesQuery,
 } from '../db/queries/dashboard';
 import { roundPercentages } from '../utils/roundPercentages';
 import { useWeeklyRecurringStore, useWeeklyMonthlyTotal } from '../stores/weeklyRecurringStore';
@@ -128,6 +130,8 @@ export interface UseDashboardDataReturn {
   isLoading: boolean;
   /** Error message if any */
   error: string | null;
+  /** Total fund-linked expenses for the selected month (in cents) */
+  fundExpensesTotal: number;
   /** Set the selected month */
   setSelectedMonth: (month: string) => void;
   /** Set the trend period */
@@ -241,6 +245,39 @@ export function useDashboardData(): UseDashboardDataReturn {
     [selectedMonth]
   );
 
+  // Load variable categories with goals for zero-spending injection
+  const [goalCategoriesData, setGoalCategoriesData] = useState<
+    { categoryId: string; categoryName: string; categoryColor: string; categoryIcon: string }[]
+  >([]);
+
+  // Re-load goal categories when breakdown data becomes available (ensures DB is ready)
+  const breakdownReady = breakdownData != null;
+  useEffect(() => {
+    if (!breakdownReady) return;
+    let cancelled = false;
+    const loadGoalCategories = async () => {
+      try {
+        const result = await getVariableCategoriesWithGoalsQuery();
+        if (!cancelled) {
+          setGoalCategoriesData(
+            result.map((r) => ({
+              categoryId: r.categoryId,
+              categoryName: r.categoryName,
+              categoryColor: r.categoryColor,
+              categoryIcon: r.categoryIcon,
+            }))
+          );
+        }
+      } catch {
+        // Silent - categories without goals will not appear
+      }
+    };
+    loadGoalCategories();
+    return () => {
+      cancelled = true;
+    };
+  }, [breakdownReady]);
+
   // Merge transaction breakdown with weekly occurrences breakdown
   const mergedBreakdownData = useMemo(() => {
     const txData = breakdownData ?? [];
@@ -274,6 +311,11 @@ export function useDashboardData(): UseDashboardDataReturn {
 
   // Live query for available months using dashboard query module
   const { data: availableMonthsData } = useLiveQuery(getAvailableMonthsQuery());
+
+  // Live query for fund-linked expenses total for the selected month
+  const { data: fundExpensesData } = useLiveQuery(getFundExpensesQuery(selectedMonth), [
+    selectedMonth,
+  ]);
 
   // Transform summary data
   const summary = useMemo<MonthlySummary>(() => {
@@ -354,11 +396,34 @@ export function useDashboardData(): UseDashboardDataReturn {
     const variableItems = mergedBreakdownData.filter(
       (item) => item.isExpense === 1 && item.expenseGroup === 'variable'
     );
-    const variableTotal = variableItems.reduce((sum, item) => sum + (item.total ?? 0), 0);
-    const values = variableItems.map((item) => item.total ?? 0);
+
+    // Inject zero-spending entries for categories with goals but no transactions
+    const goalCategories = goalCategoriesData;
+    const existingCategoryIds = new Set(variableItems.map((item) => item.categoryId));
+    const syntheticItems: typeof variableItems = [];
+
+    for (const cat of goalCategories) {
+      if (!existingCategoryIds.has(cat.categoryId)) {
+        syntheticItems.push({
+          categoryId: cat.categoryId,
+          categoryName: cat.categoryName,
+          categoryType: 'expense',
+          categoryColor: cat.categoryColor,
+          categoryIcon: cat.categoryIcon,
+          expenseGroup: 'variable',
+          total: 0,
+          count: 0,
+          isExpense: 1,
+        } as (typeof variableItems)[number]);
+      }
+    }
+
+    const allVariableItems = [...variableItems, ...syntheticItems];
+    const variableTotal = allVariableItems.reduce((sum, item) => sum + (item.total ?? 0), 0);
+    const values = allVariableItems.map((item) => item.total ?? 0);
     const percentages = roundPercentages(values, variableTotal);
 
-    return variableItems
+    return allVariableItems
       .map((item, index) => ({
         categoryId: item.categoryId,
         categoryName: item.categoryName ?? 'Uncategorized',
@@ -371,7 +436,7 @@ export function useDashboardData(): UseDashboardDataReturn {
         percentage: percentages[index] ?? 0,
       }))
       .sort((a, b) => b.total - a.total);
-  }, [mergedBreakdownData]);
+  }, [mergedBreakdownData, goalCategoriesData]);
 
   // Compute group totals
   const fixedTotal = useMemo(() => {
@@ -459,6 +524,12 @@ export function useDashboardData(): UseDashboardDataReturn {
     return months;
   }, [availableMonthsData]);
 
+  // Fund expenses total for the selected month
+  const fundExpensesTotal = useMemo(() => {
+    if (!fundExpensesData || fundExpensesData.length === 0) return 0;
+    return fundExpensesData[0]?.totalFundExpenses ?? 0;
+  }, [fundExpensesData]);
+
   // Navigation handlers
   const previousMonth = useCallback(() => {
     setSelectedMonth((current) => getPreviousMonth(current));
@@ -495,6 +566,7 @@ export function useDashboardData(): UseDashboardDataReturn {
     trendPeriod,
     isLoading: !summaryData,
     error: summaryError ? String(summaryError) : null,
+    fundExpensesTotal,
     setSelectedMonth,
     setTrendPeriod,
     previousMonth,

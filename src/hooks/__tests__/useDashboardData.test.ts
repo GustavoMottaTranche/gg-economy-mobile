@@ -24,6 +24,9 @@ jest.mock('../../db/schema', () => ({
     amount: 'amount',
     isExcludedFromTotals: 'is_excluded_from_totals',
     categoryId: 'category_id',
+    id: 'id',
+    isPaid: 'is_paid',
+    recurringId: 'recurring_id',
   },
   categories: {
     id: 'id',
@@ -32,6 +35,14 @@ jest.mock('../../db/schema', () => ({
     color: 'color',
     icon: 'icon',
     expenseGroup: 'expense_group',
+    isActive: 'is_active',
+  },
+  categoryGoals: {
+    id: 'id',
+    categoryId: 'category_id',
+    amount: 'amount',
+    createdAt: 'created_at',
+    updatedAt: 'updated_at',
   },
   weeklyRecurringGroups: {
     id: 'id',
@@ -45,6 +56,12 @@ jest.mock('../../db/schema', () => ({
     amount: 'amount',
     referenceMonth: 'reference_month',
     isPaid: 'is_paid',
+  },
+  fundTransactions: {
+    id: 'id',
+    fundId: 'fund_id',
+    transactionId: 'transaction_id',
+    createdAt: 'created_at',
   },
 }));
 

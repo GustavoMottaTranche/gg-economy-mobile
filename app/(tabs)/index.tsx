@@ -14,7 +14,7 @@
  * **Validates: Requirements 1.2, 4.6, 5.1, 5.4, 5.5, 6.1, 6.2, 6.3, 6.4, 6.5, 6.6**
  */
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { View, ScrollView, StyleSheet, RefreshControl } from 'react-native';
+import { View, ScrollView, StyleSheet, RefreshControl, Text, Pressable } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
@@ -22,7 +22,7 @@ import { useTranslation } from 'react-i18next';
 import { useDashboardData } from '../../src/hooks/useDashboardData';
 import { useThemeColors } from '../../src/hooks/useThemeColors';
 import { useThemeStore } from '../../src/stores/themeStore';
-import { spacing, shadows, borderRadius } from '../../src/constants/theme';
+import { spacing, shadows, borderRadius, typography } from '../../src/constants/theme';
 import { LoadingIndicator } from '../../src/components/ui/LoadingIndicator';
 import { EmptyState } from '../../src/components/ui/EmptyState';
 import {
@@ -35,6 +35,7 @@ import {
   ExpenseSummaryCard,
 } from '../../src/components/dashboard';
 import { usePaymentStatusStore, usePendingItems } from '../../src/stores/paymentStatusStore';
+import { formatCurrencyLocale, getCurrentLocale } from '../../src/i18n';
 
 /**
  * Get current month in YYYY-MM format
@@ -70,6 +71,7 @@ export default function DashboardScreen() {
     setChartFilter,
     selectedMonth,
     setSelectedMonth,
+    fundExpensesTotal,
     isLoading,
     error,
     previousMonth,
@@ -127,6 +129,11 @@ export default function DashboardScreen() {
     refresh();
     usePaymentStatusStore.getState().loadPendingItemsForMonth(selectedMonth);
   }, [refresh, selectedMonth]);
+
+  // Handle tap on fund expense summary - navigate to Future Plans (Requirement 10.6)
+  const handleFundExpensePress = useCallback(() => {
+    router.push('/(tabs)/future-plans');
+  }, [router]);
 
   // Handle toggle payment status from PendingSection (Requirement 4.2)
   const handleTogglePaymentStatus = useCallback(
@@ -207,6 +214,16 @@ export default function DashboardScreen() {
           marginTop: spacing['2xl'],
           alignItems: 'center',
         },
+        fundExpenseSummary: {
+          marginBottom: spacing.base,
+          paddingHorizontal: spacing.base,
+          paddingVertical: spacing.sm,
+        },
+        fundExpenseText: {
+          fontSize: typography.caption.fontSize,
+          color: colors.interactive.primary,
+          fontWeight: '500',
+        },
       }),
     [colors, chartShadow]
   );
@@ -248,7 +265,8 @@ export default function DashboardScreen() {
     summary.totalIncome > 0 ||
     summary.totalExpenses > 0 ||
     summary.transactionCount > 0 ||
-    weeklyTotal > 0;
+    weeklyTotal > 0 ||
+    variableBreakdown.length > 0;
 
   return (
     <ScrollView
@@ -321,6 +339,22 @@ export default function DashboardScreen() {
               />
             );
           })()}
+
+          {/* Fund expense summary - only shown when fund expenses > 0 (Requirement 10.1, 10.4, 10.5, 10.6) */}
+          {fundExpensesTotal > 0 && (
+            <Pressable
+              onPress={handleFundExpensePress}
+              style={dynamicStyles.fundExpenseSummary}
+              accessibilityRole="link"
+              accessibilityLabel={t('futurePlans.dashboard.fundExpensesLabel')}
+              testID="dashboard-fund-expense-summary"
+            >
+              <Text style={dynamicStyles.fundExpenseText}>
+                {t('futurePlans.dashboard.fundExpensesLabel')}:{' '}
+                {formatCurrencyLocale(fundExpensesTotal / 100, getCurrentLocale())}
+              </Text>
+            </Pressable>
+          )}
 
           <View style={dynamicStyles.chartSection}>
             <ChartFilter

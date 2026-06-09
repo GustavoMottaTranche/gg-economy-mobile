@@ -78,6 +78,12 @@ export default function SettingsLayout() {
           title: t('goals.screenTitle'),
         }}
       />
+      <Stack.Screen
+        name="fund-config"
+        options={{
+          title: t('futurePlans.config.screenTitle'),
+        }}
+      />
     </Stack>
   );
 }

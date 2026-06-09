@@ -1,10 +1,11 @@
 /**
  * Tab Layout for GG-Economy Mobile
  *
- * Configures the bottom tab navigation with 4 main sections:
+ * Configures the bottom tab navigation with 5 main sections:
  * - Dashboard (index) - Financial overview
  * - Transactions - View transactions by month
  * - Manual - Manual entry (with installment/batch modes)
+ * - Future Plans - Savings and fund allocation
  * - Settings - App settings
  *
  * Uses theme tokens for all colors, SVG icons via TabBarIcon component,
@@ -85,6 +86,17 @@ export default function TabLayout() {
             <TabBarIcon name="manual" focused={focused} color={color} size={24} />
           ),
           tabBarAccessibilityLabel: t('navigation.manual'),
+        }}
+      />
+      <Tabs.Screen
+        name="future-plans"
+        options={{
+          title: t('futurePlans.screenTitle'),
+          tabBarLabel: t('futurePlans.tab'),
+          tabBarIcon: ({ focused, color }) => (
+            <TabBarIcon name="plans" focused={focused} color={color} size={24} />
+          ),
+          tabBarAccessibilityLabel: t('futurePlans.tab'),
         }}
       />
       <Tabs.Screen

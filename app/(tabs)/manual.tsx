@@ -35,7 +35,11 @@ import { useThemeColors } from '../../src/hooks/useThemeColors';
 import { typography, spacing, borderRadius, type ModeColors } from '../../src/constants/theme';
 import { useDraftStorage } from '../../src/hooks/useDraftStorage';
 import { useCategories } from '../../src/hooks/useCategories';
-import { createTransaction, createTransactions } from '../../src/db/queries/transactions';
+import {
+  createTransaction,
+  createTransactions,
+  getLastManualTransaction,
+} from '../../src/db/queries/transactions';
 import { DateTimePicker } from '../../src/components/ui/DateTimePicker';
 import { CategorySelector } from '../../src/components/CategorySelector';
 import { AmountDisplay } from '../../src/components/ui/AmountDisplay';
@@ -57,6 +61,10 @@ import { deriveReferenceMonth } from '../../src/utils/deriveReferenceMonth';
 import { createRecurring } from '../../src/services/recurring/RecurringTransactionService';
 import { weeklyRecurringService } from '../../src/services/weekly-recurring/WeeklyRecurringService';
 import { PaymentStatusOption } from '../../src/components/weekly-recurring/PaymentStatusOption';
+import { FundSelector } from '../../src/components/future-plans/FundSelector';
+import { useFundStore, useFunds } from '../../src/stores/fundStore';
+import { recurringFundLinkRepository } from '../../src/repositories/RecurringFundLinkRepository';
+import { useWeeklyRecurringStore } from '../../src/stores/weeklyRecurringStore';
 import type { InstallmentDetail } from '../../src/types/installment';
 import type { ManualEntryDraft } from '../../src/services/draft';
 import type { Category } from '../../src/types';
@@ -214,6 +222,38 @@ export default function ManualEntryScreen() {
   const [batchTitleError, setBatchTitleError] = useState<string | null>(null);
   const [pendingBatchCategory, setPendingBatchCategory] = useState<Category | null>(null);
 
+  // Fund linking state (Requirements 8.1, 8.7)
+  const [selectedFundId, setSelectedFundId] = useState<string | null>(null);
+  const [showFundSelector, setShowFundSelector] = useState(false);
+  const funds = useFunds();
+
+  // Load funds on mount
+  useEffect(() => {
+    useFundStore.getState().loadFunds();
+  }, []);
+
+  // Last manually added transaction
+  const [lastManualEntry, setLastManualEntry] = useState<{
+    title: string;
+    createdAt: string;
+  } | null>(null);
+
+  const loadLastManualEntry = useCallback(async () => {
+    const result = await getLastManualTransaction();
+    setLastManualEntry(result);
+  }, []);
+
+  useEffect(() => {
+    loadLastManualEntry();
+  }, [loadLastManualEntry]);
+
+  // Get selected fund name for display
+  const selectedFundName = useMemo(() => {
+    if (!selectedFundId) return null;
+    const fund = funds.find((f) => f.id === selectedFundId);
+    return fund?.name ?? null;
+  }, [selectedFundId, funds]);
+
   // Batch mode selected category object
   const batchSelectedCategory = useMemo(() => {
     if (!batchCategoryId) return null;
@@ -326,6 +366,10 @@ export default function ManualEntryScreen() {
       // Clear category if it doesn't match the new type
       if (selectedCategory && selectedCategory.type !== type) {
         setCategoryId(null);
+      }
+      // Clear fund selection when switching to income (funds are for expenses only)
+      if (type === 'income') {
+        setSelectedFundId(null);
       }
     },
     [selectedCategory]
@@ -641,6 +685,7 @@ export default function ManualEntryScreen() {
     setPaymentStatusOption('all_pending');
     setRecurringFrequency('monthly');
     setWeeklyDayOfWeek(new Date().getDay());
+    setSelectedFundId(null);
   }, []);
 
   // Handle infinite installment submission (creates a recurring transaction)
@@ -676,7 +721,7 @@ export default function ManualEntryScreen() {
 
       if (recurringFrequency === 'weekly') {
         // Create weekly recurring group via WeeklyRecurringService
-        await weeklyRecurringService.createGroup({
+        const createdGroup = await weeklyRecurringService.createGroup({
           title: title.trim(),
           amount: amountInCents,
           dayOfWeek: weeklyDayOfWeek,
@@ -685,6 +730,14 @@ export default function ManualEntryScreen() {
           description: description.trim() || undefined,
           paymentStatusOption,
         });
+
+        // Link fund to the weekly recurring group if selected (Requirements 11.4, 11.6)
+        if (selectedFundId) {
+          await recurringFundLinkRepository.link(createdGroup.id, selectedFundId);
+        }
+
+        // Reload groups in store
+        await useWeeklyRecurringStore.getState().loadGroups();
 
         Alert.alert(
           t('manual.installment.infiniteSuccessTitle'),
@@ -701,6 +754,7 @@ export default function ManualEntryScreen() {
           categoryType: transactionType,
           startMonth: installmentStartMonth,
           description: description.trim() || undefined,
+          fundId: selectedFundId,
           paymentStatusOption,
         });
 
@@ -718,6 +772,7 @@ export default function ManualEntryScreen() {
       // Clear draft and reset form
       await clearDraft();
       resetForm();
+      loadLastManualEntry();
     } catch (error) {
       console.error('Failed to create recurring:', error);
       Alert.alert(t('manual.installment.errorTitle'), t('manual.installment.errorMessage'));
@@ -735,8 +790,10 @@ export default function ManualEntryScreen() {
     recurringFrequency,
     weeklyDayOfWeek,
     paymentStatusOption,
+    selectedFundId,
     clearDraft,
     resetForm,
+    loadLastManualEntry,
     t,
   ]);
 
@@ -828,6 +885,7 @@ export default function ManualEntryScreen() {
       // Clear draft and reset form
       await clearDraft();
       resetForm();
+      loadLastManualEntry();
     } catch (error) {
       // On error: rollback is handled by createTransactions (withTransaction),
       // show error toast, retain form data (don't reset)
@@ -851,6 +909,7 @@ export default function ManualEntryScreen() {
     paymentStatusOption,
     clearDraft,
     resetForm,
+    loadLastManualEntry,
     t,
   ]);
 
@@ -877,7 +936,7 @@ export default function ManualEntryScreen() {
       const signedAmount = transactionType === 'expense' ? -amountInCents : amountInCents;
 
       // Create transaction
-      await createTransaction({
+      const createdTransaction = await createTransaction({
         date,
         amount: signedAmount,
         title: title.trim(),
@@ -888,12 +947,18 @@ export default function ManualEntryScreen() {
         isExcludedFromTotals: false,
       });
 
+      // Link transaction to fund if selected (Requirements 8.1, 8.7)
+      if (selectedFundId && createdTransaction?.id) {
+        await useFundStore.getState().linkTransaction(selectedFundId, createdTransaction.id);
+      }
+
       // Show success message
       Alert.alert(t('common.success'), t('manual.transactionSaved'));
 
       // Clear draft and reset form
       await clearDraft();
       resetForm();
+      loadLastManualEntry();
     } catch (error) {
       console.error('Failed to save transaction:', error);
       Alert.alert(t('common.error'), t('errors.database'));
@@ -912,8 +977,10 @@ export default function ManualEntryScreen() {
     description,
     categoryId,
     referenceMonth,
+    selectedFundId,
     clearDraft,
     resetForm,
+    loadLastManualEntry,
     t,
   ]);
 
@@ -977,6 +1044,20 @@ export default function ManualEntryScreen() {
               {isDirty && (
                 <Text style={styles.draftIndicator} testID="draft-indicator">
                   {isSaving ? t('common.loading') : t('manual.draftSaved')}
+                </Text>
+              )}
+              {lastManualEntry && (
+                <Text style={styles.lastEntryInfo} testID="last-entry-info">
+                  {t('manual.lastAdded', {
+                    title: lastManualEntry.title,
+                    date: new Date(lastManualEntry.createdAt).toLocaleDateString(locale, {
+                      day: '2-digit',
+                      month: '2-digit',
+                      year: 'numeric',
+                      hour: '2-digit',
+                      minute: '2-digit',
+                    }),
+                  })}
                 </Text>
               )}
             </View>
@@ -1237,6 +1318,29 @@ export default function ManualEntryScreen() {
                 </TouchableOpacity>
               </View>
             )}
+
+            {/* Fund Selector - shown for expense transactions, hidden in batch mode (Requirements 8.1, 8.7, 11.4, 11.6) */}
+            {!batchIsActive &&
+              transactionType === 'expense' &&
+              (!installmentMode || isInfiniteInstallment) && (
+                <View style={styles.section}>
+                  <Text style={styles.label}>{t('futurePlans.transactions.linkToFund')}</Text>
+                  <TouchableOpacity
+                    style={styles.selector}
+                    onPress={() => setShowFundSelector(true)}
+                    accessibilityRole="button"
+                    accessibilityLabel={t('futurePlans.transactions.linkToFund')}
+                    testID="fund-selector-button"
+                  >
+                    <Text
+                      style={selectedFundName ? styles.selectorText : styles.selectorPlaceholder}
+                    >
+                      {selectedFundName ?? t('futurePlans.transactions.noneFund')}
+                    </Text>
+                    <Text style={styles.selectorArrow}>▼</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
 
             {/* Reference Month Selector (Mês de Referência) */}
             <View style={styles.section}>
@@ -1728,6 +1832,18 @@ export default function ManualEntryScreen() {
             </View>
           </View>
         )}
+
+        {/* Fund Selector Modal (Requirements 8.1, 8.7) */}
+        <FundSelector
+          visible={showFundSelector}
+          onSelect={(fundId) => {
+            setSelectedFundId(fundId);
+            setShowFundSelector(false);
+          }}
+          onClose={() => setShowFundSelector(false)}
+          selectedFundId={selectedFundId}
+          testID="manual-fund-selector-modal"
+        />
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
@@ -1776,6 +1892,13 @@ function createStyles(c: ModeColors) {
       fontWeight: typography.caption.fontWeight,
       color: c.text.secondary,
       marginTop: spacing.xs,
+    },
+    lastEntryInfo: {
+      fontSize: typography.caption.fontSize,
+      fontWeight: typography.caption.fontWeight,
+      color: c.text.tertiary,
+      marginTop: spacing.xs,
+      fontStyle: 'italic',
     },
     // Between-group spacing: 20 (spacing.lg)
     section: {

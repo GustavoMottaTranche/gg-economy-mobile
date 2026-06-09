@@ -35,6 +35,7 @@ import { EmptyState } from '../../src/components/ui/EmptyState';
 import { InputPromptDialog } from '../../src/components/ui/InputPromptDialog';
 import { CategorySelector } from '../../src/components/CategorySelector';
 import { PaymentStatusToggle } from '../../src/components/PaymentStatusToggle';
+import { FundSelector } from '../../src/components/future-plans/FundSelector';
 import {
   formatCurrencyLocale,
   formatDateLocale,
@@ -51,8 +52,13 @@ import {
   recalculateGroup,
   updateGroupField,
 } from '../../src/services/installment/InstallmentGroupManager';
-import { updateRecurringAmount } from '../../src/services/recurring/RecurringTransactionService';
+import {
+  updateRecurringAmount,
+  deactivateAndDeleteFuture,
+} from '../../src/services/recurring/RecurringTransactionService';
 import { paymentStatusService } from '../../src/services/payment-status/PaymentStatusService';
+import { useFundStore, useFunds } from '../../src/stores/fundStore';
+import { fundTransactionRepository } from '../../src/repositories/FundTransactionRepository';
 import { getDb } from '../../src/db/client';
 import { transactions as transactionsTable } from '../../src/db/schema';
 import type { Category } from '../../src/types';
@@ -214,6 +220,11 @@ export default function TransactionDetailScreen(): React.ReactElement {
   const [isPaid, setIsPaid] = useState<boolean | null>(null);
   const [isPaymentToggling, setIsPaymentToggling] = useState(false);
 
+  // State for fund linking (Requirements 8.1, 8.6, 8.8)
+  const [fundSelectorVisible, setFundSelectorVisible] = useState(false);
+  const [linkedFundId, setLinkedFundId] = useState<string | null>(null);
+  const funds = useFunds();
+
   // Load the isPaid status from the database when the transaction is available
   useEffect(() => {
     if (!id) return;
@@ -242,6 +253,33 @@ export default function TransactionDetailScreen(): React.ReactElement {
     };
   }, [id]);
 
+  // Load the linked fund for this transaction
+  useEffect(() => {
+    if (!id) return;
+    let cancelled = false;
+
+    async function loadLinkedFund() {
+      try {
+        const fundTx = await fundTransactionRepository.getByTransactionId(id);
+        if (!cancelled) {
+          setLinkedFundId(fundTx ? fundTx.fundId : null);
+        }
+      } catch {
+        // If we can't load, leave as null
+      }
+    }
+
+    loadLinkedFund();
+    return () => {
+      cancelled = true;
+    };
+  }, [id]);
+
+  // Load funds list on mount for displaying fund name
+  useEffect(() => {
+    useFundStore.getState().loadFunds();
+  }, []);
+
   /**
    * Handles toggling the payment status with optimistic update.
    * Validates: Requirements 5.2, 5.3
@@ -264,6 +302,64 @@ export default function TransactionDetailScreen(): React.ReactElement {
       setIsPaymentToggling(false);
     }
   }, [transaction, isPaid, isPaymentToggling, t]);
+
+  /**
+   * Handles opening the fund selector modal.
+   * Validates: Requirements 8.1, 8.8
+   */
+  const handleOpenFundSelector = useCallback(() => {
+    setFundSelectorVisible(true);
+  }, []);
+
+  /**
+   * Handles fund selection: links or unlinks the transaction from a fund.
+   * Validates: Requirements 8.1, 8.6, 8.8
+   */
+  const handleFundSelect = useCallback(
+    async (fundId: string | null) => {
+      if (!transaction) return;
+      setFundSelectorVisible(false);
+
+      try {
+        if (fundId === null) {
+          // Unlink transaction from current fund
+          if (linkedFundId !== null) {
+            await useFundStore.getState().unlinkTransaction(transaction.id);
+            setLinkedFundId(null);
+          }
+        } else {
+          // If already linked to a different fund, unlink first
+          if (linkedFundId !== null && linkedFundId !== fundId) {
+            await useFundStore.getState().unlinkTransaction(transaction.id);
+          }
+          // Link to selected fund
+          if (linkedFundId !== fundId) {
+            await useFundStore.getState().linkTransaction(fundId, transaction.id);
+            setLinkedFundId(fundId);
+          }
+        }
+      } catch {
+        Alert.alert(t('common.error'), t('errors.generic'));
+      }
+    },
+    [transaction, linkedFundId, t]
+  );
+
+  /**
+   * Handles closing the fund selector modal.
+   */
+  const handleCloseFundSelector = useCallback(() => {
+    setFundSelectorVisible(false);
+  }, []);
+
+  /**
+   * Gets the display name of the currently linked fund.
+   */
+  const linkedFundName = useMemo(() => {
+    if (!linkedFundId) return null;
+    const fund = funds.find((f) => f.id === linkedFundId);
+    return fund?.name ?? null;
+  }, [linkedFundId, funds]);
 
   /**
    * Opens the input prompt dialog with the specified configuration.
@@ -328,7 +424,11 @@ export default function TransactionDetailScreen(): React.ReactElement {
           const signedAmount = transaction.amount < 0 ? -amountInCents : amountInCents;
           try {
             await update(transaction.id, { amount: signedAmount });
-            await updateRecurringAmount(transaction.recurringId!, Math.abs(signedAmount));
+            await updateRecurringAmount(
+              transaction.recurringId!,
+              Math.abs(signedAmount),
+              transaction.referenceMonth
+            );
             Alert.alert(t('common.success'), t('manual.installment.recurringUpdateSuccess'));
           } catch (_err) {
             Alert.alert(t('common.error'), t('manual.installment.recurringUpdateError'));
@@ -645,7 +745,8 @@ export default function TransactionDetailScreen(): React.ReactElement {
   }, [t, transaction, handleEditValue, handleEditDescription]);
 
   /**
-   * Handles deleting a transaction with group-aware dialog for installment parcels.
+   * Handles deleting a transaction with group-aware dialog for installment parcels
+   * and recurring-aware dialog for recurring transactions.
    */
   const handleDelete = useCallback(() => {
     if (!transaction) return;
@@ -677,6 +778,41 @@ export default function TransactionDetailScreen(): React.ReactElement {
           },
         },
       ]);
+    } else if (transaction.recurringId) {
+      // Recurring transaction: ask scope
+      Alert.alert(
+        t('manual.installment.recurringDeleteTitle'),
+        t('manual.installment.recurringDeleteMessage'),
+        [
+          { text: t('common.cancel'), style: 'cancel' },
+          {
+            text: t('manual.installment.applyToThisOccurrence'),
+            onPress: async () => {
+              try {
+                await remove(transaction.id);
+                router.back();
+              } catch (_err) {
+                Alert.alert(t('common.error'), t('errors.generic'));
+              }
+            },
+          },
+          {
+            text: t('manual.installment.recurringDeleteFuture'),
+            style: 'destructive',
+            onPress: async () => {
+              try {
+                const now = new Date();
+                const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+                await remove(transaction.id);
+                await deactivateAndDeleteFuture(transaction.recurringId!, currentMonth);
+                router.back();
+              } catch (_err) {
+                Alert.alert(t('common.error'), t('errors.generic'));
+              }
+            },
+          },
+        ]
+      );
     } else {
       Alert.alert(t('transactions.deleteTransaction'), t('transactions.deleteConfirmation'), [
         { text: t('common.cancel'), style: 'cancel' },
@@ -794,6 +930,12 @@ export default function TransactionDetailScreen(): React.ReactElement {
                 : t('transactions.included')
             }
             testID="detail-excluded"
+          />
+          <DetailRow
+            label={t('futurePlans.transactions.linked')}
+            value={linkedFundName ?? t('futurePlans.transactions.noneFund')}
+            testID="detail-fund"
+            onPress={handleOpenFundSelector}
           />
           {isPaid !== null && (
             <TouchableOpacity
@@ -956,6 +1098,15 @@ export default function TransactionDetailScreen(): React.ReactElement {
           </View>
         </View>
       </Modal>
+
+      {/* Fund Selector Modal */}
+      <FundSelector
+        visible={fundSelectorVisible}
+        onSelect={handleFundSelect}
+        onClose={handleCloseFundSelector}
+        selectedFundId={linkedFundId}
+        testID="fund-selector-modal"
+      />
 
       {/* Input Prompt Dialog for editing values/descriptions */}
       <InputPromptDialog

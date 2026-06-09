@@ -53,3 +53,11 @@ export { validateParcelAmount, validateParcelAmountStandard } from './parcelAmou
 export type { ParcelAmountValidationResult } from './parcelAmountValidation';
 
 export { validateGoalAmount } from './goalValidation';
+
+export { validateFundName, validateMonetaryInput } from './fundValidation';
+
+export type {
+  FundNameValidationResult,
+  MonetaryValidationResult,
+  MonetaryValidationOptions,
+} from './fundValidation';

@@ -5,10 +5,14 @@
  * Optimized for large lists (100+ items) with infinite scroll support.
  * Integrates buildFilterConditions for SQL-level filtering.
  *
+ * Uses manual fetching for paginated data (not live query) to avoid
+ * cursor conflicts with reactive queries. Live queries are only used
+ * for count and summary aggregates.
+ *
  * **Validates: Requirements 6.1, 6.2, 6.4, 6.5, 6.6, 6.7, 6.8, 7.1, 7.2, 7.3**
  */
-import { useState, useCallback, useEffect, useRef } from 'react';
-import { eq, desc, sql } from 'drizzle-orm';
+import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
+import { eq, desc, and, sql, type SQL } from 'drizzle-orm';
 import { useLiveQuery, getDb } from '../db/client';
 import { transactions, categories } from '../db/schema';
 import { buildFilterConditions, type PaginationFilters } from '../db/buildFilterConditions';
@@ -96,6 +100,15 @@ function toTransaction(record: typeof transactions.$inferSelect): Transaction {
 }
 
 /**
+ * Extract the raw date string from a DB record for use as cursor.
+ * The DB stores dates as YYYY-MM-DD strings, so we must use that format
+ * in cursor comparisons (not ISO with time component).
+ */
+function getRawDate(record: typeof transactions.$inferSelect): string {
+  return record.date;
+}
+
+/**
  * Convert database record to Category
  */
 function toCategory(record: typeof categories.$inferSelect | null): Category | null {
@@ -117,32 +130,6 @@ function toCategory(record: typeof categories.$inferSelect | null): Category | n
  *
  * @param filters - Pagination filters including referenceMonth, categoryIds, value range, date range
  * @returns Paginated transactions interface with summary
- *
- * @example
- * ```tsx
- * const {
- *   transactions,
- *   isLoading,
- *   isLoadingMore,
- *   hasMore,
- *   totalCount,
- *   summary,
- *   loadMore,
- *   refresh,
- * } = usePaginatedTransactions({
- *   referenceMonth: '2024-06',
- *   categoryIds: ['cat-1', 'cat-2'],
- *   minAmount: 1000,
- *   maxAmount: 50000,
- * });
- *
- * // In FlashList
- * <FlashList
- *   data={transactions}
- *   onEndReached={loadMore}
- *   onEndReachedThreshold={0.5}
- * />
- * ```
  */
 export function usePaginatedTransactions(
   filters: PaginationFilters
@@ -153,16 +140,34 @@ export function usePaginatedTransactions(
   const [loadedTransactions, setLoadedTransactions] = useState<PaginatedTransactionWithCategory[]>(
     []
   );
+  const [isLoading, setIsLoading] = useState(true);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [lastDate, setLastDate] = useState<string | null>(null);
   const [lastId, setLastId] = useState<string | null>(null);
 
   // Use ref to prevent duplicate batch requests
   const isLoadingMoreRef = useRef(false);
+  // Track current fetch generation to ignore stale results
+  const fetchGeneration = useRef(0);
 
   // Build WHERE conditions from all active filters using buildFilterConditions
-  const whereConditions = buildFilterConditions(filters);
+  // We intentionally list individual filter fields rather than the whole object
+  // to avoid unnecessary recalculations when the object reference changes.
+  const whereConditions = useMemo(
+    () => buildFilterConditions(filters),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [
+      filters.referenceMonth,
+      filters.categoryIds,
+      filters.minAmount,
+      filters.maxAmount,
+      filters.startDate,
+      filters.endDate,
+      filters.pendingOnly,
+    ]
+  );
 
   // Live query for total count (with same filters, no cursor)
   const { data: countData } = useLiveQuery(
@@ -214,57 +219,92 @@ export function usePaginatedTransactions(
       }
     : EMPTY_SUMMARY;
 
-  // Initial data load (first page with filters, no cursor)
-  const { data: initialData, error: queryError } = useLiveQuery(
-    db
-      .select({
-        transaction: transactions,
-        category: categories,
-      })
-      .from(transactions)
-      .leftJoin(categories, eq(transactions.categoryId, categories.id))
-      .where(whereConditions)
-      .orderBy(desc(transactions.date), desc(transactions.id))
-      .limit(pageSize),
-    [
-      filters.referenceMonth,
-      filters.categoryIds,
-      filters.minAmount,
-      filters.maxAmount,
-      filters.startDate,
-      filters.endDate,
-      filters.pendingOnly,
-      pageSize,
-    ]
-  );
+  // Fetch a page of data (used for both initial load and load more)
+  // Returns transformed transactions along with the raw cursor date of the last item
+  const fetchPage = useCallback(
+    async (
+      cursor: { date: string; id: string } | null
+    ): Promise<{
+      items: PaginatedTransactionWithCategory[];
+      cursorDate: string | null;
+      cursorId: string | null;
+    }> => {
+      const conditions: SQL[] = [];
 
-  // Transform initial data
-  useEffect(() => {
-    if (initialData) {
-      const transformed = initialData.map(({ transaction, category }) => ({
+      // Add filter conditions
+      if (whereConditions) {
+        conditions.push(whereConditions);
+      }
+
+      // Add cursor condition for subsequent pages
+      if (cursor) {
+        conditions.push(
+          sql`(${transactions.date} < ${cursor.date} OR (${transactions.date} = ${cursor.date} AND ${transactions.id} < ${cursor.id}))`
+        );
+      }
+
+      const combinedWhere = conditions.length > 0 ? and(...conditions) : undefined;
+
+      const rows = await db
+        .select({
+          transaction: transactions,
+          category: categories,
+        })
+        .from(transactions)
+        .leftJoin(categories, eq(transactions.categoryId, categories.id))
+        .where(combinedWhere)
+        .orderBy(desc(transactions.date), desc(transactions.id))
+        .limit(pageSize);
+
+      const items = rows.map(({ transaction, category }) => ({
         ...toTransaction(transaction),
         category: toCategory(category),
       }));
 
-      setLoadedTransactions(transformed);
-      setHasMore(transformed.length >= pageSize);
+      // Extract raw cursor from the last DB record
+      const lastRow = rows[rows.length - 1];
+      const cursorDate = lastRow ? getRawDate(lastRow.transaction) : null;
+      const cursorId = lastRow ? lastRow.transaction.id : null;
 
-      if (transformed.length > 0) {
-        const lastItem = transformed[transformed.length - 1];
-        if (lastItem) {
-          setLastDate(lastItem.date.toISOString());
-          setLastId(lastItem.id);
-        }
-      } else {
-        setLastDate(null);
-        setLastId(null);
-      }
-    }
-  }, [initialData, pageSize]);
+      return { items, cursorDate, cursorId };
+    },
+    [db, whereConditions, pageSize]
+  );
+
+  // Initial load: fetch first page when filters change
+  useEffect(() => {
+    const generation = ++fetchGeneration.current;
+
+    setIsLoading(true);
+    setError(null);
+    setLoadedTransactions([]);
+    setLastDate(null);
+    setLastId(null);
+    setHasMore(true);
+    isLoadingMoreRef.current = false;
+
+    fetchPage(null)
+      .then(({ items, cursorDate, cursorId }) => {
+        // Ignore stale results
+        if (generation !== fetchGeneration.current) return;
+
+        setLoadedTransactions(items);
+        setHasMore(items.length >= pageSize);
+        setLastDate(cursorDate);
+        setLastId(cursorId);
+      })
+      .catch((err) => {
+        if (generation !== fetchGeneration.current) return;
+        setError(String(err));
+      })
+      .finally(() => {
+        if (generation !== fetchGeneration.current) return;
+        setIsLoading(false);
+      });
+  }, [fetchPage, pageSize]);
 
   // Load more function with duplicate request prevention
   const loadMore = useCallback(async () => {
-    // Prevent duplicate batch requests using both state and ref
     if (isLoadingMoreRef.current || !hasMore || !lastDate || !lastId) {
       return;
     }
@@ -273,77 +313,59 @@ export function usePaginatedTransactions(
     setIsLoadingMore(true);
 
     try {
-      // Build cursor condition combined with filter conditions
-      const cursorCondition = sql`(${transactions.date} < ${lastDate} OR (${transactions.date} = ${lastDate} AND ${transactions.id} < ${lastId}))`;
+      const { items, cursorDate, cursorId } = await fetchPage({ date: lastDate, id: lastId });
 
-      // Combine filter conditions with cursor
-      const combinedConditions = whereConditions
-        ? sql`${whereConditions} AND ${cursorCondition}`
-        : cursorCondition;
-
-      const moreData = await db
-        .select({
-          transaction: transactions,
-          category: categories,
-        })
-        .from(transactions)
-        .leftJoin(categories, eq(transactions.categoryId, categories.id))
-        .where(combinedConditions)
-        .orderBy(desc(transactions.date), desc(transactions.id))
-        .limit(pageSize);
-
-      const transformed = moreData.map(({ transaction, category }) => ({
-        ...toTransaction(transaction),
-        category: toCategory(category),
-      }));
-
-      if (transformed.length > 0) {
-        setLoadedTransactions((prev) => [...prev, ...transformed]);
-        const lastItem = transformed[transformed.length - 1];
-        if (lastItem) {
-          setLastDate(lastItem.date.toISOString());
-          setLastId(lastItem.id);
-        }
+      if (items.length > 0) {
+        setLoadedTransactions((prev) => [...prev, ...items]);
+        setLastDate(cursorDate);
+        setLastId(cursorId);
       }
 
-      setHasMore(transformed.length >= pageSize);
-    } catch (error) {
-      console.error('[usePaginatedTransactions] Error loading more:', error);
+      setHasMore(items.length >= pageSize);
+    } catch (err) {
+      console.error('[usePaginatedTransactions] Error loading more:', err);
     } finally {
       setIsLoadingMore(false);
       isLoadingMoreRef.current = false;
     }
-  }, [db, whereConditions, pageSize, hasMore, lastDate, lastId]);
+  }, [fetchPage, pageSize, hasMore, lastDate, lastId]);
 
-  // Refresh function - resets cursor state
+  // Refresh function - reloads from scratch
   const refresh = useCallback(() => {
+    const generation = ++fetchGeneration.current;
+
+    setIsLoading(true);
+    setError(null);
     setLoadedTransactions([]);
     setLastDate(null);
     setLastId(null);
     setHasMore(true);
-    setIsLoadingMore(false);
     isLoadingMoreRef.current = false;
-  }, []);
 
-  // Reset cursor when any filter parameter changes
-  useEffect(() => {
-    refresh();
-  }, [
-    filters.referenceMonth,
-    filters.categoryIds,
-    filters.minAmount,
-    filters.maxAmount,
-    filters.startDate,
-    filters.endDate,
-    filters.pendingOnly,
-    refresh,
-  ]);
+    fetchPage(null)
+      .then(({ items, cursorDate, cursorId }) => {
+        if (generation !== fetchGeneration.current) return;
+
+        setLoadedTransactions(items);
+        setHasMore(items.length >= pageSize);
+        setLastDate(cursorDate);
+        setLastId(cursorId);
+      })
+      .catch((err) => {
+        if (generation !== fetchGeneration.current) return;
+        setError(String(err));
+      })
+      .finally(() => {
+        if (generation !== fetchGeneration.current) return;
+        setIsLoading(false);
+      });
+  }, [fetchPage, pageSize]);
 
   return {
     transactions: loadedTransactions,
-    isLoading: !initialData,
+    isLoading,
     isLoadingMore,
-    error: queryError ? String(queryError) : null,
+    error,
     hasMore,
     totalCount,
     summary,

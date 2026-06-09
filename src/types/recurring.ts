@@ -20,5 +20,6 @@ export interface CreateRecurringDTO {
   startMonth: string;
   description?: string;
   originId?: string;
+  fundId?: string | null;
   paymentStatusOption?: import('./paymentStatus').PaymentStatusCreationOption;
 }

@@ -20,7 +20,9 @@ export type PreferenceKey =
   | 'last_backup_time'
   | 'last_backup_status'
   | 'google_account_email'
-  | 'general_variable_goal';
+  | 'general_variable_goal'
+  | 'monthly_income'
+  | `monthly_income_${string}`;
 
 /**
  * Backup frequency options

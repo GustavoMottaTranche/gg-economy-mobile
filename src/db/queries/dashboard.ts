@@ -8,7 +8,14 @@
  */
 import { eq, and, desc, sql, inArray } from 'drizzle-orm';
 import { getDb } from '../client';
-import { transactions, categories, weeklyOccurrences, weeklyRecurringGroups } from '../schema';
+import {
+  transactions,
+  categories,
+  weeklyOccurrences,
+  weeklyRecurringGroups,
+  categoryGoals,
+  fundTransactions,
+} from '../schema';
 
 // ============================================================================
 // Types
@@ -302,4 +309,91 @@ export function getCategoryTransactionsQuery(categoryId: string, referenceMonth:
       )
     )
     .orderBy(desc(transactions.date));
+}
+
+// ============================================================================
+// Variable Categories With Goals Query
+// ============================================================================
+
+/**
+ * Result type for variable categories with goals query
+ */
+export interface VariableCategoryWithGoalResult {
+  /** Category ID */
+  categoryId: string;
+  /** Category name */
+  categoryName: string;
+  /** Category color */
+  categoryColor: string;
+  /** Category icon */
+  categoryIcon: string;
+  /** Goal amount in cents */
+  goalAmount: number;
+}
+
+/**
+ * Get all active variable expense categories that have a goal configured.
+ *
+ * Joins the categories table with category_goals to return metadata
+ * for categories that have goals set. This is used to inject zero-spending
+ * entries into the variable breakdown on the dashboard.
+ *
+ * @returns Drizzle query builder for variable categories with goals
+ *
+ * **Validates: Requirement 4.5**
+ */
+export function getVariableCategoriesWithGoalsQuery() {
+  const db = getDb();
+  return db
+    .select({
+      categoryId: categories.id,
+      categoryName: categories.name,
+      categoryColor: categories.color,
+      categoryIcon: categories.icon,
+      goalAmount: categoryGoals.amount,
+    })
+    .from(categoryGoals)
+    .innerJoin(categories, eq(categoryGoals.categoryId, categories.id))
+    .where(and(eq(categories.isActive, true), eq(categories.expenseGroup, 'variable')));
+}
+
+// ============================================================================
+// Fund Expenses Query
+// ============================================================================
+
+/**
+ * Result type for fund expenses query
+ */
+export interface FundExpensesResult {
+  /** Total fund-linked expense amount for the month (absolute value, in cents) */
+  totalFundExpenses: number;
+}
+
+/**
+ * Get fund-linked expense total for a specific reference month.
+ *
+ * Joins `fund_transactions` with `transactions` to sum the absolute amounts
+ * of all transactions linked to funds for the given month.
+ * Only includes transactions where the reference month matches the selected month.
+ *
+ * @param referenceMonth - The month in YYYY-MM format
+ * @returns Drizzle query builder for fund expenses total
+ *
+ * **Validates: Requirements 10.1, 10.3**
+ *
+ * @example
+ * ```typescript
+ * const result = await getFundExpensesQuery('2024-01');
+ * // result[0] = { totalFundExpenses: 15000 } // R$ 150.00 in cents
+ * ```
+ */
+export function getFundExpensesQuery(referenceMonth: string) {
+  const db = getDb();
+  return db
+    .select({
+      totalFundExpenses: sql<number>`COALESCE(SUM(ABS(${transactions.amount})), 0)`,
+    })
+    .from(fundTransactions)
+    .innerJoin(transactions, eq(fundTransactions.transactionId, transactions.id))
+    .where(eq(transactions.referenceMonth, referenceMonth));
 }
