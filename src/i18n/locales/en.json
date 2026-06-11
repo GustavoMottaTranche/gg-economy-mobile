@@ -362,6 +362,30 @@
     "preferences": "Preferences",
     "dataManagement": "Data Management"
   },
+  "cloudSync": {
+    "title": "Cloud Sync",
+    "settingsDescription": "Export data to the web platform",
+    "syncKeyTitle": "Sync Key",
+    "syncKeyDescription": "Generate a key at Settings → Sync Keys on the web and paste it here.",
+    "keyPlaceholder": "gge_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+    "paste": "Paste",
+    "saveKey": "Validate & Save",
+    "removeKey": "Remove",
+    "keyConfigured": "✓ Key configured and valid",
+    "keyStored": "✓ Key configured",
+    "keyValidTitle": "Key valid",
+    "keyValidMessage": "The key was verified and saved successfully.",
+    "startButton": "Start Sync",
+    "successTitle": "Sync Complete",
+    "successOk": "{{count}} imported successfully",
+    "successFailed": "{{count}} failed",
+    "successSkipped": "{{count}} skipped",
+    "steps": {
+      "extracting": "Extracting data...",
+      "building": "Preparing upload...",
+      "uploading": "Uploading data..."
+    }
+  },
   "backup": {
     "title": "Backup",
     "backupNow": "Backup Now",

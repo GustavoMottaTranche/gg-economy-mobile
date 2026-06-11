@@ -362,6 +362,30 @@
     "preferences": "Preferências",
     "dataManagement": "Gerenciamento de Dados"
   },
+  "cloudSync": {
+    "title": "Sincronização Cloud",
+    "settingsDescription": "Exportar dados para a plataforma web",
+    "syncKeyTitle": "Chave de Sincronização",
+    "syncKeyDescription": "Gere uma chave em Ajustes → Chaves de Sincronização no web e cole aqui.",
+    "keyPlaceholder": "gge_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+    "paste": "Colar",
+    "saveKey": "Validar e Salvar",
+    "removeKey": "Remover",
+    "keyConfigured": "✓ Chave configurada e válida",
+    "keyStored": "✓ Chave configurada",
+    "keyValidTitle": "Chave válida",
+    "keyValidMessage": "A chave foi verificada e salva com sucesso.",
+    "startButton": "Iniciar Sincronização",
+    "successTitle": "Sincronização Concluída",
+    "successOk": "{{count}} importados com sucesso",
+    "successFailed": "{{count}} falharam",
+    "successSkipped": "{{count}} ignorados",
+    "steps": {
+      "extracting": "Extraindo dados...",
+      "building": "Preparando envio...",
+      "uploading": "Enviando dados..."
+    }
+  },
   "backup": {
     "title": "Backup",
     "backupNow": "Fazer Backup Agora",

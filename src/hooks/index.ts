@@ -115,3 +115,6 @@ export {
 
 // Goal hooks
 export { useGoals, type UseGoalsReturn, type CategorySpendingInput } from './useGoals';
+
+// Cloud sync hooks
+export { useCloudSync, type UseCloudSyncReturn } from './useCloudSync';

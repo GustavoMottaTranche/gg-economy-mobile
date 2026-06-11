@@ -84,6 +84,12 @@ export default function SettingsLayout() {
           title: t('futurePlans.config.screenTitle'),
         }}
       />
+      <Stack.Screen
+        name="cloud-sync"
+        options={{
+          title: t('cloudSync.title'),
+        }}
+      />
     </Stack>
   );
 }

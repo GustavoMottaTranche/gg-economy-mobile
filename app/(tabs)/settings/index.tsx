@@ -302,6 +302,14 @@ export default function SettingsScreen() {
             type: 'navigation' as const,
             href: '/(tabs)/settings/rules',
           },
+          {
+            id: 'cloud-sync',
+            icon: '🔄',
+            title: t('cloudSync.title'),
+            description: t('cloudSync.settingsDescription'),
+            type: 'navigation' as const,
+            href: '/(tabs)/settings/cloud-sync',
+          },
         ],
       },
       {
